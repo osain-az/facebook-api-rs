@@ -1,0 +1,28 @@
+[package]
+name = "facebook-api-rs"
+version = "0.1.0"
+description = "App Description"
+categories = ["wasm"]
+license = "MIT"
+readme = "./README.md"
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+
+[lib]
+name = "facebook_url"
+path = "src/lib.rs"
+
+[dev-dependencies]
+wasm-bindgen-test = "0.3.18"
+
+
+[dependencies]
+seed = {git  ="https://github.com/seed-rs/seed", branch="master"}
+
+
+
+
+
+
