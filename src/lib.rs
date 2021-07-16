@@ -1,3 +1,5 @@
+use reqwest;
+use serde::Deserialize;
 #[derive(Debug)]
  pub struct RedirectURL {
 
@@ -39,7 +41,7 @@
 
 #[allow(dead_code)]
 impl RedirectURL {
-    pub fn new_redirect_url(facebook_oath_url: String, client_id: String, redirect_uri: String, state: String, response_type: ResponseType, scope: Vec<String>) -> RedirectURL {
+    pub fn new(facebook_oath_url: String, client_id: String, redirect_uri: String, state: String, response_type: ResponseType, scope: Vec<String>) -> RedirectURL {
         RedirectURL {
             facebook_oath_url,
             client_id,
@@ -68,29 +70,29 @@ impl RedirectURL {
         &self.scope
     }
 
-    fn set_facebook_oath_url(& mut self) -> &mut String {
-        &mut self.facebook_oath_url
+    fn set_facebook_oath_url(&mut self, facebook_oath_url: String) {
+        self.facebook_oath_url = facebook_oath_url;
     }
-    fn set_client_id(&mut self) -> &mut String {
-        &mut self.client_id
+    fn set_client_id(&mut self, client_id: String) {
+        self.client_id = client_id;
     }
-    fn set_redirect_uri(&mut self) -> &mut String {
-        &mut self.redirect_uri
+    fn set_redirect_uri(&mut self, redirect_uri: String) {
+        self.redirect_uri = redirect_uri;
     }
-    fn set_state(&mut self) -> &mut String {
-        &mut self.state
+    fn set_state(&mut self, state: String) {
+        self.state = state;
     }
-    fn set_response_type(&mut self) -> &mut ResponseType {
-        &mut self.response_type
+    fn set_response_type(&mut self, response_type: ResponseType) {
+        self.response_type = response_type;
     }
-    fn set_scope(&mut self) -> &mut Vec<String> {
-        &mut self.scope
+    fn set_scope(&mut self, scope: Vec<String>) {
+        self.scope = scope;
     }
 }
 
 #[allow(dead_code)]
 impl ResponseType {
-    pub fn new_response_type(code: String, token: String, code20token: String, granted_scopes: Vec<String>) -> ResponseType {
+    pub fn new(code: String, token: String, code20token: String, granted_scopes: Vec<String>) -> ResponseType {
         ResponseType {
             code,
             token,
@@ -111,40 +113,81 @@ impl ResponseType {
         &self.granted_scopes
     }
 
-    fn set_code(&mut self) -> &str {
-        &self.code
+    fn set_code(&mut self, code: String) {
+        self.code = code;
     }
-    fn set_token(&mut self) -> &str {
-        &self.token
+    fn set_token(&mut self, token: String) {
+        self.token = token;
     }
-    fn set_code20token(&mut self) -> &str {
-        &self.code20token
+    fn set_code20token(&mut self, code20token: String) {
+        self.code20token = code20token;
     }
-    fn set_granted_scopes(&mut self) -> &Vec<String> {
-        &mut self.granted_scopes
+    fn set_granted_scopes(&mut self, granted_scopes: Vec<String>) {
+        self.granted_scopes = granted_scopes;
     }
 }
 
 pub fn main() {
 
 
-    let response_type = ResponseType::new_response_type(
-                            "some code".parse().unwrap(),
-                            "the access token".parse().unwrap(),
-                            "I don't remember".parse().unwrap(),
-                            vec!["username".to_string(), "likes".to_string()]);
 
-    let redirect_uri = r#"&redirect_uri={"https://www.domain.com/login"}"#;
 
-    let redirect_url = RedirectURL::new_redirect_url("https://www.facebook.com/v11.0/dialog/oauth?".parse().unwrap(),
-                                 "client_id={339031417714735}".parse().unwrap(),
-                                 redirect_uri.parse().unwrap(),
-                                 "this is random :O".parse().unwrap(),
-                                 response_type,
-                                 vec!["test".to_string()],
-    );
+    #[derive(Deserialize, Debug)]
+    struct AccessTokenData{
+        access_token: String,
+        token_type: String,
+        expires_in: u32
+    }
 
-    println!("{:?}", redirect_url);
+    struct CanceledLogin{
+        error_redirect_uri: String,
+        error_reason: String,
+        error: String,
+        error_description: String
+    }
 
+    #[tokio::main]
+    async fn main2() -> Result<(), Box<dyn std::error::Error>> {
+
+        let response_type = ResponseType::new(
+            "some code".parse().unwrap(),
+            "the access token".parse().unwrap(),
+            "I don't remember".parse().unwrap(),
+            vec!["username".to_string(), "likes".to_string()]);
+
+
+        let mut redirect_url = RedirectURL::new("https://www.facebook.com/v11.0/dialog/oauth?".parse().unwrap(),
+                                                "client_id=507151837217406".parse().unwrap(),
+                                                r#"&redirect_uri=https://localhost:8000"#.parse().unwrap(),
+                                                r#"&state=st=state123abc,ds=123456789"#.parse().unwrap(),
+                                                response_type,
+                                                vec!["test".to_string()],
+        );
+
+        println!("{:?}", redirect_url);
+        println!("{}{}{}{}", redirect_url.get_facebook_oath_url(), redirect_url.get_client_id(), redirect_url.get_redirect_uri(), redirect_url.get_state());
+
+
+        // Build the client using the builder pattern
+        let client = reqwest::Client::builder()
+            .build()?;
+
+        // Perform the actual execution of the network request
+        let res = client
+            .get(redirect_url.get_facebook_oath_url().to_string()+redirect_url.get_client_id()+redirect_url.get_redirect_uri()+redirect_url.get_state())
+            .send()
+            .await;
+
+        // Parse the response body as Json in this case
+        let data = res
+            .json::<AccessTokenData>()
+            .await?;
+
+
+        println!("{:?}", data);
+        Ok(())
+    }
+
+    main2();
 }
 
