@@ -1,6 +1,9 @@
 use reqwest;
-use serde::Deserialize;
-#[derive(Debug)]
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use seed::prelude::UnwrapThrowExt;
+
+#[derive(Debug, Deserialize, Serialize)]
  pub struct RedirectURL {
 
     // The Facebook url preamble for the oath dialog.
@@ -22,7 +25,7 @@ use serde::Deserialize;
     // A comma or space separated list of Permissions to request from the person.
      scope: Vec<String>,
 }
-#[derive(Debug)]
+#[derive(Debug, Deserialize, Serialize)]
  pub struct ResponseType {
     // Response data is included as URL parameters and contains code parameter (an encrypted string unique to each login request). This is the default behavior.
      code: String,
@@ -132,11 +135,15 @@ pub fn main() {
 
 
 
-    #[derive(Deserialize, Debug)]
+    #[derive(Serialize, Deserialize, Debug)]
     struct AccessTokenData{
         access_token: String,
         token_type: String,
         expires_in: u32
+    }
+
+    impl AccessTokenData {
+
     }
 
     struct CanceledLogin{
@@ -146,6 +153,18 @@ pub fn main() {
         error_description: String
     }
 
+    #[derive(Serialize, Deserialize, Debug)]
+    struct Code {
+        code: String
+    }
+
+    impl Code {
+
+        fn get_code(&self) -> &String {
+            &self.code
+        }
+
+    }
     #[tokio::main]
     async fn main2() -> Result<(), Box<dyn std::error::Error>> {
 
@@ -158,36 +177,81 @@ pub fn main() {
 
         let mut redirect_url = RedirectURL::new("https://www.facebook.com/v11.0/dialog/oauth?".parse().unwrap(),
                                                 "client_id=507151837217406".parse().unwrap(),
-                                                r#"&redirect_uri=https://localhost:8000"#.parse().unwrap(),
-                                                r#"&state=st=state123abc,ds=123456789"#.parse().unwrap(),
+                                                r#"&redirect_uri=http://localhost:8000"#.parse().unwrap(),
+                                                r#"&state="{st=state123abc,ds=123456789}""#.parse().unwrap(),
                                                 response_type,
                                                 vec!["test".to_string()],
         );
 
-        println!("{:?}", redirect_url);
-        println!("{}{}{}{}", redirect_url.get_facebook_oath_url(), redirect_url.get_client_id(), redirect_url.get_redirect_uri(), redirect_url.get_state());
+       // println!("{:?}", redirect_url);
+      //  println!("{}{}{}{}", redirect_url.get_facebook_oath_url(), redirect_url.get_client_id(), redirect_url.get_redirect_uri(), redirect_url.get_state());
 
 
         // Build the client using the builder pattern
         let client = reqwest::Client::builder()
             .build()?;
 
-        // Perform the actual execution of the network request
-        let res = client
-            .get(redirect_url.get_facebook_oath_url().to_string()+redirect_url.get_client_id()+redirect_url.get_redirect_uri()+redirect_url.get_state())
-            .send()
-            .await;
+        let graph = r#"https://graph.facebook.com/v11.0/oauth/access_token?"#;
 
-        // Parse the response body as Json in this case
-        let data = res
-            .json::<AccessTokenData>()
+        let secret = r#"&client_secret=cb112e5dd460eccf5d539a694affbe6d"#;
+        let a_string = redirect_url.get_client_id().to_string()+ &*redirect_url.get_redirect_uri().to_string() + &*redirect_url.get_state().to_string();
+
+        let res = client
+            .get(redirect_url.get_facebook_oath_url().to_string())
+            .query(&a_string)
+            .send()
+            .await?;
+
+        let code = res
+            .json::<Code>()
             .await?;
 
 
-        println!("{:?}", data);
+
+
+
+
+
+
+
+
+                // This will POST a body of `{"lang":"rust","body":"json"}`
+                let mut map = HashMap::new();
+                map.insert("facebook smth", "facebook details");
+                map.insert("body", "json");
+
+                // Perform the actual execution of the network request
+                let res = client
+                    .get(redirect_url.get_facebook_oath_url().to_string()+redirect_url.get_client_id()+redirect_url.get_redirect_uri()+redirect_url.get_state())
+                    .json(&map);
+
+                println!("body = {:?} ------------------------------------------------", res);
+        /*
+
+                let a_form = {redirect_url.get_client_id().to_string()+ &*redirect_url.get_redirect_uri().to_string() + &*secret.to_string()};
+                let res_2 = client
+                    .post(graph.to_string())
+                    .query(a_form.as_str());
+
+                println!("res_2body: {:?}", res_2);
+
+                let res_3 = client
+                    .get(graph.to_string()+redirect_url.get_client_id()+redirect_url.get_redirect_uri()+secret+r#"&code=testing/"#)
+                    .send()
+                    .await?;
+            //    println!("body = {:?}", res_2);
+
+
+                // Parse the response body as Json in this case
+                let data = client.post(graph.to_string()+redirect_url.get_client_id()+redirect_url.get_redirect_uri()+secret+r#"&code=testing"#)
+                    .json(&map)
+                    .send()
+                    .await?;
+
+        */
+        println!("data {:?}", code);
         Ok(())
     }
 
-    main2();
 }
 
