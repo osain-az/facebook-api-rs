@@ -1,45 +1,101 @@
-use reqwest;
-use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
-use seed::prelude::UnwrapThrowExt;
+mod sign_in;
 
-#[derive(Debug, Deserialize, Serialize)]
- pub struct RedirectURL {
+use seed::{prelude::*, *};
+use serde::{Serialize, Deserialize};
+// ------ ------
+//     Init
+// ------ ------
+
+// `init` describes what should happen when your app started.
+fn init(url: Url, orders: &mut impl Orders<Msg>) -> Model {
+   let code_param= url.search().get("code");
+    log!(code_param);
+        orders.perform_cmd(async {
+        // Load config from some json.
+        // You can have a specific Api key here for facebook.
+        Msg::ConfigFetched(
+            async { fetch("/config.json").await?.check_status()?.json().await }.await,
+        )
+    });
+    if let Some(code) = code_param {
+        let code_param = Token {
+            access_token: code.get(0).unwrap().to_string()
+        };
+        Model {
+            config: None,
+            error: None,
+            token: Some(code_param),
+        }
+
+    } else {     Model {
+        config: None,
+        error: None,
+        token: None,
+    } }
+
+
+}
+
+// ------ ------
+//     Model
+// ------ ------
+
+// `Model` describes our app state.
+pub struct Model {
+    config: Option<RedirectURL>,
+    error: Option<String>,
+    token: Option<Token>,
+}
+
+impl Model {
+    fn get_config(&self) -> &Option<RedirectURL> {
+        &self.config
+    }
+}
+
+
+#[derive(Deserialize, Debug, Serialize)]
+pub struct RedirectURL {
 
     // The Facebook url preamble for the oath dialog.
     facebook_oath_url: String,
 
     // The ID of your app, found in your app's dashboard.
-     client_id: String,
+    client_id: String,
 
     // The URL that you want to redirect the person logging in back to.
-     redirect_uri: String,
+    redirect_uri: String,
 
     // A string value created by your app to maintain state between the request and callback.
     //todo randomly generate this
-     state: String,
+    state: String,
 
     // Determines whether the response data included when the redirect back to the app occurs is in URL parameters or fragments.
-     response_type: ResponseType,
+    response_type: ResponseType,
 
     // A comma or space separated list of Permissions to request from the person.
-     scope: Vec<String>,
+    scope: Vec<String>,
 }
-#[derive(Debug, Deserialize, Serialize)]
- pub struct ResponseType {
+
+#[derive(Deserialize, Debug, Serialize)]
+pub struct ResponseType {
     // Response data is included as URL parameters and contains code parameter (an encrypted string unique to each login request). This is the default behavior.
-     code: String,
+    code: String,
 
     // Response data is included as a URL fragment and contains an access token. Desktop apps must use this setting for response_type. This is most useful when the client will be handling the token.
-     token: String,
+    token: String,
 
     // Response data is included as a URL fragment and contains both an access token and the code parameter.
-     code20token: String,
+    code20token: String,
 
     // A comma-separated list of all Permissions granted to the app by the user at the time of login.
     // Can be combined with other response_type values.
     // When combined with token, response data is included as a URL fragment, otherwise included as a URL parameter.
-     granted_scopes: Vec<String>,
+    granted_scopes: Vec<String>,
+}
+
+pub struct Token {
+    access_token: String,
 }
 
 #[allow(dead_code)]
@@ -56,10 +112,10 @@ impl RedirectURL {
     }
     fn get_facebook_oath_url(&self) -> &String {
         &self.facebook_oath_url
-}
+    }
     fn get_client_id(&self) -> &String {
         &self.client_id
-}
+    }
     fn get_redirect_uri(&self) -> &String {
         &self.redirect_uri
     }
@@ -130,128 +186,68 @@ impl ResponseType {
     }
 }
 
-pub fn main() {
+// ------ ------
+//    Update
+// ------ ------
 
+// (Remove the line below once any of your `Msg` variants doesn't implement `Copy`.)
+// `Msg` describes the different events you can modify state with.
+enum Msg {
+    SignedFailed(String),
+    ConfigFetched(fetch::Result<RedirectURL>),}
 
-
-
-    #[derive(Serialize, Deserialize, Debug)]
-    struct AccessTokenData{
-        access_token: String,
-        token_type: String,
-        expires_in: u32
-    }
-
-    impl AccessTokenData {
-
-    }
-
-    struct CanceledLogin{
-        error_redirect_uri: String,
-        error_reason: String,
-        error: String,
-        error_description: String
-    }
-
-    #[derive(Serialize, Deserialize, Debug)]
-    struct Code {
-        code: String
-    }
-
-    impl Code {
-
-        fn get_code(&self) -> &String {
-            &self.code
-        }
-
-    }
-    #[tokio::main]
-    async fn main2() -> Result<(), Box<dyn std::error::Error>> {
-
-        let response_type = ResponseType::new(
-            "some code".parse().unwrap(),
-            "the access token".parse().unwrap(),
-            "I don't remember".parse().unwrap(),
-            vec!["username".to_string(), "likes".to_string()]);
-
-
-        let mut redirect_url = RedirectURL::new("https://www.facebook.com/v11.0/dialog/oauth?".parse().unwrap(),
-                                                "client_id=507151837217406".parse().unwrap(),
-                                                r#"&redirect_uri=http://localhost:8000"#.parse().unwrap(),
-                                                r#"&state="{st=state123abc,ds=123456789}""#.parse().unwrap(),
-                                                response_type,
-                                                vec!["test".to_string()],
-        );
-
-       // println!("{:?}", redirect_url);
-      //  println!("{}{}{}{}", redirect_url.get_facebook_oath_url(), redirect_url.get_client_id(), redirect_url.get_redirect_uri(), redirect_url.get_state());
-
-
-        // Build the client using the builder pattern
-        let client = reqwest::Client::builder()
-            .build()?;
-
-        let graph = r#"https://graph.facebook.com/v11.0/oauth/access_token?"#;
-
-        let secret = r#"&client_secret=cb112e5dd460eccf5d539a694affbe6d"#;
-        let a_string = redirect_url.get_client_id().to_string()+ &*redirect_url.get_redirect_uri().to_string() + &*redirect_url.get_state().to_string();
-
-        let res = client
-            .get(redirect_url.get_facebook_oath_url().to_string())
-            .query(&a_string)
-            .send()
-            .await?;
-
-        let code = res
-            .json::<Code>()
-            .await?;
-
-
-
-
-
-
-
-
-
-
-                // This will POST a body of `{"lang":"rust","body":"json"}`
-                let mut map = HashMap::new();
-                map.insert("facebook smth", "facebook details");
-                map.insert("body", "json");
-
-                // Perform the actual execution of the network request
-                let res = client
-                    .get(redirect_url.get_facebook_oath_url().to_string()+redirect_url.get_client_id()+redirect_url.get_redirect_uri()+redirect_url.get_state())
-                    .json(&map);
-
-                println!("body = {:?} ------------------------------------------------", res);
-        /*
-
-                let a_form = {redirect_url.get_client_id().to_string()+ &*redirect_url.get_redirect_uri().to_string() + &*secret.to_string()};
-                let res_2 = client
-                    .post(graph.to_string())
-                    .query(a_form.as_str());
-
-                println!("res_2body: {:?}", res_2);
-
-                let res_3 = client
-                    .get(graph.to_string()+redirect_url.get_client_id()+redirect_url.get_redirect_uri()+secret+r#"&code=testing/"#)
-                    .send()
-                    .await?;
-            //    println!("body = {:?}", res_2);
-
-
-                // Parse the response body as Json in this case
-                let data = client.post(graph.to_string()+redirect_url.get_client_id()+redirect_url.get_redirect_uri()+secret+r#"&code=testing"#)
-                    .json(&map)
-                    .send()
-                    .await?;
-
-        */
-        println!("data {:?}", code);
-        Ok(())
+// `update` describes how to handle each `Msg`.
+fn update(msg: Msg, model: &mut Model, _: &mut impl Orders<Msg>) {
+    match msg {
+    Msg::ConfigFetched(Ok(config)) => model.config = Some(config),
+    Msg::ConfigFetched(Err(fetch_error)) => error!("Config fetch failed! Be sure to have config.json at the root of your project with client:id and api_key", fetch_error),
+    Msg::SignedFailed(err) => {model.error = Some(err)}
     }
 
 }
 
+
+
+// ------ ------
+//     View
+// ------ ------
+
+// `view` describes what to display.
+fn view(model: &Model) -> Node<Msg> {
+    if let Some(loaded_config) = &model.config {
+        let url = loaded_config.get_facebook_oath_url().to_string()+loaded_config.get_client_id()+loaded_config.get_redirect_uri()+loaded_config.get_state();
+        a![
+            attrs! {
+                At::Href => url
+            },
+            button![ img![
+                    attrs! {
+                    At::Src => "src/fb.jpeg",
+                    },
+                    style! {
+                            St::Height => "750px",
+                            St::Width => "750px",
+                    }
+                ,
+                // Button style
+                style! [
+                    St::Border => "none",
+                    St::BackgroundColor => "white"
+                ],
+            ],
+            ]
+        ]
+    } else {
+        div![]
+    }
+}
+// ------ ------
+//     Start
+// ------ ------
+
+// (This function is invoked by `init` function in `index.html`.)
+#[wasm_bindgen(start)]
+pub fn start() {
+    // Mount the `app` to the element with the `id` "app".
+    App::start("app", init, update, view);
+}
