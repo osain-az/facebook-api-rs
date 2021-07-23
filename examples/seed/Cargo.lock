@@ -84,6 +84,16 @@ checksum = "1056f553da426e9c025a662efa48b52e62e0a3a7648aa2d15aeaaf7f0d329357"
 name = "facebook-manual-flow-rs"
 version = "0.1.0"
 dependencies = [
+ "facebook_api_rs",
+ "seed",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "facebook_api_rs"
+version = "0.1.0"
+dependencies = [
  "seed",
  "serde",
  "serde_json",

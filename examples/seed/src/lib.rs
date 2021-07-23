@@ -1,6 +1,4 @@
-mod structs;
-
-use crate::structs::{RedirectURL, ResponseType, Token, Data, Image};
+use facebook_api_rs::prelude::*;
 use seed::{prelude::*, *};
 // ------ ------
 //     Init

@@ -1,4 +1,3 @@
-use serde::{Serialize, Deserialize};
 
 #[derive(Deserialize, Debug, Serialize)]
 pub struct RedirectURL {
