@@ -1,9 +1,16 @@
-/.idea/
+# --- Files ---
+**/*.ts
+**.wasm
+**/*.rs.bk
+**/*.log
 
+# --- Dependencies and Build artifacts ---
+**/node_modules
+**/target
+**/pkg/*
 
-# Added by cargo
+# --- IDE metadata ---
+**/.idea
+**/.vscode
 
-/target
-
-/pkg
-
+/examples/seed/pkg
