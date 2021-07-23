@@ -2,12 +2,7 @@
   "facebook_oath_url": "https://www.facebook.com/v11.0/dialog/oauth?",
   "client_id":  "client_id=507151837217406",
   "redirect_uri": "&redirect_uri=http://localhost:8001",
-  "state": "&state=st=4t3809w48g9hi4rgoh8i,ds=w4trf97u4jktg34w89ohi/",
-  "response_type": {
-   "code": "",
-    "token": "the access token",
-    "code20token": "I don't remember",
-    "granted_scopes": ["I'm empty"]
-  },
+  "state": "&state=43y345eyghtrshyetnu35eyub65twrvys",
+  "response_type": "&response_type=token",
   "scope": ["test"]
 }
