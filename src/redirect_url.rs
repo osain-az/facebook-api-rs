@@ -1,44 +1,117 @@
-use serde::{Serialize, Deserialize};
+use crate::extract_query_fragments::extract_query_fragments;
+use crate::token::Token;
+use rand::distributions::Alphanumeric;
+use rand::{thread_rng, Rng};
+use seed::Url;
+use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Debug, Serialize)]
+pub struct Config {
+    facebook_oath_url: String,
+
+    client_id: String,
+
+    redirect_uri: String,
+}
+
+#[derive(Deserialize, Debug, Default, Serialize)]
 pub struct RedirectURL {
-    
     // The Facebook url preamble for the oath dialog.
     facebook_oath_url: String,
-    
+
     // The ID of your app, found in your app's dashboard.
     client_id: String,
-    
+
     // The URL that you want to redirect the person logging in back to.
     redirect_uri: String,
-    
+
     // A string value created by your app to maintain state between the request and callback.
-    //todo randomly generate this
     state: String,
-    
+
     // Determines whether the response data included when the redirect back to the app occurs is in URL parameters or fragments.
     response_type: String,
-    
+
     // A comma or space separated list of Permissions to request from the person.
     scope: Vec<String>,
+
+    full_url: String,
 }
 
 #[allow(dead_code)]
 impl RedirectURL {
-    pub fn new(facebook_oath_url: String, client_id: String, redirect_uri: String, state: String, response_type: String, scope: Vec<String>) -> RedirectURL {
-        RedirectURL {
-            facebook_oath_url,
-            client_id,
-            redirect_uri,
-            state,
-            response_type,
-            scope
-        }
+    pub fn new(config: Config) -> RedirectURL {
+        RedirectURL::default()
+            .add_client_id(&config.client_id)
+            .add_facebook_oath_url(&config.facebook_oath_url)
+            .add_redirect_uri(&config.redirect_uri)
+            .add_state("8917y4eyuoihf4wreoif24o8yf24f")
+            .add_response_type("token")
+            //MUST ADD A VALID SCOPE!
+            .add_scope(&[])
     }
+
+    pub fn add_client_id(mut self, client_id: &str) -> Self {
+        self.client_id = client_id.to_string();
+        self
+    }
+    pub fn add_facebook_oath_url(mut self, url: &str) -> Self {
+        self.facebook_oath_url = url.to_string();
+        self
+    }
+
+    pub fn add_redirect_uri(mut self, redirect_uri: &str) -> Self {
+        self.redirect_uri = redirect_uri.to_string();
+        self
+    }
+
+    pub fn add_state(mut self, state: &str) -> Self {
+        self.state = state.to_string();
+        self
+    }
+
+    pub fn add_response_type(mut self, response_type: &str) -> Self {
+        self.response_type = response_type.to_string();
+        self
+    }
+
+    pub fn add_scope(mut self, scope: &[String]) -> Self {
+        self.scope = scope.to_vec();
+        self
+    }
+
+    pub fn add_random_state(mut self) -> Self {
+        let rand_string: String = thread_rng()
+            .sample_iter(&Alphanumeric)
+            .take(10)
+            .map(char::from)
+            .collect();
+        self.state = rand_string;
+        self
+    }
+
+    pub fn build_redirect_url_as_string(&mut self) -> String {
+        let full_url = "".to_string()
+            + &*self.get_facebook_oath_url()
+            + &*"client_id=".to_string()
+            + &*self.get_client_id()
+            + "&redirect_uri="
+            + &*self.get_redirect_uri()
+            + "&state="
+            + &*self.get_state()
+            + "&scope="
+            + &*self.get_scope().iter().cloned().collect::<String>();
+        full_url
+    }
+
+    pub fn add_full_url(mut self) -> Self {
+        self.full_url = self.build_redirect_url_as_string();
+        self
+    }
+
     pub fn get_facebook_oath_url(&self) -> &String {
         &self.facebook_oath_url
     }
-    pub  fn get_client_id(&self) -> &String {
+    pub fn get_client_id(&self) -> &String {
         &self.client_id
     }
     pub fn get_redirect_uri(&self) -> &String {
@@ -53,7 +126,10 @@ impl RedirectURL {
     pub fn get_scope(&self) -> &Vec<String> {
         &self.scope
     }
-    
+    pub fn get_full_url(&self) -> &String {
+        &self.full_url
+    }
+
     fn set_facebook_oath_url(&mut self, facebook_oath_url: String) {
         self.facebook_oath_url = facebook_oath_url;
     }
@@ -74,4 +150,31 @@ impl RedirectURL {
     }
 }
 
+pub fn get_token(url: Url) {
+    let query = extract_query_fragments(url);
 
+    let iterations = query.iter();
+
+    let mut response = Token::default();
+
+    for e in iterations {
+        match e.0.as_str() {
+            "access_token" => {
+                response.access_token = e.1.to_string();
+            }
+            "data_access_expiration_time" => {
+                response.data_access_expiration_time = e.1.to_string();
+            }
+            "expires_in" => {
+                response.expires_in = e.1.to_string();
+            }
+            "long_lived_token" => {
+                response.long_lived_token = e.1.to_string();
+            }
+            "state" => {
+                response.state = e.1.to_string();
+            }
+            _ => panic!("unknown field: {}"),
+        }
+    }
+}

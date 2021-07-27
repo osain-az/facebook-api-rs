@@ -1,8 +1,0 @@
-{
-  "facebook_oath_url": "https://www.facebook.com/v11.0/dialog/oauth?",
-  "client_id":  "client_id=507151837217406",
-  "redirect_uri": "&redirect_uri=http://localhost:8001",
-  "state": "&state=43y345eyghtrshyetnu35eyub65twrvys",
-  "response_type": "&response_type=token",
-  "scope": ["test"]
-}

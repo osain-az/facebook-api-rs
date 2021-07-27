@@ -14,3 +14,4 @@
 **/.vscode
 
 /examples/seed/pkg
+/examples/seed/config.json
