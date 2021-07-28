@@ -4,48 +4,62 @@ use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
 use seed::Url;
 use serde::{Deserialize, Serialize};
-
+///A struct which describes the config.json file structure.
+/// the json file fields are stored in this struct, and are then
+/// added to the RedirectURL struct.
 #[derive(Deserialize, Debug, Serialize)]
 pub struct Config {
+    /// The Facebook url preamble for the oath dialog.
     facebook_oath_url: String,
 
+    /// The ID of your app, found in your app's dashboard.
     client_id: String,
 
+    /// The URL that you want to redirect the person logging in back to.
     redirect_uri: String,
 }
 
+///Contains the Config struct and is used for building the login flow
+///
 #[derive(Deserialize, Debug, Default, Serialize)]
 pub struct RedirectURL {
-    // The Facebook url preamble for the oath dialog.
+    /// The Facebook url preamble for the oath dialog.
     facebook_oath_url: String,
 
-    // The ID of your app, found in your app's dashboard.
+    /// The ID of your app, found in your app's dashboard.
     client_id: String,
 
-    // The URL that you want to redirect the person logging in back to.
+    /// The URL that you want to redirect the person logging in back to.
     redirect_uri: String,
 
-    // A string value created by your app to maintain state between the request and callback.
+    /// A string value created by your app to maintain state between the request and callback.
     state: String,
 
-    // Determines whether the response data included when the redirect back to the app occurs is in URL parameters or fragments.
+    /// Determines whether the response data included when the redirect back to the app occurs is in URL parameters or fragments.
     response_type: String,
 
-    // A comma or space separated list of Permissions to request from the person.
+    /// A comma or space separated list of Permissions to request from the person.
     scope: Vec<String>,
 
+    /// The full url of the login flow.
     full_url: String,
 }
 
-#[allow(dead_code)]
 impl RedirectURL {
+    /// Constructor of the RedirectURL
+    /// facebook_oath_url, client_id, and redirect_uri are retrieved from the config.json file.
+    /// which the user has to configure.
+    /// A random state is provided or the user may chose to create their own state.
+    /// response_type has to be configured depending on the use case of the application, or else the response
+    /// will default to code upon the login flow redirect.
+    /// scope is optional, but inclusion must fulfill a valid scope.
     pub fn new(config: Config) -> RedirectURL {
         RedirectURL::default()
-            .add_client_id(&config.client_id)
             .add_facebook_oath_url(&config.facebook_oath_url)
+            .add_client_id(&config.client_id)
             .add_redirect_uri(&config.redirect_uri)
-            .add_state("8917y4eyuoihf4wreoif24o8yf24f")
-            .add_response_type("token")
+            .add_random_state()
+            .add_response_type("")
             //MUST ADD A VALID SCOPE!
             .add_scope(&[])
     }
@@ -89,17 +103,20 @@ impl RedirectURL {
         self
     }
 
+    ///Builds the redirect url for the login flow as a string so it may be passed thorugh a GET request
     pub fn build_redirect_url_as_string(&mut self) -> String {
         let full_url = "".to_string()
-            + &*self.get_facebook_oath_url()
-            + &*"client_id=".to_string()
-            + &*self.get_client_id()
+            + &self.facebook_oath_url
+            + &"client_id=".to_string()
+            + &self.client_id
             + "&redirect_uri="
-            + &*self.get_redirect_uri()
+            + &self.redirect_uri
+            + "&response_type="
+            + &self.response_type
             + "&state="
-            + &*self.get_state()
+            + &*self.state
             + "&scope="
-            + &*self.get_scope().iter().cloned().collect::<String>();
+            + &self.scope.iter().cloned().collect::<String>();
         full_url
     }
 
@@ -147,34 +164,5 @@ impl RedirectURL {
     }
     fn set_scope(&mut self, scope: Vec<String>) {
         self.scope = scope;
-    }
-}
-
-pub fn get_token(url: Url) {
-    let query = extract_query_fragments(url);
-
-    let iterations = query.iter();
-
-    let mut response = Token::default();
-
-    for e in iterations {
-        match e.0.as_str() {
-            "access_token" => {
-                response.access_token = e.1.to_string();
-            }
-            "data_access_expiration_time" => {
-                response.data_access_expiration_time = e.1.to_string();
-            }
-            "expires_in" => {
-                response.expires_in = e.1.to_string();
-            }
-            "long_lived_token" => {
-                response.long_lived_token = e.1.to_string();
-            }
-            "state" => {
-                response.state = e.1.to_string();
-            }
-            _ => panic!("unknown field: {}"),
-        }
     }
 }

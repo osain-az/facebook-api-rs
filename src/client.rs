@@ -1,13 +1,11 @@
 pub use crate::{
-    code::*, data::*, image::*,image::*,redirect_url::*,redirect_url::*,token::*,
-    extract_query_fragments::*,
+    code::*, data::*, extract_query_fragments::*, image::*, image::*, redirect_url::*,
+    redirect_url::*, token::*,
 };
-use seed::{prelude::*, *};
 use async_trait::async_trait;
+use seed::{prelude::*, *};
 
-
-//Seed Client Struct for making calls to Facebook Graph
-
+///Seed Client Struct for making calls to Facebook Graph
 #[derive(Debug)]
 pub struct Client {
     graph: String,
@@ -16,7 +14,7 @@ pub struct Client {
     fields: Vec<String>,
     access_token: String,
 }
-
+/// Empty Client
 impl Default for Client {
     fn default() -> Self {
         let graph = "https://graph.facebook.com/".to_string();
@@ -24,7 +22,7 @@ impl Default for Client {
         Self {
             graph,
             node: "".to_string(),
-            edge:"".to_string(),
+            edge: "".to_string(),
             fields: Vec::new(),
             access_token: "".to_string(),
         }

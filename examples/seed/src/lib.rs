@@ -51,12 +51,14 @@ enum Msg {
 // `update` describes how to handle each `Msg`.
 fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
     match msg {
-            Msg::ConfigFetched(Ok(config)) => model.redirect_url = RedirectURL::new(config).add_scope(&["email".to_string()]).add_full_url(),
+
+
+            Msg::ConfigFetched(Ok(config)) => model.redirect_url = RedirectURL::new(config).add_response_type("token").add_scope(&["email".to_string()]).add_full_url(),
             Msg::ConfigFetched(Err(fetch_error)) => error!("Config fetch failed! Be sure to have config.json at the root of your project with client:id and api_key", fetch_error),
             Msg::SignedFailed(err) => {model.error = Some(err)},
             Msg::GetFriends => {
-
-                let url = "https://graph.facebook.com/v11.0/me/picture?access_token=".to_string() + model.response.access_token.as_str() + "&format=json"+ "&redirect=false";
+                get_token();
+                let url = "https://graph.facebook.com/v11.0/me/picture?access_token=".to_string() + &*model.response.access_token + "&format=json"+ "&redirect=false";
                 let request = fetch::Request::new(url).method(Method::Get);
 
                 orders.perform_cmd( async  {
@@ -81,6 +83,9 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
 
 // `view` describes what to display.
 fn view(model: &Model) -> Node<Msg> {
+    get_token();
+    log!(get_token());
+    log!(model.response.access_token);
     div![
         a![
             attrs! {
@@ -127,12 +132,12 @@ mod test {
 
     #[wasm_bindgen_test]
     fn test_extract_query_fragments() {
-        let url: Url = "https://localhost:8001/?#access_token=EAAHNQH0awn4BACL9uLJx6v7bS0vGIqCd41uiprqFsGf3kcR6ZCImycS3NJTIoOqlmH77gnLx9nvf8KpdvMaQqNfoH7BcBe4ZAQgfvhf3RJFPZCMMvwM2pntTImHNEGQ2yOtYIkuZCdEUzho4FqqRfY0JSn4UZA0CUmOIdxeZASsOVBOcF9hAP5xluZBQHQvbwu3juK7iYTkpQZDZD&data_access_expiration_time=1634728338&expires_in=6462&long_lived_token=EAAHNQH0awn4BAEUg0mr6aEXHMtgDCHMARJMAMbmabb6hg089Dn6ufspDZAieowZA1D1w9n87x6xmdIxOMZBIZBlMBlb1r9BNnhBwuHwj6AVbS7ik2svICi6BUSysAL2ZBkAGjLdy8bVF0Ucf25vOMxlQ5qiKrwSL8LpmjJITnSFZCvCNR7u0XL&state=43y345eyghtrshyetnu35eyub65twrvys".parse().unwrap();
+        let url: Url = "https://localhost:8001/?#access_token=EAAHNQH0aOtYIkuZCdEUzho4FqqRfYZDZD&data_access_expiration_time=1634728&expires_in=6462&long_lived_token=EAAHN65twrvys".parse().unwrap();
 
 
         let url_fragment = extract_query_fragments(url);
 
-        assert_eq!(url_fragment.get("access_token").unwrap(), "EAAHNQH0awn4BACL9uLJx6v7bS0vGIqCd41uiprqFsGf3kcR6ZCImycS3NJTIoOqlmH77gnLx9nvf8KpdvMaQqNfoH7BcBe4ZAQgfvhf3RJFPZCMMvwM2pntTImHNEGQ2yOtYIkuZCdEUzho4FqqRfY0JSn4UZA0CUmOIdxeZASsOVBOcF9hAP5xluZBQHQvbwu3juK7iYTkpQZDZD");
+        assert_eq!(url_fragment.get("access_token").unwrap(), "EAAHNEUzho4FqqRfY0JSn4UZA0CUmOIdxeZASsOVBOcF9hAP5xluZBQHQvbwu3juK7iYTkpQZDZD");
 
         assert_eq!(url_fragment.get("data_access_expiration_time").unwrap(), "1634728338");
 
