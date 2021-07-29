@@ -1,8 +1,5 @@
-use crate::extract_query_fragments::extract_query_fragments;
-use crate::token::Token;
 use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
-use seed::Url;
 use serde::{Deserialize, Serialize};
 ///A struct which describes the config.json file structure.
 /// the json file fields are stored in this struct, and are then
@@ -62,6 +59,7 @@ impl RedirectURL {
             .add_response_type("")
             //MUST ADD A VALID SCOPE!
             .add_scope(&[])
+            .add_full_url()
     }
 
     pub fn add_client_id(mut self, client_id: &str) -> Self {
@@ -164,5 +162,38 @@ impl RedirectURL {
     }
     fn set_scope(&mut self, scope: Vec<String>) {
         self.scope = scope;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::client::RedirectURL;
+    use crate::redirect_url::Config;
+
+    #[test]
+    fn test_build_url() {
+        let redirect_url = RedirectURL::new(Config {
+            facebook_oath_url: "https://www.facebook.com/v11.0/dialog/oauth?".to_string(),
+            client_id: "1234567890".to_string(),
+            redirect_uri: "http://localhost:8001".to_string(),
+        })
+        .add_response_type("token")
+        .add_state("0987654321")
+        .add_scope(&["test".to_string()])
+        .add_full_url();
+
+        assert_eq!(
+            redirect_url.facebook_oath_url,
+            "https://www.facebook.com/v11.0/dialog/oauth?"
+        );
+        assert_eq!(redirect_url.client_id, "1234567890");
+        assert_eq!(redirect_url.redirect_uri, "http://localhost:8001");
+        assert_eq!(redirect_url.state, "0987654321");
+        assert_eq!(redirect_url.response_type, "token");
+
+        let scope = &["test".to_string()];
+        assert_eq!(redirect_url.scope, scope);
+
+        assert_eq!(redirect_url.full_url, "https://www.facebook.com/v11.0/dialog/oauth?client_id=1234567890&redirect_uri=http://localhost:8001&response_type=token&state=0987654321&scope=test")
     }
 }

@@ -1,6 +1,5 @@
-use crate::extract_query_fragments::extract_query_fragments;
+use seed::prelude::IndexMap;
 use seed::Url;
-
 ///The following struct is used to describe a token which may be retrieved from
 /// the login flow of Facebook.
 #[derive(Default, Debug)]
@@ -31,35 +30,62 @@ impl Token {
     pub fn get_access_token(&self) -> &String {
         &self.access_token
     }
+
+    ///Gets gets a Token from the current URL by extracting the query query of the URL
+    pub fn get_token(hash: String) -> Token {
+        let query = extract_query_fragments(hash);
+
+        let iterations = query.iter();
+
+        let mut response = Token::default();
+
+        for e in iterations {
+            match e.0.as_str() {
+                "access_token" => {
+                    response.access_token = e.1.to_string();
+                }
+                "data_access_expiration_time" => {
+                    response.data_access_expiration_time = e.1.to_string();
+                }
+                "expires_in" => {
+                    response.expires_in = e.1.to_string();
+                }
+                "long_lived_token" => {
+                    response.long_lived_token = e.1.to_string();
+                }
+                "state" => {
+                    response.state = e.1.to_string();
+                }
+                _ => panic!("unknown field: {}"),
+            }
+        }
+        response
+    }
 }
 
-///Gets gets a Token from the current URL by extracting the query query of the URL
-pub fn get_token() -> Token {
-    let query = extract_query_fragments(Url::current());
+/// Extract data from  from the url fragment and return an `IndexMap`
+/// for the Enum Variant.
+/// # Panics
+/// The function will panic a key that has no value.
+/// # Warns
+/// with no query. Theses choices are opinionated for now.
+pub fn extract_query_fragments(hash: String) -> IndexMap<String, String> {
+    let mut query: IndexMap<String, String> = IndexMap::new();
 
-    let iterations = query.iter();
+    let key_value: Vec<&str> = hash.split('&').collect();
 
-    let mut response = Token::default();
-
-    for e in iterations {
-        match e.0.as_str() {
-            "access_token" => {
-                response.access_token = e.1.to_string();
-            }
-            "data_access_expiration_time" => {
-                response.data_access_expiration_time = e.1.to_string();
-            }
-            "expires_in" => {
-                response.expires_in = e.1.to_string();
-            }
-            "long_lived_token" => {
-                response.long_lived_token = e.1.to_string();
-            }
-            "state" => {
-                response.state = e.1.to_string();
-            }
-            _ => panic!("unknown field: {}"),
-        }
+    for pair in key_value {
+        let mut sub = pair.split('=');
+        let key = sub.next().unwrap_or_else(|| {
+            panic!(
+                "we should have a key for the parameter key but got {}",
+                hash
+            )
+        });
+        let value = sub
+            .next()
+            .unwrap_or_else(|| panic!("we should have a value for the key but got {}", hash));
+        query.insert(key.to_string(), value.to_string());
     }
-    response
+    query
 }

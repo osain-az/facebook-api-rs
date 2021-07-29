@@ -14,10 +14,15 @@ fn init(url: Url, orders: &mut impl Orders<Msg>) -> Model {
         )
     });
 
+    let token = match url.hash() {
+        Some(hash) => Token::get_token(hash.to_string()),
+        None => Token::default(),
+    };
+
     Model {
         redirect_url: RedirectURL::default(),
         error: None,
-        response: Token::default(),
+        response: token,
         image: None,
     }
 }
@@ -57,7 +62,6 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
             Msg::ConfigFetched(Err(fetch_error)) => error!("Config fetch failed! Be sure to have config.json at the root of your project with client:id and api_key", fetch_error),
             Msg::SignedFailed(err) => {model.error = Some(err)},
             Msg::GetFriends => {
-                get_token();
                 let url = "https://graph.facebook.com/v11.0/me/picture?access_token=".to_string() + &*model.response.access_token + "&format=json"+ "&redirect=false";
                 let request = fetch::Request::new(url).method(Method::Get);
 
@@ -83,8 +87,6 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
 
 // `view` describes what to display.
 fn view(model: &Model) -> Node<Msg> {
-    get_token();
-    log!(get_token());
     log!(model.response.access_token);
     div![
         a![
@@ -120,38 +122,6 @@ fn add_image(image: Option<&Data<Image>>) -> Node<Msg> {
         div![" no image for now"]
     }
 }
-/*
-#[cfg(test)]
-mod test {
-    use seed::Url;
-    use wasm_bindgen_test::{wasm_bindgen_test, wasm_bindgen_test_configure};
-    use crate::extract_query_fragments;
-    wasm_bindgen_test_configure!(run_in_browser);
-
-
-
-    #[wasm_bindgen_test]
-    fn test_extract_query_fragments() {
-        let url: Url = "https://localhost:8001/?#access_token=EAAHNQH0aOtYIkuZCdEUzho4FqqRfYZDZD&data_access_expiration_time=1634728&expires_in=6462&long_lived_token=EAAHN65twrvys".parse().unwrap();
-
-
-        let url_fragment = extract_query_fragments(url);
-
-        assert_eq!(url_fragment.get("access_token").unwrap(), "EAAHNEUzho4FqqRfY0JSn4UZA0CUmOIdxeZASsOVBOcF9hAP5xluZBQHQvbwu3juK7iYTkpQZDZD");
-
-        assert_eq!(url_fragment.get("data_access_expiration_time").unwrap(), "1634728338");
-
-        assert_eq!(url_fragment.get("expires_in").unwrap(), "6462");
-
-        assert_eq!(url_fragment.get("long_lived_token").unwrap(), "EAAHNQH0awn4BAEUg0mr6aEXHMtgDCHMARJMAMbmabb6hg089Dn6ufspDZAieowZA1D1w9n87x6xmdIxOMZBIZBlMBlb1r9BNnhBwuHwj6AVbS7ik2svICi6BUSysAL2ZBkAGjLdy8bVF0Ucf25vOMxlQ5qiKrwSL8LpmjJITnSFZCvCNR7u0XL");
-
-        assert_eq!(url_fragment.get("state").unwrap(), "43y345eyghtrshyetnu35eyub65twrvys");
-    }
-
-
-
-}
-*/
 
 // ------ ------
 //     Start
