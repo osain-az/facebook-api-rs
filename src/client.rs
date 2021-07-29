@@ -1,7 +1,4 @@
-pub use crate::{
-    code::*, data::*, extract_query_fragments::*, image::*, image::*, redirect_url::*,
-    redirect_url::*, token::*,
-};
+pub use crate::{code::*, data::*, image::*, image::*, redirect_url::*, redirect_url::*, token::*};
 use async_trait::async_trait;
 use seed::{prelude::*, *};
 
@@ -12,26 +9,54 @@ pub struct Client {
     node: String,
     edge: String,
     fields: Vec<String>,
-    access_token: String,
+    access_token: Token,
 }
 /// Empty Client
 impl Default for Client {
     fn default() -> Self {
-        let graph = "https://graph.facebook.com/".to_string();
+        let graph = "https://graph.facebook.com/v11.0/".to_string();
 
         Self {
             graph,
             node: "".to_string(),
             edge: "".to_string(),
             fields: Vec::new(),
-            access_token: "".to_string(),
+            access_token: Token::default(),
         }
     }
 }
 
+impl Client {
+    pub fn add_access_token(mut self, token: Token) -> Self {
+        self.access_token = token;
+        self
+    }
+
+    pub fn me(mut self) -> Self {
+        self.node = "me".to_string();
+        self
+    }
+
+    pub fn accounts(mut self) -> Self {
+        self.edge = "accounts".to_string();
+        self
+    }
+
+    pub fn create_url(&self) -> String {
+        self.graph.to_string()
+            + &*self.node.to_string()
+            + &*"/".to_string()
+            + &self.edge.to_string()
+            + "?access_token="
+            + &self.access_token.access_token.to_string()
+    }
+
+    // pub fn request <T>(&self)  -> Data<T>  {
+    //     let  request = Request::new(self.create_url()).method(Method::Get);
+    // }
+}
+
 /*
-
-
 impl Client {
    async fn new_request (&self) -> seed::browser::fetch::Result<Response> {
         fetch(
@@ -47,6 +72,32 @@ async fn start_login_flow (redirect_url: RedirectURL) -> seed::browser::fetch::R
     ).await
 }
 
+*/
+
+pub struct Accounts {
+    name: String,
+    access_token: String,
+    id: String,
+}
+
+mod test {
+    use crate::client::Client;
+    use crate::token::Token;
+
+    #[test]
+    fn test_builder() {
+        let mut token = Token::default();
+        token.access_token = "123".to_string();
+        let client = Client::default().add_access_token(token).me().accounts();
+
+        assert_eq!(
+            "https://graph.facebook.com/v11.0/me/accounts?access_token=123",
+            client.create_url()
+        )
+    }
+}
+
+/*
 
 pub fn client_test() {
 
@@ -65,16 +116,7 @@ pub fn client_test() {
     let token = get_token();
 
 
-
 }
-
-
-
-
-
-
-
-
 
     fn test_graph() {
 
@@ -103,12 +145,8 @@ pub fn client_test() {
             url: "this is supposed to be an url".to_string()
         };
 
-
++
         }
-
-
-
-
 
 
 */

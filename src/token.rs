@@ -89,3 +89,5 @@ pub fn extract_query_fragments(hash: String) -> IndexMap<String, String> {
     }
     query
 }
+
+//TODO: create method to verify the token recieved.
