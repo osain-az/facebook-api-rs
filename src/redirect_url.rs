@@ -101,11 +101,11 @@ impl RedirectURL {
         self
     }
 
-    ///Builds the redirect url for the login flow as a string so it may be passed thorugh a GET request
+    ///Builds the redirect url for the login flow as a string so it may be passed through a GET request
     pub fn build_redirect_url_as_string(&mut self) -> String {
         let full_url = "".to_string()
             + &self.facebook_oath_url
-            + &"client_id=".to_string()
+            + "client_id="
             + &self.client_id
             + "&redirect_uri="
             + &self.redirect_uri

@@ -10,6 +10,7 @@ pub struct Client {
     edge: String,
     fields: Vec<String>,
     access_token: Token,
+    page_access_token: Option<String>,
 }
 /// Empty Client
 impl Default for Client {
@@ -22,6 +23,7 @@ impl Default for Client {
             edge: "".to_string(),
             fields: Vec::new(),
             access_token: Token::default(),
+            page_access_token: None,
         }
     }
 }
@@ -73,12 +75,6 @@ async fn start_login_flow (redirect_url: RedirectURL) -> seed::browser::fetch::R
 }
 
 */
-
-pub struct Accounts {
-    name: String,
-    access_token: String,
-    id: String,
-}
 
 mod test {
     use crate::client::Client;
@@ -150,3 +146,4 @@ pub fn client_test() {
 
 
 */
+//TODO: flow for the pages API
