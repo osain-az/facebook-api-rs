@@ -1,7 +1,7 @@
+use crate::me::*;
 pub use crate::{code::*, data::*, image::*, image::*, redirect_url::*, redirect_url::*, token::*};
 use async_trait::async_trait;
 use seed::{prelude::*, *};
-
 ///Seed Client Struct for making calls to Facebook Graph
 #[derive(Debug)]
 pub struct Client {
@@ -9,39 +9,41 @@ pub struct Client {
     node: String,
     edge: String,
     fields: Vec<String>,
-    access_token: Token,
+    access_token: String,
     page_access_token: Option<String>,
 }
 /// Empty Client
 impl Default for Client {
     fn default() -> Self {
-        let graph = "https://graph.facebook.com/v11.0/".to_string();
+        let graph = "https://graph.facebook.com/v11.0".to_string();
 
         Self {
             graph,
             node: "".to_string(),
             edge: "".to_string(),
             fields: Vec::new(),
-            access_token: Token::default(),
+            access_token: "".to_string(),
             page_access_token: None,
         }
     }
 }
 
 impl Client {
-    pub fn add_access_token(mut self, token: Token) -> Self {
-        self.access_token = token;
+    pub fn new(access_token: Token) -> Client {
+        Client::default().add_access_token(access_token.access_token)
+    }
+
+    pub fn add_access_token(mut self, access_token: String) -> Self {
+        self.access_token = access_token;
         self
     }
 
-    pub fn me(mut self) -> Self {
-        self.node = "me".to_string();
-        self
+    pub fn me(self) -> MeApi {
+        MeApi::new(self.graph)
     }
 
-    pub fn accounts(mut self) -> Self {
-        self.edge = "accounts".to_string();
-        self
+    pub fn accounts(mut self) -> AccountsAPI {
+        AccountsAPI::new(self.graph)
     }
 
     pub fn create_url(&self) -> String {
@@ -50,12 +52,12 @@ impl Client {
             + &*"/".to_string()
             + &self.edge.to_string()
             + "?access_token="
-            + &self.access_token.access_token.to_string()
+            + &self.access_token
     }
 
-    // pub fn request <T>(&self)  -> Data<T>  {
-    //     let  request = Request::new(self.create_url()).method(Method::Get);
-    // }
+    //   pub fn request<T>(&self) -> Data<T> {
+    //      let request = Request::new(self.create_url()).method(Method::Get);
+    //  }
 }
 
 /*

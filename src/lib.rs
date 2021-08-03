@@ -1,4 +1,5 @@
-mod account;
+mod accounts;
+mod pages_api;
 mod client;
 mod code;
 mod data;
@@ -10,7 +11,7 @@ mod token;
 
 pub mod prelude {
     pub use crate::{
-        account::*, client::*, code::*, data::*, image::*, image::*, me::*, redirect_url::*,
-        redirect_url::*, token::*,
+        accounts::*, pages_api::*, client::*, code::*, data::*, image::*, image::*, me::*,
+        redirect_url::*, redirect_url::*, token::*,
     };
 }

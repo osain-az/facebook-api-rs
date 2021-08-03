@@ -25,6 +25,8 @@ fn init(url: Url, orders: &mut impl Orders<Msg>) -> Model {
         response: token,
         image: None,
         account: None,
+        pages_api: PagesAPI::default(),
+        me: None,
     }
 }
 
@@ -39,6 +41,8 @@ pub struct Model {
     response: Token,
     image: Option<Data<Image>>,
     account: Option<Data<Accounts>>,
+    pages_api: PagesAPI,
+    me: Option<Data<MeApi>>,
 }
 
 // ------ ------
@@ -50,9 +54,15 @@ pub struct Model {
 enum Msg {
     SignedFailed(String),
     ConfigFetched(fetch::Result<Config>),
+
     GetProfilePicture,
     GetProfilePictureSuccess(Data<Image>),
     GetProfilePictureFailed(FetchError),
+
+    GetMe,
+    GetMeSuccess(Data<MeApi>),
+    GetMeFailed(FetchError),
+
     GetAccount,
     GetAccountSuccess(Data<Accounts>),
     GetAccountFailed(FetchError),
@@ -82,31 +92,61 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
             },
             Msg::GetProfilePictureFailed(_) => {}
 
+            Msg::GetMe => {
 
+              //  let url = "https://graph.facebook.com/v11.0/me?access_token=".to_string() + &*model.response.access_token;
+
+                let request = fetch::Request::new(url).method(Method::Get);
+
+                orders.perform_cmd( async  {
+                    fetch(request).await
+                        .unwrap()
+                        .json::<Data<MeApi>>()
+                        .await
+                        .map_or_else( Msg::GetMeFailed, Msg::GetMeSuccess)
+
+                }
+                );
+            },
 
             Msg::GetAccount => {
 
+               // let client = Client::default().me().accounts();
 
-        let client = Client::default().me().accounts();
+                // client::new(token).me().accounts().get();
 
-                let url = "https://graph.facebook.com/v11.0/me/accounts?access_token=".to_string() + &*model.response.access_token;
+                let client = Client::new(model.response).me().accounts().get();
 
-            let request = fetch::Request::new(url).method(Method::Get);
 
-        orders.perform_cmd( async  {
-            fetch(request).await.unwrap().json::<Data<Accounts>>().await.map_or_else(Msg::GetAccountFailed, Msg::GetAccountSuccess)
+               // let url = "https://graph.facebook.com/v11.0/me/accounts?access_token=".to_string() + &*model.response.access_token;
 
+                //let request = fetch::Request::new(client).method(Method::Get);
+
+                 orders.perform_cmd( async  {
+                 fetch(client).await
+                     .unwrap()
+                     .json::<Data<Accounts>>()
+                     .await
+                     .map_or_else(Msg::GetAccountFailed, Msg::GetAccountSuccess)
+
+             }
+             );
+
+
+    },
+
+
+        Msg::GetMeSuccess(me) => {
+            model.me = Some(me);
         }
-        );
 
+        Msg::GetMeFailed(_) =>{}
 
-    },
-
-    Msg::GetAccountSuccess(account) => {
+        Msg::GetAccountSuccess(account) => {
         model.account = Some(account);
-    },
+        },
 
-    Msg::GetAccountFailed(_) =>{}
+        Msg::GetAccountFailed(_) =>{}
 
 }
 }

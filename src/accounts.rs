@@ -6,7 +6,7 @@ pub struct Accounts {
     category: String,
     category_list: Vec<String>,
     name: String,
-    id: String,
+    pub id: String,
     tasks: Vec<String>,
 }
 
