@@ -2,7 +2,7 @@ use seed::prelude::IndexMap;
 use seed::Url;
 ///The following struct is used to describe a token which may be retrieved from
 /// the login flow of Facebook.
-#[derive(Default, Debug)]
+#[derive(Clone, Default, Debug)]
 pub struct Token {
     ///access_token is used for API calls and it contains response data such as scopes
     pub access_token: String,

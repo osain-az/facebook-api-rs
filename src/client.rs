@@ -1,4 +1,4 @@
-use crate::me::*;
+use crate::me_api::*;
 pub use crate::{code::*, data::*, image::*, image::*, redirect_url::*, redirect_url::*, token::*};
 use async_trait::async_trait;
 use seed::{prelude::*, *};
@@ -15,7 +15,7 @@ pub struct Client {
 /// Empty Client
 impl Default for Client {
     fn default() -> Self {
-        let graph = "https://graph.facebook.com/v11.0".to_string();
+        let graph = "https://graph.facebook.com/v11.0/NODE/EDGE".to_string();
 
         Self {
             graph,
@@ -39,12 +39,12 @@ impl Client {
     }
 
     pub fn me(self) -> MeApi {
-        MeApi::new(self.graph)
+        MeApi::new(self.graph + &"?access_token=".to_string() + &self.access_token)
     }
 
-    pub fn accounts(mut self) -> AccountsAPI {
-        AccountsAPI::new(self.graph)
-    }
+    // pub fn accounts(self) -> AccountsAPI {
+    //     AccountsAPI::new(self.graph, self.access_token)
+    // }
 
     pub fn create_url(&self) -> String {
         self.graph.to_string()
@@ -55,10 +55,14 @@ impl Client {
             + &self.access_token
     }
 
-    //   pub fn request<T>(&self) -> Data<T> {
-    //      let request = Request::new(self.create_url()).method(Method::Get);
-    //  }
+    pub fn get_access_token(&self) -> &String {
+        &self.access_token
+    }
 }
+
+//   pub fn request<T>(&self) -> Data<T> {
+//      let request = Request::new(self.create_url()).method(Method::Get);
+//  }
 
 /*
 impl Client {

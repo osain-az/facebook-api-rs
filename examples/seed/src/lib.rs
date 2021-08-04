@@ -42,7 +42,7 @@ pub struct Model {
     image: Option<Data<Image>>,
     account: Option<Data<Accounts>>,
     pages_api: PagesAPI,
-    me: Option<Data<MeApi>>,
+    me: Option<Data<Me>>,
 }
 
 // ------ ------
@@ -94,7 +94,7 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
 
             Msg::GetMe => {
 
-              //  let url = "https://graph.facebook.com/v11.0/me?access_token=".to_string() + &*model.response.access_token;
+                let url = "https://graph.facebook.com/v11.0/me?access_token=".to_string() + &*model.response.access_token;
 
                 let request = fetch::Request::new(url).method(Method::Get);
 
@@ -111,28 +111,13 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
 
             Msg::GetAccount => {
 
-               // let client = Client::default().me().accounts();
-
-                // client::new(token).me().accounts().get();
-
-                let client = Client::new(model.response).me().accounts().get();
-
-
-               // let url = "https://graph.facebook.com/v11.0/me/accounts?access_token=".to_string() + &*model.response.access_token;
-
-                //let request = fetch::Request::new(client).method(Method::Get);
-
-                 orders.perform_cmd( async  {
-                 fetch(client).await
-                     .unwrap()
-                     .json::<Data<Accounts>>()
-                     .await
-                     .map_or_else(Msg::GetAccountFailed, Msg::GetAccountSuccess)
-
-             }
-             );
-
-
+                log!("click to get accounts");
+                let  client = Client::new(model.response.clone());
+                orders.perform_cmd( async  {
+                    client.me().accounts().get()
+                        .await
+                        .map_or_else(Msg::GetAccountFailed, Msg::GetAccountSuccess)
+                });
     },
 
 
