@@ -1,20 +1,9 @@
+#![allow(dead_code)]
+
+use crate::login::config::Config;
 use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
 use serde::{Deserialize, Serialize};
-///A struct which describes the config.json file structure.
-/// the json file fields are stored in this struct, and are then
-/// added to the RedirectURL struct.
-#[derive(Deserialize, Debug, Serialize)]
-pub struct Config {
-    /// The Facebook url preamble for the oath dialog.
-    facebook_oath_url: String,
-
-    /// The ID of your app, found in your app's dashboard.
-    client_id: String,
-
-    /// The URL that you want to redirect the person logging in back to.
-    redirect_uri: String,
-}
 
 ///Contains the Config struct and is used for building the login flow
 ///
@@ -52,9 +41,9 @@ impl RedirectURL {
     /// scope is optional, but inclusion must fulfill a valid scope.
     pub fn new(config: Config) -> RedirectURL {
         RedirectURL::default()
-            .add_facebook_oath_url(&config.facebook_oath_url)
-            .add_client_id(&config.client_id)
-            .add_redirect_uri(&config.redirect_uri)
+            .add_facebook_oath_url(&config.facebook_oath_url())
+            .add_client_id(&config.client_id())
+            .add_redirect_uri(&config.redirect_uri())
             .add_random_state()
             .add_response_type("")
             //MUST ADD A VALID SCOPE!
@@ -167,8 +156,8 @@ impl RedirectURL {
 
 #[cfg(test)]
 mod tests {
-    use crate::client::RedirectURL;
-    use crate::redirect_url::Config;
+    use crate::login::config::Config;
+    use crate::login::redirect_url::RedirectURL;
 
     #[test]
     fn test_build_url() {
