@@ -1,7 +1,8 @@
+use crate::login::token::Token;
 use crate::me_api::*;
-pub use crate::{code::*, data::*, image::*, image::*, redirect_url::*, redirect_url::*, token::*};
 use async_trait::async_trait;
 use seed::{prelude::*, *};
+
 ///Seed Client Struct for making calls to Facebook Graph
 #[derive(Debug)]
 pub struct Client {
@@ -62,13 +63,16 @@ impl Client {
 
 mod test {
     use crate::client::Client;
-    use crate::token::Token;
+    use crate::login::token::Token;
 
     #[test]
     fn test_builder() {
         let mut token = Token::default();
         token.access_token = "123".to_string();
-        let client = Client::default().add_access_token(token).me().accounts();
+        let client = Client::default()
+            .add_access_token(token.access_token)
+            .me()
+            .accounts();
 
         assert_eq!(
             "https://graph.facebook.com/v11.0/me/accounts?access_token=123",
