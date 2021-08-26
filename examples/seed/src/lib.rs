@@ -52,17 +52,13 @@ pub struct Model {
 // (Remove the line below once any of your `Msg` variants doesn't implement `Copy`.)
 // `Msg` describes the different events you can modify state with.
 enum Msg {
-    SignedFailed(String),
     ConfigFetched(fetch::Result<Config>),
-
     GetProfilePicture,
     GetProfilePictureSuccess(Data<Image>),
     GetProfilePictureFailed(FetchError),
-
     GetMe,
-    GetMeSuccess(Data<MeApi>),
+    GetMeSuccess(Data<Me>),
     GetMeFailed(FetchError),
-
     GetAccount,
     GetAccountSuccess(Data<Accounts>),
     GetAccountFailed(FetchError),
@@ -71,11 +67,8 @@ enum Msg {
 // `update` describes how to handle each `Msg`.
 fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
     match msg {
-
-
             Msg::ConfigFetched(Ok(config)) => model.redirect_url = RedirectURL::new(config).add_response_type("token").add_scope(&["email".to_string()]).add_full_url(),
             Msg::ConfigFetched(Err(fetch_error)) => error!("Config fetch failed! Be sure to have config.json at the root of your project with client_id and redirect_uri", fetch_error),
-            Msg::SignedFailed(err) => {model.error = Some(err)},
             Msg::GetProfilePicture => {
                 let url = "https://graph.facebook.com/v11.0/me/picture?access_token=".to_string() + &*model.response.access_token + "&format=json"+ "&redirect=false";
                 let request = fetch::Request::new(url).method(Method::Get);
@@ -101,7 +94,7 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
                 orders.perform_cmd( async  {
                     fetch(request).await
                         .unwrap()
-                        .json::<Data<MeApi>>()
+                        .json::<Data<Me>>()
                         .await
                         .map_or_else( Msg::GetMeFailed, Msg::GetMeSuccess)
 
