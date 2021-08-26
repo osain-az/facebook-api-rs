@@ -5,13 +5,13 @@ use serde::{Deserialize, Serialize};
 #[derive(Deserialize, Debug, Serialize)]
 pub struct Config {
     /// The Facebook url preamble for the oath dialog.
-    facebook_oath_url: String,
+    pub(crate) facebook_oath_url: String,
 
     /// The ID of your app, found in your app's dashboard.
-    client_id: String,
+    pub(crate) client_id: String,
 
     /// The URL that you want to redirect the person logging in back to.
-    redirect_uri: String,
+    pub(crate) redirect_uri: String,
 }
 
 impl Config {

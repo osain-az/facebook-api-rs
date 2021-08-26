@@ -154,10 +154,8 @@ impl RedirectURL {
 
 #[cfg(test)]
 mod tests {
-    use crate::client::RedirectURL;
     use crate::login::config::Config;
     use crate::login::redirect_url::RedirectURL;
-    use crate::redirect_url::Config;
 
     #[test]
     fn test_build_url() {
