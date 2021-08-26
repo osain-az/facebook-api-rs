@@ -1,13 +1,14 @@
+use crate::graph::me::MeApi;
 use crate::login::token::Token;
-use crate::me_api::*;
 
-///Seed Client Struct for making calls to Facebook Graph
+/// Client Struct for making calls to Facebook Graph
 #[derive(Debug)]
 pub struct Client {
     graph: String,
     access_token: String,
     page_access_token: Option<String>,
 }
+
 /// Empty Client
 impl Default for Client {
     fn default() -> Self {
@@ -42,7 +43,7 @@ impl Client {
 
 #[cfg(test)]
 mod test {
-    use crate::client::Client;
+    use crate::graph::client::Client;
     use crate::login::token::Token;
 
     #[test]

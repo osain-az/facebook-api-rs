@@ -1,4 +1,4 @@
-use crate::prelude::Accounts;
+use crate::graph::accounts::Accounts;
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize, Default)]

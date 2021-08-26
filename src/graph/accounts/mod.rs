@@ -1,3 +1,5 @@
+use crate::graph::data::Data;
+use seed::{prelude::*, *};
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Debug, Default, Serialize)]
@@ -61,5 +63,27 @@ impl Accounts {
 
     pub fn get_tasks(&self) -> &Vec<String> {
         &self.tasks
+    }
+}
+
+pub struct AccountsAPI {
+    url: String,
+}
+
+impl AccountsAPI {
+    pub fn new(base_url: String) -> AccountsAPI {
+        AccountsAPI {
+            url: base_url.replace("EDGE", "accounts"),
+        }
+    }
+
+    pub fn url(&self) -> &str {
+        &self.url
+    }
+
+    pub async fn get(&self) -> seed::fetch::Result<Data<Accounts>> {
+        log!(self.url);
+        let request = Request::new(&self.url).method(Method::Get);
+        fetch(request).await?.json::<Data<Accounts>>().await
     }
 }
