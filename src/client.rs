@@ -7,9 +7,6 @@ use seed::{prelude::*, *};
 #[derive(Debug)]
 pub struct Client {
     graph: String,
-    node: String,
-    edge: String,
-    fields: Vec<String>,
     access_token: String,
     page_access_token: Option<String>,
 }
@@ -20,9 +17,6 @@ impl Default for Client {
 
         Self {
             graph,
-            node: "".to_string(),
-            edge: "".to_string(),
-            fields: Vec::new(),
             access_token: "".to_string(),
             page_access_token: None,
         }
@@ -43,19 +37,6 @@ impl Client {
         MeApi::new(self.graph + &"?access_token=".to_string() + &self.access_token)
     }
 
-    // pub fn accounts(self) -> AccountsAPI {
-    //     AccountsAPI::new(self.graph, self.access_token)
-    // }
-
-    pub fn create_url(&self) -> String {
-        self.graph.to_string()
-            + &*self.node.to_string()
-            + &*"/".to_string()
-            + &self.edge.to_string()
-            + "?access_token="
-            + &self.access_token
-    }
-
     pub fn get_access_token(&self) -> &String {
         &self.access_token
     }
@@ -69,14 +50,14 @@ mod test {
     fn test_builder() {
         let mut token = Token::default();
         token.access_token = "123".to_string();
-        let client = Client::default()
+        let accounts = Client::default()
             .add_access_token(token.access_token)
             .me()
             .accounts();
 
         assert_eq!(
             "https://graph.facebook.com/v11.0/me/accounts?access_token=123",
-            client.create_url()
+            accounts.url()
         )
     }
 }

@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct MeApi {
-    pub url: String,
+    url: String,
 }
 
 impl MeApi {
@@ -17,6 +17,9 @@ impl MeApi {
         MeApi {
             url: graph_base.replace("NODE", "me"),
         }
+    }
+    pub fn url(&self) -> &str {
+        &self.url
     }
 
     pub fn accounts(self) -> AccountsAPI {
@@ -31,7 +34,7 @@ impl MeApi {
 }
 
 pub struct AccountsAPI {
-    pub url: String,
+    url: String,
 }
 
 impl AccountsAPI {
@@ -40,9 +43,10 @@ impl AccountsAPI {
             url: base_url.replace("EDGE", "accounts"),
         }
     }
-    // pub fn get_access_token(&self) -> String {
-    //     "?access_token=".to_string() + &self.access_token
-    // }
+
+    pub fn url(&self) -> &str {
+        &self.url
+    }
 
     pub async fn get(&self) -> seed::fetch::Result<Data<Accounts>> {
         log!(self.url);
