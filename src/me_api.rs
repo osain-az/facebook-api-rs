@@ -3,7 +3,7 @@ use crate::data::Data;
 use crate::me::Me;
 use seed::fetch::fetch;
 use seed::prelude::{Method, Request};
-use seed::{prelude::*, *};
+use seed::*;
 
 use serde::{Deserialize, Serialize};
 

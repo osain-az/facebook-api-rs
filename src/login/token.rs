@@ -1,5 +1,5 @@
 use seed::prelude::IndexMap;
-use seed::Url;
+
 ///The following struct is used to describe a token which may be retrieved from
 /// the login flow of Facebook.
 #[derive(Clone, Default, Debug)]
@@ -56,7 +56,7 @@ impl Token {
                 "state" => {
                     response.state = e.1.to_string();
                 }
-                _ => panic!("unknown field: {}"),
+                _ => panic!("unknown field: {}", e.0.as_str()),
             }
         }
         response

@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use crate::login::config::Config;
 use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};

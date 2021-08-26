@@ -1,7 +1,5 @@
 use crate::login::token::Token;
 use crate::me_api::*;
-use async_trait::async_trait;
-use seed::{prelude::*, *};
 
 ///Seed Client Struct for making calls to Facebook Graph
 #[derive(Debug)]
@@ -42,6 +40,7 @@ impl Client {
     }
 }
 
+#[cfg(test)]
 mod test {
     use crate::client::Client;
     use crate::login::token::Token;
