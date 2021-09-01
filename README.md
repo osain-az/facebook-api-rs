@@ -9,20 +9,20 @@
 
 #ToDo
 
-##-Milestone version 0.1.x
--[ ] Invoking the Login Dialog and Setting the Redirect URL
--[ ] Handling Login Dialog Response
--[ ] Canceled Login
--[ ] Confirming Identity
--[ ] Exchanging Code for an Access Token
--[ ] Handling Response which is returned in JSON format
--[ ] Inspecting Access Tokens
--[ ] Checking Permissions
--[ ] Re-asking for Declined Permissions
--[ ] Store Access Tokens and Login Status
--[ ] Logging People Out
--[ ] Detecting When People Uninstall Apps
--[ ] Responding to Requests to Delete User Data
+##-Milestone version 0.1.x  <br/>
+-[ ] Invoking the Login Dialog and Setting the Redirect URL <br/>
+-[ ] Handling Login Dialog Response <br/>
+-[ ] Canceled Login <br/>
+-[ ] Confirming Identity <br/>
+-[ ] Exchanging Code for an Access Token <br/>
+-[ ] Handling Response which is returned in JSON format <br/>
+-[ ] Inspecting Access Tokens <br/>
+-[ ] Checking Permissions <br/>
+-[ ] Re-asking for Declined Permissions <br/>
+-[ ] Store Access Tokens and Login Status <br/>
+-[ ] Logging People Out <br/>
+-[ ] Detecting When People Uninstall Apps <br/>
+-[ ] Responding to Requests to Delete User Data<br/>
 -[ ] Storage and tracking og login status
 
 
