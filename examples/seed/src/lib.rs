@@ -10,19 +10,17 @@ fn init(url: Url, orders: &mut impl Orders<Msg>) -> Model {
         // Load config from some json.
         // You can have a specific Api key here for facebook.
         Msg::ConfigFetched(
+
             async { fetch("/config.json").await?.check_status()?.json().await }.await,
         )
     });
 
-    let token = match url.hash() {
-        Some(hash) => Token::get_token(hash.to_string()),
-        None => Token::default(),
-    };
+    let response = url.hash().map(|hash|Token::get_token(hash.to_string()));
 
     Model {
         redirect_url: RedirectURL::default(),
         error: None,
-        response: token,
+        response: response,
         image: None,
         account: None,
         pages_api: PagesAPI::default(),
@@ -38,7 +36,7 @@ fn init(url: Url, orders: &mut impl Orders<Msg>) -> Model {
 pub struct Model {
     redirect_url: RedirectURL,
     error: Option<String>,
-    response: Token,
+    response: Option<Token>,
     image: Option<Data<Image>>,
     account: Option<Data<Accounts>>,
     pages_api: PagesAPI,
@@ -70,15 +68,16 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
             Msg::ConfigFetched(Ok(config)) => model.redirect_url = RedirectURL::new(config).add_response_type("token").add_scope(&["email".to_string()]).add_full_url(),
             Msg::ConfigFetched(Err(fetch_error)) => error!("Config fetch failed! Be sure to have config.json at the root of your project with client_id and redirect_uri", fetch_error),
             Msg::GetProfilePicture => {
-                let url = "https://graph.facebook.com/v11.0/me/picture?access_token=".to_string() + &*model.response.access_token + "&format=json"+ "&redirect=false";
-                let request = fetch::Request::new(url).method(Method::Get);
+           if let Some(response) = &model.response {
+               let url = "https://graph.facebook.com/v11.0/me/picture?access_token=".to_string() + &response.access_token + "&format=json"+ "&redirect=false";
+               let request = fetch::Request::new(url).method(Method::Get);
+               orders.perform_cmd( async  {
 
-                orders.perform_cmd( async  {
+                   fetch(request).await.unwrap().json::<Data<Image>>().await.map_or_else(Msg::GetProfilePictureFailed,Msg::GetProfilePictureSuccess)
 
-                    fetch(request).await.unwrap().json::<Data<Image>>().await.map_or_else(Msg::GetProfilePictureFailed,Msg::GetProfilePictureSuccess)
-
-                }
-            );
+               }
+               );
+           }
             },
             Msg::GetProfilePictureSuccess(image) => {
                     model.image = Some(image)
@@ -86,12 +85,26 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
             Msg::GetProfilePictureFailed(_) => {}
 
             Msg::GetMe => {
+                if let Some(response) = &model.response {
 
-                let url = "https://graph.facebook.com/v11.0/me?access_token=".to_string() + &*model.response.access_token;
 
-                let request = fetch::Request::new(url).method(Method::Get);
+                    let url = "https://graph.facebook.com/v11.0/me?access_token=".to_string() + &response.access_token ;
+                    let request = fetch::Request::new(url).method(Method::Get);
+                    orders.perform_cmd( async  {
+                        fetch(request).await
+                            .unwrap()
+                            .json::<Data<Me>>()
+                            .await
+                            .map_or_else( Msg::GetMeFailed, Msg::GetMeSuccess)
 
-                orders.perform_cmd( async  {
+                    }
+                    );
+                }
+
+
+              /*  let request = fetch::Request::new(url).method(Method::Get);*/
+
+              /*  orders.perform_cmd( async  {
                     fetch(request).await
                         .unwrap()
                         .json::<Data<Me>>()
@@ -99,18 +112,20 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
                         .map_or_else( Msg::GetMeFailed, Msg::GetMeSuccess)
 
                 }
-                );
+                );*/
             },
 
             Msg::GetAccount => {
 
-                log!("click to get accounts");
-                let  client = Client::new(model.response.clone());
-                orders.perform_cmd( async  {
-                    client.me().accounts().get()
-                        .await
-                        .map_or_else(Msg::GetAccountFailed, Msg::GetAccountSuccess)
-                });
+                if let Some(response) = &model.response {
+                    log!("click to get accounts");
+                    let client = Client::new(response.clone());
+                    orders.perform_cmd(async {
+                        client.me().accounts().get()
+                            .await
+                            .map_or_else(Msg::GetAccountFailed, Msg::GetAccountSuccess)
+                    });
+                }
     },
 
 
@@ -118,14 +133,21 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
             model.me = Some(me);
         }
 
-        Msg::GetMeFailed(_) =>{}
+        Msg::GetMeFailed(_) =>{
+            log!(" get me failed")
+        }
 
         Msg::GetAccountSuccess(account) => {
+            log!(account);
         model.account = Some(account);
+
         },
 
-        Msg::GetAccountFailed(_) =>{}
-
+        Msg::GetAccountFailed(err) =>{
+            log!("account failed");
+            log!(err);
+        }
+        
 }
 }
 
@@ -136,60 +158,87 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
 // `view` describes what to display.
 fn view(model: &Model) -> Node<Msg> {
     div![
+        style! [
+            St::Width => "100%",
+
+         ],
+        h1![
+            "facebook Api example",
+            style! [
+            St:: Display => "center",
+
+         ],
+        ],
+        div![
+         style! [
+            St:: Display => "flex",
+            St:: JustifyContent => "center",
+            St:: MarginTop =>  "20px"
+         ],
         a![
             attrs! {
                 At::Href => model.redirect_url.get_full_url()
             },
             button![img![
                 attrs! {
-                    At::Src => "src/fb.jpeg",
+                    At::Src => "src/login_button.png", // attribute <a href="https://www.freeiconspng.com/img/18026">Facebook login button png</a>
                 },
                 style! {
-                    St::Height => "750px",
-                    St::Width => "750px",
+                    St::Height => "100px",
+                    St::Width => "300px",
                 },
                 // Button style
                 style! [
                 St::Border => "none",
-                St::BackgroundColor => "white"
+                St::BackgroundColor => "white",
+                St::MarginLeft => "auto",
+                St::MarginRight => "auto",
+
                 ],
             ],]
         ],
         button![
             "Get my Profile Picture!",
-            ev(Ev::Click, |_| { Msg::GetProfilePicture })
+            ev(Ev::Click, |_| { Msg::GetProfilePicture }),
+             attrs! {
+                        At:: Disabled => model.response.is_none().as_at_value()
+                    },
+           style! {
+                St::Height => "50px"
+
+            },
         ],
-        add_image(model.image.as_ref()),
-        div![a![
             attrs! {
                 At::Src => format!("{:?}",model.account),
             },
             style! {
-                St::Height => "20px"
-                St::Width => "10px"
+                St::Height => "50px"
             },
-            button!["Get my Account!", ev(Ev::Click, |_| { Msg::GetAccount })],
-            add_account(model.account.as_ref())
-        ]]
+            button!["Get my Account!", ev(Ev::Click, |_| { Msg::GetAccount }),
+                attrs! {
+                        At:: Disabled => model.response.is_none().as_at_value()
+                    }],
+        ],
+        div![
+            h3!( "Avaliable accounts ", attrs!{
+            }),
+        ]
+
     ]
 }
 
 fn add_image(image: Option<&Data<Image>>) -> Node<Msg> {
-    if let Some(img) = image {
-        img![attrs! {
-            At::Src => img.data.url
-        }]
-    } else {
-        div![" no image for now"]
-    }
+    div![""]
 }
 
 fn add_account(account: Option<&Data<Accounts>>) -> Node<Msg> {
-    if let Some(account) = account {
-        div![attrs![At::Src => account.data.get_access_token()]]
-    } else {
+      log!(account);
+  //  if let Some(account) = account {
+    //    div![attrs!{At::Src => account.data.get_access_token()}
+
+   // } else {
         div![""]
-    }
+   // }
 }
 
 // ------ ------
