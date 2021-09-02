@@ -6,50 +6,25 @@ use serde::{Deserialize, Serialize};
 pub struct Accounts {
     pub access_token: String,
     category: String,
-    category_list: Vec<String>,
+    category_list: Vec<ListDetails>,
     name: String,
     pub id: String,
     tasks: Vec<String>,
 }
+#[derive(Deserialize, Debug, Default, Serialize)]
+pub struct ListDetails {
+    id: String,
+    name: String,
+}
 
 impl Accounts {
-    pub fn add_access_token(mut self, access_token: &str) -> Self {
-        self.access_token = access_token.to_string();
-        self
-    }
-
-    pub fn add_category(mut self, category: &str) -> Self {
-        self.category = category.to_string();
-        self
-    }
-
-    pub fn add_category_list(mut self, category_list: &Vec<String>) -> Self {
-        self.category_list = category_list.to_vec();
-        self
-    }
-
-    pub fn add_name(mut self, name: &str) -> Self {
-        self.name = name.to_string();
-        self
-    }
-
-    pub fn add_id(mut self, id: &str) -> Self {
-        self.id = id.to_string();
-        self
-    }
-
-    pub fn add_tasks(mut self, tasks: &Vec<String>) -> Self {
-        self.tasks = tasks.to_vec();
-        self
-    }
-
     pub fn get_access_token(&self) -> &String {
         &self.access_token
     }
     pub fn get_category(&self) -> &String {
         &self.category
     }
-    pub fn get_category_list(&self) -> &Vec<String> {
+    pub fn get_category_list(&self) -> &Vec<ListDetails> {
         &self.category_list
     }
 
@@ -80,10 +55,44 @@ impl AccountsAPI {
     pub fn url(&self) -> &str {
         &self.url
     }
-
     pub async fn get(&self) -> seed::fetch::Result<Data<Accounts>> {
         log!(self.url);
         let request = Request::new(&self.url).method(Method::Get);
         fetch(request).await?.json::<Data<Accounts>>().await
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use serde_json::Value;
+
+    #[test]
+    fn test_object() {
+        let data = r#"{
+   "data": [
+      {
+         "access_token": "Dummy",
+         "category": "Musician/Band",
+         "category_list": [
+            {
+               "id": "ID",
+               "name": "Musician/Band"
+            }
+         ],
+         "name": "business_name",
+         "id": "12345",
+         "tasks": [
+             
+         ]
+      }
+   ]
+
+}"#;
+
+        let v: Data<Accounts> = serde_json::from_str(data).unwrap();
+
+        println!("{:?}", v);
+        assert_eq!(v.data.first().unwrap().name, "business_name".to_string());
     }
 }
