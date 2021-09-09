@@ -1,5 +1,8 @@
+use crate::graph::getPosts::GetPostApi;
 use crate::graph::me::MeApi;
 use crate::login::token::Token;
+use crate::prelude::PostApi;
+use seed::{prelude::*, *};
 
 /// Client Struct for making calls to Facebook Graph
 #[derive(Debug)]
@@ -32,13 +35,24 @@ impl Client {
         self
     }
 
-    pub fn me(self) -> MeApi {
-        MeApi::new(self.graph + &"?access_token=".to_string() + &self.access_token)
-    }
-
     pub fn get_access_token(&self) -> &String {
         &self.access_token
     }
+    
+    pub fn me(self) -> MeApi {
+        MeApi::new(self.graph + &"?access_token=".to_string() + &self.access_token)
+    }
+    
+    pub fn post(self, page_id: String, page_token: String) -> PostApi {
+        let base_url = self.graph.replace("NODE", &page_id);
+        PostApi::new(base_url, page_token)
+    }
+    
+    pub fn get_post(self, page_post_id: String, page_token: String) -> GetPostApi {
+        let base_url = self.graph.replace("NODE", &page_post_id);
+        GetPostApi::new(base_url, page_token)
+    }
+    
 }
 
 #[cfg(test)]
