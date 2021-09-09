@@ -7,7 +7,7 @@ pub struct Accounts {
     pub access_token: String,
     category: String,
     category_list: Vec<ListDetails>,
-    name: String,
+    pub name: String,
     pub id: String,
     tasks: Vec<String>,
 }
