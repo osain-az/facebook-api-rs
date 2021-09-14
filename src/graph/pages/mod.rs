@@ -1,3 +1,8 @@
+///The Pages API allows apps to access and update a Facebook Page's settings and content,
+/// create and get Posts, get Comments on Page owned content, get Page insights, update actions that
+/// Users are able to perform on a Page, and much more.
+///
+///
 use crate::graph::accounts::Accounts;
 use serde::{Deserialize, Serialize};
 
