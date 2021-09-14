@@ -2,6 +2,10 @@ use crate::graph::data::Data;
 use seed::{prelude::*, *};
 use serde::{Deserialize, Serialize};
 
+///This struct represent the that data gotten from the response when  the account API is called
+/// it returns the  Facebook Pages that a person owns or is able to perform tasks on.
+/// the response is the list of pages and the atskes the user can perform on those pages
+
 #[derive(Deserialize, Debug, Default, Serialize)]
 pub struct Accounts {
     pub access_token: String,
