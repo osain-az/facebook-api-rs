@@ -2,6 +2,9 @@ use facebook_api_rs::prelude::*;
 //use seed::prelude::js_sys::to_string;
 //use seed::prelude::js_sys::input;
 use seed::{prelude::*, *};
+use wasm_bindgen::prelude::*;
+use wasm_bindgen::JsCast;
+use web_sys::{ HtmlInputElement, File};
 
 // ------ ------
 //     Init
@@ -12,6 +15,7 @@ fn init(url: Url, orders: &mut impl Orders<Msg>) -> Model {
     orders.perform_cmd(async {
         // Load config from some json.
         // You can have a specific Api key here for facebook.
+
         Msg::ConfigFetched(
             async { fetch("/config.json").await?.check_status()?.json().await }.await,
         )
@@ -32,6 +36,7 @@ fn init(url: Url, orders: &mut impl Orders<Msg>) -> Model {
         post_data: None,
         feed_post_response: None,
         get_post_response: None,
+
     }
 }
 
@@ -53,6 +58,7 @@ pub struct PostData {
     link_url: String, // this for external link
     video_url: String,
 }
+
 impl PostData {
     fn get_message(&self) -> &str {
         &self.message
@@ -93,7 +99,7 @@ pub struct Model {
     post_data: Option<PostData>,
     feed_post_response: Option<FeedPostSuccess>,
     get_post_response: Option<GetPost>,
-    //  get_page_feeds
+
 }
 
 // ------ ------
@@ -121,6 +127,12 @@ enum Msg {
     PostFailed(FetchError),
     GetPostSuccess(GetPost),
     GetPostFailed(FetchError),
+    PostVideoByUrl(String),
+    PostVideoSucces(VideoPostResponse),
+    PostVideoFailed(FetchError),
+    SubmitPost,
+    FileUpload(Option <File>),
+
 }
 
 // `update` describes how to handle each `Msg`.
@@ -211,6 +223,48 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
                 // }
             }
         }
+        Msg::SubmitPost => {
+            //  handle this in a sepearte functiom
+            log!(model.post_type);
+              if model.post_type =="feed" {
+                  if let Some(page_token) = &model.selectedAccount {
+                      let token = page_token.access_token.clone();
+                      let page_id = page_token.id.clone();
+
+                      if let Some(post_message) = &model.post_data{
+                          let post_description = post_message.message.clone();
+
+                          orders.perform_cmd(async move {
+                              Client::new(Token::default())
+                                  .post(page_id,token)
+                                  .feed_post(&post_description)
+                                  .await
+                                  .map_or_else(Msg::PostFailed,Msg::PostSuccess)
+
+                          });
+                      }
+
+                      // }
+                  }
+              } else if model.post_type =="video" {
+
+                  if let Some( video_url)  = &model.post_data{
+                      let video_url = video_url.video_url.to_owned();
+                      if let Some(selected_page ) = &model.selectedAccount{
+                          let page_token   =  selected_page.access_token.to_owned();
+                          let page_id = selected_page.id.to_owned();
+                          orders.perform_cmd(async move {
+                              Client::new(Token::default())
+                                  .get_post_video_link(page_id,&page_token)
+                                  .post_by_link(&video_url)
+                                  .await
+                               .map_or_else(Msg::PostVideoFailed,Msg::PostVideoSucces)
+                          });
+                      }
+                  }
+              }
+
+        }
         Msg::FacebookPostType(post_type) =>{
 
             model.post_type= post_type
@@ -238,7 +292,9 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
             }
         }
         Msg:: PostFailed(err) => {
+
             log!(err)
+
         }
         Msg::GetPostSuccess(response) => {
             model.get_post_response = Some(response);
@@ -246,7 +302,48 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
         }
         Msg::GetPostFailed(err) => {
                 log!(err);
-    }
+      }
+
+        Msg::PostVideoSucces(response) => {
+          //  model.get_post_response = Some(response);
+            log!(model.get_post_response);
+        }
+        Msg::PostVideoFailed(err) => {
+            log!(err);
+        }
+
+        Msg:: PostVideoByUrl(file_url) => {
+
+       /*  if let Some( post_response)  = &model.feed_post_response{
+             let page_post_id = post_response.id.to_string();
+             if let Some(selected_page ) = &model.selectedAccount{
+                 let page_token   =  selected_page.access_token.to_string();
+                 orders.perform_cmd(async move  {
+                     Client::new(Token::default())
+                         .get_post_video_link(page_post_id,page_token)
+                         .post_by_link(&file_url)
+                         .await
+                        // .map_or_else(Msg::GetPostFailed,Msg::GetPostSuccess)
+                 });
+             }
+         }*/
+        
+     }
+
+        Msg::FileUpload(None)  => {
+
+        }
+     Msg::FileUpload(Some(file))  => {
+
+         let chunk_size = 1048576.0*2.0; // 1048576.0 = 1Mb
+         let start = 0.0;
+         let end = start + chunk_size;
+         let chunks_count = js_sys::Math::ceil(file.size() / chunk_size);
+         let chunked_list = file.slice_with_f64_and_f64(start,end).unwrap();
+         let  chunk_form  = web_sys::FormData::new().unwrap();
+         log!(chunked_list, chunks_count);
+           // chunk_Form.
+     }
 
 
     }
@@ -263,7 +360,6 @@ fn view(model: &Model) -> Node<Msg> {
             "facebook Api example",
             style! {
                St:: TextAlign => "center",
-
             },
         ],
         div![
@@ -378,7 +474,7 @@ fn view(model: &Model) -> Node<Msg> {
                 select![
                     option![attrs! {At::Value => ""}, "Select type post"],
                     option![attrs! {At::Value => "feed"}, "Post to feed"],
-                    option![attrs! {At::Value => "video"}, "Video post"],
+                    option![attrs! {At::Value => "video"}, "video post"],
                     option![attrs! {At::Value => "image"}, "Image post"],
                     option![attrs! {At::Value => "link"}, "Link post "],
                     input_ev(Ev::Input, Msg::FacebookPostType)
@@ -389,10 +485,10 @@ fn view(model: &Model) -> Node<Msg> {
                        St:: MarginRight =>  "20px"
                     },
                     "Submit post",
-                    ev(Ev::Click, |_| Msg::PostFaceebookFeed),
+                    ev(Ev::Click, |_| Msg::SubmitPost),
                     attrs! {
                         At:: Disabled =>  model.selectedAccount.is_none().as_at_value()
-                    }
+                    },
                 ],
                 post_input(model)
             ]
@@ -406,8 +502,27 @@ fn view(model: &Model) -> Node<Msg> {
                 ]
             ],
             display_recent_post(model)
-        ]
+        ],
+        input![
+             C!["fileput_field"],
+
+            attrs!{
+                At::Type => "file",
+            },
+            id!["fileput_field"],
+            ev(Ev::Change, |e| {
+                 let file = e
+                        .target()
+                        .and_then(|target| target.dyn_into::<web_sys::HtmlInputElement>().ok())
+                        .and_then(|file_input| file_input.files())
+                        .and_then(|file_list| file_list.get(0));
+                Msg::FileUpload(file)
+                }
+            )
+        ],
+
     ]
+
 }
 
 fn display_account(accounts: &Data<Accounts>, model: &Model) -> Node<Msg> {
@@ -602,6 +717,11 @@ fn display_recent_post(model: &Model) -> Node<Msg> {
         div![]
     }
 }
+//fn video_upload()
+
+//ed::browser::dom::event_handler
+//pub fn ev<Ms: 'static, MsU: 'static>(trigger: impl Into<Ev>, handler: impl FnOnce(web_sys::Event) -> MsU + 'static + Clone) -> EventHandler<Ms>
+
 // ------ ------
 //     Start
 // ------ ------
