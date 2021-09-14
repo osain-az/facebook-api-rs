@@ -1,8 +1,11 @@
-use crate::graph::getPosts::GetPostApi;
+use crate::graph::get_posts::GetPostApi;
 use crate::graph::me::MeApi;
 use crate::login::token::Token;
 use crate::prelude::PostApi;
 use seed::{prelude::*, *};
+
+/// This mod will server as method binder that allow other mothod to post content to the api,
+/// it also hold all the user creditenials that will pass to each method.
 
 /// Client Struct for making calls to Facebook Graph
 #[derive(Debug)]
@@ -26,9 +29,13 @@ impl Default for Client {
 }
 
 impl Client {
+    /// this method add access token to the client when the user has authenticate from the frontend
+
     pub fn new(access_token: Token) -> Client {
         Client::default().add_access_token(access_token.access_token)
     }
+
+    /// this method add access token to the client when the user has authenticate from the frontend
 
     pub fn add_access_token(mut self, access_token: String) -> Self {
         self.access_token = access_token;
@@ -38,21 +45,34 @@ impl Client {
     pub fn get_access_token(&self) -> &String {
         &self.access_token
     }
-    
+
+    /// this method  is used to pass user data/crediteniatls to the ME method which will be used to reach the ME API
+
     pub fn me(self) -> MeApi {
         MeApi::new(self.graph + &"?access_token=".to_string() + &self.access_token)
     }
-    
+
+    ///  this method is used to pass user data/crediteniatls to the Post CONTENT  method which will
+    /// be used to post content to the  feed : Note this API can not be use for posting of vide and image
+    ///
     pub fn post(self, page_id: String, page_token: String) -> PostApi {
         let base_url = self.graph.replace("NODE", &page_id);
         PostApi::new(base_url, page_token)
     }
-    
+
+    ///  This method passes the page_post_id and the page token to the get method which will be use to get the
+    /// content of the id that was pass
     pub fn get_post(self, page_post_id: String, page_token: String) -> GetPostApi {
         let base_url = self.graph.replace("NODE", &page_post_id);
         GetPostApi::new(base_url, page_token)
     }
-    
+
+    ///Posting video using link ( hosted file)
+    ///  This method take the page id and the page token you want post video to.
+    pub fn get_post_video_link(self, page_id: String, page_token: &str) -> PostApi {
+        let base_url = self.graph.replace("NODE", &page_id);
+        PostApi::new(base_url, page_token.to_string())
+    }
 }
 
 #[cfg(test)]
