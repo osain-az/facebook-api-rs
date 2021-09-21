@@ -10,6 +10,7 @@ use seed::{prelude::*, *};
 use serde_json::Value;
 use web_sys::File;
 //use gloo_file::File;
+use crate::graph::utils::FileResult;
 use seed::prelude::js_sys::Math::exp;
 use serde::{Deserialize, Serialize};
 
@@ -119,6 +120,63 @@ pub struct VideoApi {
     video_params: Option<VideoParams>,
 }
 
+pub struct VideoApis {
+    base_url: String,
+    page_access_token: String,
+}
+
+impl VideoApis {
+    pub fn new(base_url: String, page_access_token: String) -> VideoApis {
+        VideoApis {
+            base_url,
+            page_access_token,
+        }
+    }
+
+    fn create_form_data(file: File, video_params: VideoParams) -> FormData {
+        let mut form_data = FormData::new();
+        form_data.append_blob("source", &file); // appped  the  current chunked file   to the form
+
+        if !video_params.video_title.is_empty() {
+            form_data.append_str("video_title", &video_params.video_title);
+        }
+
+        if !video_params.description.is_empty() {
+            form_data.append_str("description", &video_params.description);
+        }
+
+        if !video_params.thum.is_empty() {
+            form_data.append_str("thum", &video_params.thum);
+        };
+
+        form_data
+    }
+
+    ///
+    /// This method is expecting a video file less than 1 gb,  if the vide file is within this range it post the video
+    /// but if the video is not within the range , the post will not be made but a Fetcherror will be gerated.
+    ///
+    pub async fn post_video(
+        &self,
+        video_params: VideoParams,
+        file: File,
+    ) -> seed::fetch::Result<PostResponse> {
+        let uploaded_file = file.clone();
+        let upload_method = FileResult::file_analize(file).get_upload_method();
+        log!(upload_method);
+        if upload_method == "non_resumabl" {
+            let form_data = VideoApis::create_form_data(uploaded_file, video_params);
+            let base_url = self.base_url.replace("EDGE", "videos");
+            let url = base_url + "?access_token=" + &self.page_access_token;
+            let request = Request::new(url).method(Method::Post).form_data(form_data);
+            fetch(request).await?.json::<PostResponse>().await
+        } else {
+            let err = JsValue::from_str("the uplaoded file is above 1 gb, use Resumable method ");
+            Err(FetchError::RequestError(err)) // try to generate a customer error
+        }
+    }
+}
+
 impl VideoApi {
     pub fn new(base_url: String, page_access_token: String) -> VideoApi {
         VideoApi {
@@ -177,7 +235,8 @@ impl VideoApi {
 
         form_data
     }
-    ///This method
+
+    ///
     pub async fn post_video(self, uploaded_file: UploadFile) -> seed::fetch::Result<PostResponse> {
         if self.video_post_type == "non_resumable" {
             VideoApi::non_resumable_video_upload(&self, uploaded_file).await
