@@ -1,11 +1,11 @@
 use facebook_api_rs::prelude::*;
 //use seed::prelude::js_sys::to_string;
 //use seed::prelude::js_sys::input;
+use gloo_file::FileList;
 use seed::{prelude::*, *};
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
-use web_sys::{ HtmlInputElement, File};
-
+use web_sys::{File, HtmlInputElement};
 // ------ ------
 //     Init
 // ------ ------
@@ -36,7 +36,6 @@ fn init(url: Url, orders: &mut impl Orders<Msg>) -> Model {
         post_data: None,
         feed_post_response: None,
         get_post_response: None,
-
     }
 }
 
@@ -99,7 +98,6 @@ pub struct Model {
     post_data: Option<PostData>,
     feed_post_response: Option<FeedPostSuccess>,
     get_post_response: Option<GetPost>,
-
 }
 
 // ------ ------
@@ -131,8 +129,9 @@ enum Msg {
     PostVideoSucces(VideoPostResponse),
     PostVideoFailed(FetchError),
     SubmitPost,
-    FileUpload(Option <File>),
-
+    FileUpload(Option<File>),
+    VideoUploadByFileSucess(PostResponse),
+    VideoUploadByFileFailed(FetchError),
 }
 
 // `update` describes how to handle each `Msg`.
@@ -247,7 +246,7 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
                       // }
                   }
               } else if model.post_type =="video" {
-
+                  // this is for posting video with hosted fline ( with  a url)
                   if let Some( video_url)  = &model.post_data{
                       let video_url = video_url.video_url.to_owned();
                       if let Some(selected_page ) = &model.selectedAccount{
@@ -314,20 +313,6 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
 
         Msg:: PostVideoByUrl(file_url) => {
 
-       /*  if let Some( post_response)  = &model.feed_post_response{
-             let page_post_id = post_response.id.to_string();
-             if let Some(selected_page ) = &model.selectedAccount{
-                 let page_token   =  selected_page.access_token.to_string();
-                 orders.perform_cmd(async move  {
-                     Client::new(Token::default())
-                         .get_post_video_link(page_post_id,page_token)
-                         .post_by_link(&file_url)
-                         .await
-                        // .map_or_else(Msg::GetPostFailed,Msg::GetPostSuccess)
-                 });
-             }
-         }*/
-        
      }
 
         Msg::FileUpload(None)  => {
@@ -335,15 +320,43 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
         }
      Msg::FileUpload(Some(file))  => {
 
-         let chunk_size = 1048576.0*2.0; // 1048576.0 = 1Mb
-         let start = 0.0;
-         let end = start + chunk_size;
-         let chunks_count = js_sys::Math::ceil(file.size() / chunk_size);
-         let chunked_list = file.slice_with_f64_and_f64(start,end).unwrap();
-         let  chunk_form  = web_sys::FormData::new().unwrap();
-         log!(chunked_list, chunks_count);
-           // chunk_Form.
+         let fy = file.clone();
+            let test_file = UploadFile{
+             file: file
+         };
+       //  if let Some( video_url)  = &model.post_data{
+             if let Some(selected_page ) = &model.selectedAccount{
+                 let page_token   =  selected_page.access_token.to_owned();
+                 let page_id = selected_page.id.to_owned();
+
+                 // used the defaukt paramters
+                 let video_params = VideoParams{
+
+                     ..VideoParams::default()
+                 };
+                let uploaded_file =UploadFile{
+                     file:fy
+                 };
+                 let tes = &uploaded_file;
+                 orders.perform_cmd(async move {
+                     Client::new(Token::default())
+                         .post_video_file(page_id,&page_token)
+                         .init_video_upload( uploaded_file, video_params)
+                         .post_video(  test_file)
+                         .await
+                         .map_or_else(Msg:: VideoUploadByFileFailed,Msg:: VideoUploadByFileSucess)
+                 });
+             }
+
      }
+
+        Msg:: VideoUploadByFileSucess(res) =>{
+            log!(res)
+        }
+
+        Msg:: VideoUploadByFileFailed(res) =>{
+            log!(res)
+        }
 
 
     }
@@ -504,25 +517,21 @@ fn view(model: &Model) -> Node<Msg> {
             display_recent_post(model)
         ],
         input![
-             C!["fileput_field"],
-
-            attrs!{
+            C!["fileput_field"],
+            attrs! {
                 At::Type => "file",
             },
             id!["fileput_field"],
             ev(Ev::Change, |e| {
-                 let file = e
-                        .target()
-                        .and_then(|target| target.dyn_into::<web_sys::HtmlInputElement>().ok())
-                        .and_then(|file_input| file_input.files())
-                        .and_then(|file_list| file_list.get(0));
+                let file = e
+                    .target()
+                    .and_then(|target| target.dyn_into::<web_sys::HtmlInputElement>().ok())
+                    .and_then(|file_input| file_input.files())
+                    .and_then(|file_list| file_list.get(0));
                 Msg::FileUpload(file)
-                }
-            )
+            })
         ],
-
     ]
-
 }
 
 fn display_account(accounts: &Data<Accounts>, model: &Model) -> Node<Msg> {
