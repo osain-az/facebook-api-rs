@@ -28,6 +28,12 @@ lto = true
 opt-level = 'z'
 codegen-units = 1
 
+[dependencies.web-sys]
+version = "0.3.40"
+features = [
+    "File",
+]
+
 [package.metadata.wasm-pack.profile.release]
 wasm-opt = ['-Os']
 
