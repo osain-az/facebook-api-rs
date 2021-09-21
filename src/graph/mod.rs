@@ -6,9 +6,12 @@ pub mod image;
 pub mod me;
 pub mod pages;
 pub mod post;
-pub  mod video;
+pub mod video;
+pub mod utils;
 pub mod prelude {
     pub use crate::graph::{
-        accounts::*, client::*, data::*, get_posts::*, image::*, me::*, pages::*, post::*,video::*,
+        accounts::*, client::*, data::*,
+        get_posts::*, image::*, me::*, pages::*,
+        post::*, video::*, utils::*,
     };
 }
