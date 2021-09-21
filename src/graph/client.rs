@@ -1,7 +1,8 @@
 use crate::graph::get_posts::GetPostApi;
 use crate::graph::me::MeApi;
+use crate::graph::video::VideoApi;
 use crate::login::token::Token;
-use crate::prelude::PostApi;
+use crate::prelude::{PostApi, VideoParams};
 use seed::{prelude::*, *};
 
 /// This mod will server as method binder that allow other mothod to post content to the api,
@@ -73,6 +74,12 @@ impl Client {
         let base_url = self.graph.replace("NODE", &page_id);
         PostApi::new(base_url, page_token.to_string())
     }
+
+    // this will be used for posting of videos using uploading files
+    pub fn post_video_file(self, page_id: String, page_token: &str) -> VideoApi {
+        let base_url = self.graph.replace("NODE", &page_id);
+        VideoApi::new(base_url, page_token.to_string()) // initit videp Api
+    }
 }
 
 #[cfg(test)]
@@ -88,7 +95,6 @@ mod test {
             .add_access_token(token.access_token)
             .me()
             .accounts();
-
         assert_eq!(
             "https://graph.facebook.com/v11.0/me/accounts?access_token=123",
             accounts.url()
