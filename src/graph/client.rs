@@ -1,8 +1,12 @@
 use crate::graph::get_posts::GetPostApi;
 use crate::graph::me::MeApi;
-use crate::graph::video::{VideoApi, VideoApis};
+
+use crate::graph::pages::PagesAPI;
+use crate::graph::prelude::account::InstagramApi;
+use crate::graph::prelude::publish::InstagramPostApi;
+use crate::graph::video::VideoApi;
 use crate::login::token::Token;
-use crate::prelude::{PostApi, VideoParams};
+use crate::prelude::{PagesSearchAPI, PostApi, VideoParams};
 use seed::{prelude::*, *};
 
 /// This mod will server as method binder that allow other mothod to post content to the api,
@@ -75,20 +79,18 @@ impl Client {
         PostApi::new(base_url, page_token.to_string())
     }
 
-    // this will be used for posting of videos using uploading files
-    pub fn post_video_file(self, page_id: String, page_token: &str) -> VideoApi {
+    ///
+    ///This method allows developers to choose which viddeo uploading method they want to use.
+    /// For Large file greater than 1gb and 20 minute  user method called resumable_upload, for video
+    /// files smaller than that use method called "non_resumable".
+    ///Although facebook recommend using resumable method.
+    ///
+    pub fn video_upload(self, page_id: String, page_token: &str) -> VideoApi {
         let base_url = self.graph.replace("NODE", &page_id);
         VideoApi::new(base_url, page_token.to_string()) // initit videp Api
     }
 
-    ///
-    /// This method should  only be used when uploading video with size not more than 1 gb and playing time of 20 minutes.
-    /// For vide larger than that, it is recommended to use " Resumable method " or the general method.
-    ///
-    pub fn non_resumable_video_upload(self, page_id: String, page_token: &str) -> VideoApis {
-        let base_url = self.graph.replace("NODE", &page_id);
-        VideoApis::new(base_url, page_token.to_string()) // initit videp Api
-    }
+    // Instagram end point call
 }
 
 #[cfg(test)]
