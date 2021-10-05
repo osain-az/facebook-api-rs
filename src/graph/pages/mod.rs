@@ -4,6 +4,9 @@
 ///
 ///
 use crate::graph::accounts::Accounts;
+use seed::fetch::fetch;
+use seed::prelude::{Method, Request};
+use seed::{prelude::*, *};
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize, Default)]
@@ -43,5 +46,58 @@ impl PagesAPI {
 
     pub fn set_page_id(&mut self, page_id: String) {
         self.page_id = page_id;
+    }
+}
+
+#[derive(Deserialize, Serialize, Default)]
+
+pub struct PageSearch {
+    pub name: String,
+    pub id: String,
+    pub location: Location,
+    pub link: String,
+}
+
+#[derive(Deserialize, Serialize, Default)]
+pub struct Location {
+    pub city: String,
+    pub country: String,
+    pub latitude: u64,
+    pub longitude: u64,
+    pub state: String,
+    pub street: String,
+    pub zip: String,
+}
+
+pub struct PagesSearchAPI {
+    pub page_acess_token: String,
+    pub base_url: String,
+}
+
+impl PagesSearchAPI {
+    pub fn new(base_url: String, page_acess_token: String) -> PagesSearchAPI {
+        PagesSearchAPI {
+            base_url,
+            page_acess_token,
+        }
+    }
+
+    ///
+    /// This method is used to search for different facebook pages, which will return the struct as shown
+    /// in the PageSearch
+    ///
+    pub async fn init_search(self) -> seed::fetch::Result<PageSearch> {
+        // this method has not be offically tested to be working proper since any attempt to test return error off
+        // permission error due to the app still in development mode
+
+        // the note should be a dynamica value that will be pass in
+        let url = self.base_url
+            + "?q=Oslo"
+            + "&fields=id,name,location,link"
+            + "&access_token="
+            + &self.page_acess_token;
+
+        let request = Request::new(url).method(Method::Get);
+        fetch(request).await?.json::<PageSearch>().await
     }
 }
