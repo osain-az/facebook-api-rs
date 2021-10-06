@@ -15,6 +15,7 @@ pub struct Accounts {
     pub id: String,
     tasks: Vec<String>,
 }
+//Todo add documentation on every field.
 #[derive(Deserialize, Debug, Default, Serialize)]
 pub struct ListDetails {
     id: String,

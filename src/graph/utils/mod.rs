@@ -87,7 +87,7 @@ impl FileResult {
         self.chunked_file = chunked_file;
         self
     }
-
+//TODO remove get for getters
     pub fn get_chunked_file(self) -> Blob {
         self.chunked_file
     }

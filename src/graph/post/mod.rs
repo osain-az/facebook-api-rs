@@ -4,7 +4,8 @@ use seed::prelude::{Method, Request};
 //use seed::{prelude::*, *};
 use crate::graph::video::ContentCategory;
 use serde::{Deserialize, Serialize};
-
+// todo rename this api to feed
+// move it under page module
 /// Struct that will hold different data for the making a post request which are upadted from the client method
 #[derive(Deserialize, Debug, Default, Serialize)]
 pub struct PostApi {
@@ -107,6 +108,9 @@ impl PostApi {
         fetch(request).await?.json::<FeedPostSuccess>().await
     }
 
+
+
+    // TODO move it to videos.rs under page module
     // video upload by  link
     /// this Method is used for posting video hosted online (video url ) to the  account or page feed.
     ///

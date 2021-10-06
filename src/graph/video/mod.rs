@@ -13,6 +13,9 @@ use crate::graph::utils::FileResult;
 use serde::{Deserialize, Serialize};
 use web_sys::Blob;
 
+//Todo need link to official guide on facebook.
+//Todo move under page
+
 /// Facebook video api accepts different paramters that could be passed posted while uploading the video.
 /// this struck will have the possible pramaters that a user might need to pass along the video upload
 /// Note : video_title, file_name, and title will not appera in your post. use "description"

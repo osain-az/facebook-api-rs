@@ -18,7 +18,6 @@ fn init(url: Url, orders: &mut impl Orders<Msg>) -> Model {
     orders.perform_cmd(async {
         // Load config from some json.
         // You can have a specific Api key here for facebook.
-
         Msg::ConfigFetched(
             async { fetch("/config.json").await?.check_status()?.json().await }.await,
         )
@@ -56,6 +55,9 @@ fn init(url: Url, orders: &mut impl Orders<Msg>) -> Model {
 // ------ ------
 
 // `Model` describes our app state.
+
+// TODO simplify struct and function for insta
+
 #[derive(Debug, Clone)]
 struct SelectedAccount {
     access_token: String,
@@ -68,12 +70,6 @@ pub struct PostData {
     photo_url: String,
     link_url: String, // this for external link
     video_url: String,
-}
-#[derive(Debug, Clone)]
-struct InstaPostData {
-    url: String,
-    caption: String,
-    location_id: String, // this should be coded
 }
 
 impl PostData {
@@ -90,6 +86,14 @@ impl PostData {
         &self.link_url
     }
 }
+
+#[derive(Debug, Clone)]
+struct InstaPostData {
+    url: String,
+    caption: String,
+    location_id: String, // this should be coded
+}
+
 
 fn build_Post(message: String, photo_url: String, link_url: String, video_url: String) -> PostData {
     PostData {
@@ -118,7 +122,7 @@ struct InstaPostingOption {
     is_post_video: bool,
     tag_users: bool,
 }
-
+//  TODO make 2 pages for facebook and insta
 #[derive(Default)]
 pub struct Model {
     redirect_url: RedirectURL,
@@ -143,9 +147,10 @@ pub struct Model {
 // ------ ------
 //    Update
 // ------ ------
+// TODO simplify messages
 
-// (Remove the line below once any of your `Msg` variants doesn't implement `Copy`.)
-// `Msg` describes the different events you can modify state with.
+
+
 enum Msg {
     ConfigFetched(fetch::Result<Config>),
     GetProfilePicture,
@@ -198,6 +203,7 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
     match msg {
         Msg::ConfigFetched(Ok(config)) => model.redirect_url = RedirectURL::new(config).add_response_type("token").add_scope(&["email".to_string()]).add_full_url(),
         Msg::ConfigFetched(Err(fetch_error)) => error!("Config fetch failed! Be sure to have config.json at the root of your project with client_id and redirect_uri", fetch_error),
+      //TODO remove or have the irght api call
         Msg::GetProfilePicture => {
             if let Some(response) = &model.response {
                 let url = "https://graph.facebook.com/v11.0/me/picture?access_token=".to_string() + &response.access_token + "&format=json" + "&redirect=false";
@@ -212,7 +218,7 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
             model.image = Some(image)
         },
         Msg::GetProfilePictureFailed(_) => {}
-
+        //TODO remove
         Msg::GetMe => {
             if let Some(response) = &model.response {
                 let url = "https://graph.facebook.com/v11.0/me?access_token=".to_string() + &response.access_token;
@@ -232,7 +238,9 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
             if let Some(response) = &model.response {
                 let client = Client::new(response.clone());
                 orders.perform_cmd(async {
-                    client.me().accounts().get()
+                    client.me()
+                        .accounts()
+                        .get()
                         .await
                         .map_or_else(Msg::GetAccountFailed, Msg::GetAccountSuccess)
                 });
@@ -255,10 +263,12 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
             log!("account failed");
             log!(err);
         }
+
         Msg::UpdateSelectedccount(account) => {
             model.selectedAccount = Some(account);
             log!(model.selectedAccount);
         }
+
         Msg::PostFaceebookFeed => {
             if let Some(page_token) = &model.selectedAccount {
                 let token = page_token.access_token.clone();
