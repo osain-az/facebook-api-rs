@@ -1,11 +1,14 @@
 use facebook_api_rs::prelude::*;
 //use seed::prelude::js_sys::to_string;
 //use seed::prelude::js_sys::input;
-use gloo_file::FileList;
+use crate::Msg::GetInstaAccountFailed;
+use facebook_api_rs::prelude::account::InstaAccount;
+use facebook_api_rs::prelude::publish::{InstaMediaConatiner, InstaPostParams};
 use seed::{prelude::*, *};
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use web_sys::{File, HtmlInputElement};
+use Msg::GetInstaAccountSuccess;
 // ------ ------
 //     Init
 // ------ ------
@@ -36,6 +39,15 @@ fn init(url: Url, orders: &mut impl Orders<Msg>) -> Model {
         post_data: None,
         feed_post_response: None,
         get_post_response: None,
+        insta_account: None,
+        insta_post_param: None,
+        insta_media_container_id: None,
+        insta_posting_options: InstaPostingOption {
+            caption: false,
+            location_tag: false,
+            is_post_video: true,
+            tag_users: false,
+        },
     }
 }
 
@@ -56,6 +68,12 @@ pub struct PostData {
     photo_url: String,
     link_url: String, // this for external link
     video_url: String,
+}
+#[derive(Debug, Clone)]
+struct InstaPostData {
+    url: String,
+    caption: String,
+    location_id: String, // this should be coded
 }
 
 impl PostData {
@@ -84,6 +102,23 @@ fn build_Post(message: String, photo_url: String, link_url: String, video_url: S
     }
 }
 
+// build str
+fn insta_post_params(url: String, location_id: String, caption: String) -> InstaPostParams {
+    InstaPostParams {
+        url,
+        caption,
+        location_id,
+        tag_users: vec![],
+    }
+}
+#[derive(Debug, Default, Clone)]
+struct InstaPostingOption {
+    caption: bool,
+    location_tag: bool,
+    is_post_video: bool,
+    tag_users: bool,
+}
+
 #[derive(Default)]
 pub struct Model {
     redirect_url: RedirectURL,
@@ -98,6 +133,11 @@ pub struct Model {
     post_data: Option<PostData>,
     feed_post_response: Option<FeedPostSuccess>,
     get_post_response: Option<GetPost>,
+
+    insta_account: Option<InstaAccount>,
+    insta_post_param: Option<InstaPostParams>,
+    insta_media_container_id: Option<InstaMediaConatiner>,
+    insta_posting_options: InstaPostingOption,
 }
 
 // ------ ------
@@ -132,6 +172,25 @@ enum Msg {
     FileUpload(Option<File>),
     VideoUploadByFileSucess(PostResponse),
     VideoUploadByFileFailed(FetchError),
+    ResumableUpload(Option<File>),
+    ResumableUploadSucess(FinalResponeResumableUpload),
+    ResumableUploadFailed(FetchError),
+
+    //Instagram operations
+    GetInstaAcoount,
+    InstaMediaConatinerInit,
+    InstaContainerResponse(InstaMediaConatiner),
+    GetInstaAccountSuccess(InstaAccount),
+    GetInstaAccountFailed(FetchError),
+    UpdatInstaPostParams(InstaPostParams),
+    InstagramVideoPost,
+    InstaPostSucessful(InstaMediaConatiner),
+    InstaPostFailed(FetchError),
+    HandleInstaPostingOption(web_sys::Event),
+    PagesSearch(String),
+    PageSearchResponse(PageSearch),
+
+    ResponseFailed(FetchError),
 }
 
 // `update` describes how to handle each `Msg`.
@@ -182,10 +241,10 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
 
         Msg::GetMeSuccess(me) => {
             model.me = Some(me);
+            log!(model.me );
         }
 
-        Msg::GetMeFailed(_) => {
-        }
+        Msg::GetMeFailed(_) => {}
 
         Msg::GetAccountSuccess(account) => {
             model.accounts = Some(account);
@@ -201,21 +260,19 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
             log!(model.selectedAccount);
         }
         Msg::PostFaceebookFeed => {
-
             if let Some(page_token) = &model.selectedAccount {
                 let token = page_token.access_token.clone();
                 let page_id = page_token.id.clone();
 
-                if let Some(post_message) = &model.post_data{
+                if let Some(post_message) = &model.post_data {
                     let post_description = post_message.message.clone();
 
-                   orders.perform_cmd(async move {
-                      Client::new(Token::default())
-                          .post(page_id,token)
-                          .feed_post(&post_description)
-                          .await
-                          .map_or_else(Msg::PostFailed,Msg::PostSuccess)
-
+                    orders.perform_cmd(async move {
+                        Client::new(Token::default())
+                            .post(page_id, token)
+                            .feed_post(&post_description)
+                            .await
+                            .map_or_else(Msg::PostFailed, Msg::PostSuccess)
                     });
                 }
 
@@ -225,140 +282,347 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
         Msg::SubmitPost => {
             //  handle this in a sepearte functiom
             log!(model.post_type);
-              if model.post_type =="feed" {
-                  if let Some(page_token) = &model.selectedAccount {
-                      let token = page_token.access_token.clone();
-                      let page_id = page_token.id.clone();
+            if model.post_type == "feed" {
+                if let Some(page_token) = &model.selectedAccount {
+                    let token = page_token.access_token.clone();
+                    let page_id = page_token.id.clone();
 
-                      if let Some(post_message) = &model.post_data{
-                          let post_description = post_message.message.clone();
+                    if let Some(post_message) = &model.post_data {
+                        let post_description = post_message.message.clone();
 
-                          orders.perform_cmd(async move {
-                              Client::new(Token::default())
-                                  .post(page_id,token)
-                                  .feed_post(&post_description)
-                                  .await
-                                  .map_or_else(Msg::PostFailed,Msg::PostSuccess)
+                        orders.perform_cmd(async move {
+                            Client::new(Token::default())
+                                .post(page_id, token)
+                                .feed_post(&post_description)
+                                .await
+                                .map_or_else(Msg::PostFailed, Msg::PostSuccess)
+                        });
+                    }
 
-                          });
-                      }
-
-                      // }
-                  }
-              } else if model.post_type =="video" {
-                  // this is for posting video with hosted fline ( with  a url)
-                  if let Some( video_url)  = &model.post_data{
-                      let video_url = video_url.video_url.to_owned();
-                      if let Some(selected_page ) = &model.selectedAccount{
-                          let page_token   =  selected_page.access_token.to_owned();
-                          let page_id = selected_page.id.to_owned();
-                          orders.perform_cmd(async move {
-                              Client::new(Token::default())
-                                  .get_post_video_link(page_id,&page_token)
-                                  .post_by_link(&video_url)
-                                  .await
-                               .map_or_else(Msg::PostVideoFailed,Msg::PostVideoSucces)
-                          });
-                      }
-                  }
-              }
-
+                    // }
+                }
+            } else if model.post_type == "video" {
+                // this is for posting video with hosted fline ( with  a url)
+                if let Some(video_url) = &model.post_data {
+                    let video_url = video_url.video_url.to_owned();
+                    if let Some(selected_page) = &model.selectedAccount {
+                        let page_token = selected_page.access_token.to_owned();
+                        let page_id = selected_page.id.to_owned();
+                        orders.perform_cmd(async move {
+                            Client::new(Token::default())
+                                .get_post_video_link(page_id, &page_token)
+                                .post_by_link(&video_url)
+                                .await
+                                .map_or_else(Msg::PostVideoFailed, Msg::PostVideoSucces)
+                        });
+                    }
+                }
+            }
         }
-        Msg::FacebookPostType(post_type) =>{
-
-            model.post_type= post_type
+        Msg::FacebookPostType(post_type) => {
+            model.post_type = post_type
         }
-        Msg::UpdatePostData(post_data) =>{
-            model.post_data=  Some( post_data);
+        Msg::UpdatePostData(post_data) => {
+            model.post_data = Some(post_data);
             log!(model.post_data);
         }
-        Msg:: PostSuccess(result) => {
+        Msg::PostSuccess(result) => {
             model.feed_post_response = Some(result); // store response id ( page_post_id)
 
             // make a new Get request to return the just posted Post
-            if let Some( post_response)  = &model.feed_post_response{
+            if let Some(post_response) = &model.feed_post_response {
                 let page_post_id = post_response.id.to_string();
-                if let Some(selected_page ) = &model.selectedAccount{
-                      let page_token   =  selected_page.access_token.to_string();
-                    orders.perform_cmd(async move  {
+                if let Some(selected_page) = &model.selectedAccount {
+                    let page_token = selected_page.access_token.to_string();
+                    orders.perform_cmd(async move {
                         Client::new(Token::default())
-                            .get_post(page_post_id,page_token)
+                            .get_post(page_post_id, page_token)
                             .get()
                             .await
-                            .map_or_else(Msg::GetPostFailed,Msg::GetPostSuccess)
+                            .map_or_else(Msg::GetPostFailed, Msg::GetPostSuccess)
                     });
                 }
             }
         }
-        Msg:: PostFailed(err) => {
-
+        Msg::PostFailed(err) => {
             log!(err)
-
         }
         Msg::GetPostSuccess(response) => {
             model.get_post_response = Some(response);
-             log!(model.get_post_response);
+
+            log!(model.get_post_response);
         }
         Msg::GetPostFailed(err) => {
-                log!(err);
-      }
+            log!(err);
+        }
 
         Msg::PostVideoSucces(response) => {
-          //  model.get_post_response = Some(response);
+            //  model.get_post_response = Some(response);
             log!(model.get_post_response);
         }
         Msg::PostVideoFailed(err) => {
             log!(err);
         }
 
-        Msg:: PostVideoByUrl(file_url) => {
+        Msg::PostVideoByUrl(file_url) => {}
 
-     }
+        Msg::FileUpload(None) => {}
+        Msg::FileUpload(Some(file)) => {
+            let file_uploaded = file.clone();
 
-        Msg::FileUpload(None)  => {
+            //  if let Some( video_url)  = &model.post_data{
+            if let Some(selected_page) = &model.selectedAccount {
+                let page_token = selected_page.access_token.to_owned();
+                let page_id = selected_page.id.to_owned();
 
+                // used the defaukt paramters
+                let video_params = VideoParams {
+                    ..VideoParams::default()
+                };
+                let uploaded_file = UploadFile {
+                    file
+                };
+                orders.perform_cmd(async move {
+                    //This test is for nonresumable
+                    Client::new(Token::default())
+                        .video_upload(page_id, &page_token)
+                        .post_video(video_params, file_uploaded)
+                        .await
+                        .map_or_else(Msg::VideoUploadByFileFailed, Msg::VideoUploadByFileSucess)
+                });
+            }
         }
-     Msg::FileUpload(Some(file))  => {
 
-         let fy = file.clone();
-            let test_file = UploadFile{
-             file: file
-         };
-       //  if let Some( video_url)  = &model.post_data{
-             if let Some(selected_page ) = &model.selectedAccount{
-                 let page_token   =  selected_page.access_token.to_owned();
-                 let page_id = selected_page.id.to_owned();
-
-                 // used the defaukt paramters
-                 let video_params = VideoParams{
-
-                     ..VideoParams::default()
-                 };
-                let uploaded_file =UploadFile{
-                     file:fy
-                 };
-                 let tes = &uploaded_file;
-                 orders.perform_cmd(async move {
-                     Client::new(Token::default())
-                         .post_video_file(page_id,&page_token)
-                         .init_video_upload( uploaded_file, video_params)
-                         .post_video(  test_file)
-                         .await
-                         .map_or_else(Msg:: VideoUploadByFileFailed,Msg:: VideoUploadByFileSucess)
-                 });
-             }
-
-     }
-
-        Msg:: VideoUploadByFileSucess(res) =>{
+        Msg::VideoUploadByFileSucess(res) => {
             log!(res)
         }
 
-        Msg:: VideoUploadByFileFailed(res) =>{
-            log!(res)
+        Msg::VideoUploadByFileFailed(res) => {
+            log!(" thisis the eeror", res) // This erro could error send from facebook or error generated when  larger video file was uploaded.
         }
 
+        Msg::ResumableUpload(None) => {}
 
+        Msg::ResumableUpload(Some(file)) => {
+            let file_uploaded = file.clone();
+            //  if let Some( video_url)  = &model.post_data{
+            if let Some(selected_page) = &model.selectedAccount {
+                let page_token = selected_page.access_token.to_owned();
+                let page_id = selected_page.id.to_owned();
+
+                // used the defaukt paramters
+                let video_params = VideoParams {
+                    ..VideoParams::default()
+                };
+                let uploaded_file = UploadFile {
+                    file
+                };
+                orders.perform_cmd(async move {
+                    Client::new(Token::default())
+                        .video_upload(page_id, &page_token)
+                        .resumable_post(file_uploaded, video_params)
+                        .await
+                        .map_or_else(Msg::ResumableUploadFailed, Msg::ResumableUploadSucess)
+                });
+            }
+        }
+
+        Msg::ResumableUploadSucess(res) => {
+            log!("final response ", res)
+        }
+
+        Msg::ResumableUploadFailed(res) => {
+            log!( res)
+        }
+
+        //Instagram operation
+        Msg::GetInstaAcoount => {
+            if model.selectedAccount.is_some(){
+
+                if let Some(selected_page) = &model.selectedAccount {
+                    let page_token = selected_page.access_token.to_owned();
+                    let page_id = selected_page.id.to_owned();
+
+                    orders.perform_cmd(async move {
+                        Client::new(Token::default())
+                            .get_instagram_account(&page_token,page_id, )
+                            .insta_account()
+                            .await
+                            .map_or_else(Msg::GetInstaAccountFailed, GetInstaAccountSuccess)
+                    });
+                }
+
+
+            }
+        }
+
+      Msg::  GetInstaAccountSuccess(resp) => {
+            model.insta_account = Some(resp);
+
+        }
+
+     Msg::   GetInstaAccountFailed(resp) => {
+
+        }
+    Msg:: UpdatInstaPostParams( post_input) => {
+
+        model.insta_post_param = Some(post_input);
+        log!(model.insta_post_param);
+    }
+        Msg::InstagramVideoPost => {
+
+            if let Some(selected_page)  = &model.selectedAccount{
+
+         /*       if let Some(instag_account) = &model.insta_account {
+                    log!(instag_account);
+                    let page_token = selected_page.access_token.to_owned();
+                    let page_id = selected_page.id.to_owned();
+                    let insta_page_id = instag_account.instagram_business_account.id.clone();
+
+                    if let Some(post_param) = model.insta_post_param.clone() {
+                        orders.perform_cmd(async move {
+                            Client::new(Token::default())
+                                .instagram(insta_page_id, &page_token)
+                                .post_video(post_param)
+                                .await
+                                .map_or_else(Msg::InstaPostFailed, Msg::InstaPostSucessful)
+                        });
+                    }
+                }
+
+
+            }
+*/
+                if let Some(selected_page)  = &model.selectedAccount {
+                    if let Some(instag_account) = &model.insta_account {
+                        if let Some(insta_media_container_id) = &model.insta_media_container_id {
+                            let page_token = selected_page.access_token.to_owned();
+                            let page_id = selected_page.id.to_owned();
+                            let insta_page_id = instag_account.instagram_business_account.id.clone();
+                            let insta_media_conatiner = insta_media_container_id.id.clone();
+                            if let Some(post_param) = model.insta_post_param.clone() {
+                                orders.perform_cmd(async move {
+                                    Client::new(Token::default())
+                                        .instagram(insta_page_id, &page_token)
+                                        .publish_video(insta_media_conatiner)
+                                        .await
+                                        .map_or_else(Msg::InstaPostFailed, Msg::InstaPostSucessful)
+                                });
+                            }
+                        }
+                    }
+                }
+
+                       }
+
+        }
+        Msg:: InstaPostSucessful(resp) => {
+          log!(resp)
+        }
+
+        Msg:: InstaPostFailed(resp) => {
+            log!(resp)
+        }
+
+        Msg:: InstaMediaConatinerInit => {
+
+            if let Some(selected_page)  = &model.selectedAccount{
+
+                if let Some(instag_account) = &model.insta_account {
+                    log!(instag_account);
+                    let page_token = selected_page.access_token.to_owned();
+                    let page_id = selected_page.id.to_owned();
+                    let insta_page_id = instag_account.instagram_business_account.id.clone();
+
+                    if let Some(post_param) = model.insta_post_param.clone() {
+                        orders.perform_cmd(async move {
+                            Client::new(Token::default())
+                                .instagram(insta_page_id, &page_token)
+                                .ig_mdeia_container(post_param,"video".to_string())
+                                .await
+                                .map_or_else(Msg::InstaPostFailed, Msg::InstaContainerResponse)
+                        });
+                    }
+                }
+
+
+            }
+
+
+        }
+
+        Msg::InstaContainerResponse(resp) => {
+             model.insta_media_container_id = Some(resp);
+            log!(model.insta_media_container_id);
+
+        }
+
+        Msg::  HandleInstaPostingOption(e) =>{
+
+            let checked  = e
+                .target()
+                .and_then(|target| target.dyn_into::<web_sys::HtmlInputElement>().ok())
+                .map(|file_input| file_input.checked()).unwrap();
+            let event_type = e
+                .target()
+                .and_then(|target| target.dyn_into::<web_sys::HtmlInputElement>().ok())
+                .map(|file_input| file_input.name()).unwrap();
+
+            if event_type =="is_post_video"{
+                if checked {
+                    model.insta_posting_options.is_post_video = false;
+                }else {
+                    model.insta_posting_options.is_post_video = true;
+                }
+            }
+            else if event_type =="location_tag" {
+                if checked {
+                    model.insta_posting_options.location_tag = true;
+                }else {
+                    model.insta_posting_options.location_tag  = false;
+                };
+            }
+            else if event_type =="tag_user" {
+                if checked {
+                    model.insta_posting_options.tag_users = true;
+                }else {
+                    model.insta_posting_options.tag_users  = false;
+                };
+            };
+            log!(checked)
+        }
+        Msg:: PagesSearch(e) => {
+            log!(e);
+
+            if let Some(selected_page)  = &model.selectedAccount{
+
+                if let Some(instag_account) = &model.insta_account {
+                    log!(instag_account);
+                    let page_token = selected_page.access_token.to_owned();
+                    let page_id = selected_page.id.to_owned();
+                    let insta_page_id = instag_account.instagram_business_account.id.clone();
+
+                        log!(e);
+                        orders.perform_cmd(async move {
+                            Client::new(Token::default())
+                                .search_pages( &page_token)
+                                .init_search()
+                                .await
+                                .map_or_else(Msg::ResponseFailed, Msg::PageSearchResponse)
+                        });
+
+                }
+
+
+            }
+        }
+        Msg::PageSearchResponse(resp) => {
+            log!(resp)
+        }
+
+        Msg::ResponseFailed(resp) => {
+            log!(resp)
+        }
     }
 }
 
@@ -386,14 +650,36 @@ fn view(model: &Model) -> Node<Msg> {
                     At::Href => model.redirect_url.get_full_url()
                 },
                 button![
-                    "Login with Facebook",
+                    img![
+                        attrs! {
+                            At::Src => "src/blue_58.png",
+                           At:: Width => 40,
+                            At:: Height => 40,
+
+                          // At::Src => "src/login_button.png", // attribute <a href="https://www.freeiconspng.com/img/18026">Facebook login button png</a>
+                        },
+                        style! {
+                         St::PaddingTop => px(3),
+                         St:: MarginLeft => px(7)
+                        },
+                    ],
+                    span![
+                        "Login with Facebook",
+                        style! {
+                           St:: MarginTop => px(11),
+                           St:: MarginLeft => px(8)
+                        },
+                    ],
                     style! [
-                     St:: Color => "white" ,
+                        St:: Display => "flex" ,
+                     St:: Color => "#1877F2" ,
                      St:: BorderRadius => px(10),
+                     St:: BorderColor => " #1877F2",
                     St::MarginRight => px(10),
-                    St:: BackgroundColor => "#192aa3d9",
+                    St:: BackgroundColor => "white",
+                     St::Width => "270px", // 240 - 400 px
                      St::Height => "50px",
-                      St:: FontSize => "1.3em"
+                      St:: FontSize => "1.2em"
                     ],
                 ]
             ],
@@ -406,7 +692,6 @@ fn view(model: &Model) -> Node<Msg> {
                 style! {
                     St::Height => "50px",
                     St::MarginRight => px(10),
-
                 },
             ],
             attrs! {
@@ -516,21 +801,89 @@ fn view(model: &Model) -> Node<Msg> {
             ],
             display_recent_post(model)
         ],
-        input![
-            C!["fileput_field"],
-            attrs! {
-                At::Type => "file",
+        div![
+            style! {
+                St:: Display => "flex",
+               St:: JustifyContent => "center",
+               St:: MarginTop =>  "20px"
             },
-            id!["fileput_field"],
-            ev(Ev::Change, |e| {
-                let file = e
-                    .target()
-                    .and_then(|target| target.dyn_into::<web_sys::HtmlInputElement>().ok())
-                    .and_then(|file_input| file_input.files())
-                    .and_then(|file_list| file_list.get(0));
-                Msg::FileUpload(file)
-            })
+            div![
+                h5!["Non resumable upload"],
+                input![
+                    C!["fileput_field"],
+                    attrs! {
+                        At::Type => "file",
+                    },
+                    id!["fileput_field"],
+                    ev(Ev::Change, |e| {
+                        let file = e
+                            .target()
+                            .and_then(|target| target.dyn_into::<web_sys::HtmlInputElement>().ok())
+                            .and_then(|file_input| file_input.files())
+                            .and_then(|file_list| file_list.get(0));
+                        Msg::FileUpload(file)
+                    })
+                ],
+            ],
+            div![
+                h5![" Resumable upload"],
+                input![
+                    C!["resumable file upload"],
+                    attrs! {
+                        At::Type => "file",
+                    },
+                    id!["fileput_field"],
+                    ev(Ev::Change, |e| {
+                        let file = e
+                            .target()
+                            .and_then(|target| target.dyn_into::<web_sys::HtmlInputElement>().ok())
+                            .and_then(|file_input| file_input.files())
+                            .and_then(|file_list| file_list.get(0));
+                        Msg::ResumableUpload(file)
+                    })
+                ],
+            ],
         ],
+        div![
+            div![
+                style! [
+
+                  St:: Display => "flex",
+                  St:: JustifyContent => "center",
+                  St:: MarginTop =>  "20px"
+                ],
+                h2!["Instagram section "]
+            ],
+            div![
+                style! [
+
+                   St:: Display => "flex",
+                   St:: JustifyContent => "center",
+                   St:: MarginTop =>  "20px"
+                ],
+                button![
+                    "Get Instagram Account",
+                    ev(Ev::Click, |_| { Msg::GetInstaAcoount }),
+                    attrs! {
+                       At:: Disabled => model.selectedAccount.is_none().as_at_value()
+                    }
+                ]
+            ],
+            insta_post_options(model),
+            if model.insta_posting_options.location_tag == true {
+                pages_search(model)
+            } else {
+                div![]
+            },
+            div![
+                style! [
+                    St::  MarginTop => px(20),
+                   St:: Display => "flex",
+                   St:: JustifyContent => "center",
+                ],
+                instagram_post_params(model)
+            ],
+        ]
     ]
 }
 
@@ -726,6 +1079,123 @@ fn display_recent_post(model: &Model) -> Node<Msg> {
         div![]
     }
 }
+
+fn instagram_post_params(model: &Model) -> Node<Msg> {
+    div![
+        h5!["Insta post inputs "],
+        div![style! {
+            St:: Display => "flex",
+           St:: JustifyContent => "center",
+           St:: MarginTop =>  "20px"
+        },],
+        div![textarea![
+            attrs! {
+                At:: Placeholder => "url to photo or video"
+            },
+            input_ev(Ev::Input, move |post_url| {
+                Msg::UpdatInstaPostParams(insta_post_params(
+                    post_url,
+                    "".to_string(),
+                    "#DJ, #live".to_string(),
+                ))
+                //initiate or update/ build  post struct
+            })
+        ]],
+        div![textarea![
+            attrs! {
+                At:: Placeholder => "Caption "
+            },
+            input_ev(Ev::Input, move |caption| {
+                Msg::UpdatInstaPostParams(insta_post_params(
+                    "".to_string(),
+                    "".to_string(),
+                    caption,
+                ))
+                //initiate or update/ build  post struct
+            })
+        ]],
+        div![textarea![
+            attrs! {
+                At:: Placeholder => "   Location tag id"
+            },
+            input_ev(Ev::Input, move |location_id| {
+                Msg::UpdatInstaPostParams(insta_post_params(
+                    "".to_string(),
+                    location_id,
+                    "".to_string(),
+                ))
+                //initiate or update/ build  post struct
+            })
+        ]],
+        div![
+            button![" sumbit  container post "],
+            ev(Ev::Click, |_| { Msg::InstaMediaConatinerInit })
+        ],
+        div![
+            button!["publish post "],
+            ev(Ev::Click, |_| { Msg::InstagramVideoPost })
+        ]
+    ]
+}
+
+fn insta_post_options(model: &Model) -> Node<Msg> {
+    div![
+        style! [
+            St:: Display => "flex",
+           St:: JustifyContent => "center",
+           St:: MarginTop =>  "20px"
+        ],
+        div![
+            input![
+                attrs! {
+                    At::Type => "CheckBox",
+                    At:: Name  => "is_video_post",
+                    At:: Checked => model.insta_posting_options.is_post_video.as_at_value(),
+                },
+                ev(Ev::Change, |e| { Msg::HandleInstaPostingOption(e) })
+            ],
+            span![" video post ? ".to_owned()],
+        ],
+        div![
+            input![
+                attrs! {
+                    At::Type => "CheckBox",
+                    At:: Name  => "location_tag",
+                    At:: Checked => model.insta_posting_options.location_tag.as_at_value(),
+                },
+                ev(Ev::Change, |e| { Msg::HandleInstaPostingOption(e) })
+            ],
+            span![" location tag included ?  ".to_owned()],
+        ],
+        div![
+            input![
+                attrs! {
+                    At::Type => "CheckBox",
+                    At:: Name  => "users_tag",
+                    At:: Checked => model.insta_posting_options.tag_users.as_at_value(),
+                },
+                ev(Ev::Change, |e| { Msg::HandleInstaPostingOption(e) })
+            ],
+            span!["tag user ".to_owned()],
+        ],
+    ]
+}
+
+// TO tag  a location, the user need to make search of relevant pages with that location
+
+fn pages_search(model: &Model) -> Node<Msg> {
+    div![
+        h4!["Enter location"],
+        div![textarea![
+            attrs! {
+                At:: Placeholder => "   Location tag id"
+            },
+            input_ev(Ev::Input, Msg::PagesSearch)
+        ]],
+        div![p!["Possible locations"]]
+    ]
+}
+
 //fn video_upload()
 
 //ed::browser::dom::event_handler
