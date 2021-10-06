@@ -91,6 +91,26 @@ impl Client {
     }
 
     // Instagram end point call
+
+    pub fn get_instagram_account(
+        self,
+        page_access_token: &str,
+        facebook_page_id: String,
+    ) -> InstagramApi {
+        let base_url = self.graph.replace("NODE", &facebook_page_id);
+        InstagramApi::new(page_access_token.to_string(), base_url)
+    }
+
+    pub fn instagram(self, instagarm_id: String, page_token: &str) -> InstagramPostApi {
+        let base_url = self.graph.replace("NODE", &instagarm_id);
+
+        InstagramPostApi::new(page_token.to_string(), base_url)
+    }
+
+    pub fn search_pages(self, access_token: &str) -> PagesSearchAPI {
+        let base_url = self.graph.replace("NODE/EDGE", "pages/search");
+        PagesSearchAPI::new(base_url, access_token.to_string())
+    }
 }
 
 #[cfg(test)]
