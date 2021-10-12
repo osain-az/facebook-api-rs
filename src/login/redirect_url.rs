@@ -5,8 +5,7 @@ use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
 use serde::{Deserialize, Serialize};
 
-///Contains the Config struct and is used for building the login flow
-///
+/// Contains the Config struct and is used for building the login flow
 #[derive(Deserialize, Debug, Default, Serialize)]
 pub struct RedirectURL {
     /// The Facebook url preamble for the oath dialog.
@@ -18,13 +17,16 @@ pub struct RedirectURL {
     /// The URL that you want to redirect the person logging in back to.
     redirect_uri: String,
 
-    /// A string value created by your app to maintain state between the request and callback.
+    /// A string value created by your app to maintain state between the request
+    /// and callback.
     state: String,
 
-    /// Determines whether the response data included when the redirect back to the app occurs is in URL parameters or fragments.
+    /// Determines whether the response data included when the redirect back to
+    /// the app occurs is in URL parameters or fragments.
     response_type: String,
 
-    /// A comma or space separated list of Permissions to request from the person.
+    /// A comma or space separated list of Permissions to request from the
+    /// person.
     scope: Vec<String>,
 
     /// The full url of the login flow.
@@ -33,12 +35,13 @@ pub struct RedirectURL {
 
 impl RedirectURL {
     /// Constructor of the RedirectURL
-    /// facebook_oath_url, client_id, and redirect_uri are retrieved from the config.json file.
-    /// which the user has to configure.
-    /// A random state is provided or the user may chose to create their own state.
-    /// response_type has to be configured depending on the use case of the application, or else the response
-    /// will default to code upon the login flow redirect.
-    /// scope is optional, but inclusion must fulfill a valid scope.
+    /// facebook_oath_url, client_id, and redirect_uri are retrieved from the
+    /// config.json file. which the user has to configure.
+    /// A random state is provided or the user may chose to create their own
+    /// state. response_type has to be configured depending on the use case
+    /// of the application, or else the response will default to code upon
+    /// the login flow redirect. scope is optional, but inclusion must
+    /// fulfill a valid scope.
     pub fn new(config: Config) -> RedirectURL {
         RedirectURL::default()
             .add_facebook_oath_url(&config.facebook_oath_url())
@@ -55,6 +58,7 @@ impl RedirectURL {
         self.client_id = client_id.to_string();
         self
     }
+
     pub fn add_facebook_oath_url(mut self, url: &str) -> Self {
         self.facebook_oath_url = url.to_string();
         self
@@ -90,7 +94,8 @@ impl RedirectURL {
         self
     }
 
-    ///Builds the redirect url for the login flow as a string so it may be passed through a GET request
+    /// Builds the redirect url for the login flow as a string so it may be
+    /// passed through a GET request
     pub fn build_redirect_url_as_string(&mut self) -> String {
         let full_url = "".to_string()
             + &self.facebook_oath_url
@@ -112,24 +117,30 @@ impl RedirectURL {
         self
     }
 
-    pub fn get_facebook_oath_url(&self) -> &String {
+    pub fn facebook_oath_url(&self) -> &String {
         &self.facebook_oath_url
     }
-    pub fn get_client_id(&self) -> &String {
+
+    pub fn client_id(&self) -> &String {
         &self.client_id
     }
-    pub fn get_redirect_uri(&self) -> &String {
+
+    pub fn redirect_uri(&self) -> &String {
         &self.redirect_uri
     }
-    pub fn get_state(&self) -> &String {
+
+    pub fn state(&self) -> &String {
         &self.state
     }
-    pub fn get_response_type(&self) -> &String {
+
+    pub fn response_type(&self) -> &String {
         &self.response_type
     }
-    pub fn get_scope(&self) -> &Vec<String> {
+
+    pub fn scope(&self) -> &Vec<String> {
         &self.scope
     }
+
     pub fn get_full_url(&self) -> &String {
         &self.full_url
     }
@@ -137,18 +148,23 @@ impl RedirectURL {
     fn set_facebook_oath_url(&mut self, facebook_oath_url: String) {
         self.facebook_oath_url = facebook_oath_url;
     }
+
     fn set_client_id(&mut self, client_id: String) {
         self.client_id = client_id;
     }
+
     fn set_redirect_uri(&mut self, redirect_uri: String) {
         self.redirect_uri = redirect_uri;
     }
+
     fn set_state(&mut self, state: String) {
         self.state = state;
     }
+
     fn set_response_type(&mut self, response_type: String) {
         self.response_type = response_type;
     }
+
     fn set_scope(&mut self, scope: Vec<String>) {
         self.scope = scope;
     }
