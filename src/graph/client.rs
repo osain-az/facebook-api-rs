@@ -1,16 +1,17 @@
-use crate::graph::get_posts::GetPostApi;
 use crate::graph::me::MeApi;
 
-use crate::graph::pages::PagesAPI;
+use crate::graph::pages::feed::FeedApi;
 use crate::graph::prelude::account::InstagramApi;
 use crate::graph::prelude::publish::InstagramPostApi;
-use crate::graph::video::VideoApi;
 use crate::login::token::Token;
-use crate::prelude::{PagesSearchAPI, PostApi, VideoParams};
+use crate::prelude::feed::PostApi;
+use crate::prelude::search::PagesSearchAPI;
+use crate::prelude::video::VideoApi;
 use seed::{prelude::*, *};
 
-/// This mod will server as method binder that allow other mothod to post content to the api,
-/// it also hold all the user creditenials that will pass to each method.
+/// This mod will server as method binder that allow other mothod to feed
+/// content to the api, it also hold all the user creditenials that will pass to
+/// each method.
 
 /// Client Struct for making calls to Facebook Graph
 #[derive(Debug)]
@@ -34,13 +35,15 @@ impl Default for Client {
 }
 
 impl Client {
-    /// this method add access token to the client when the user has authenticate from the frontend
+    /// this method add access token to the client when the user has
+    /// authenticate from the frontend
 
     pub fn new(access_token: Token) -> Client {
         Client::default().add_access_token(access_token.access_token)
     }
 
-    /// this method add access token to the client when the user has authenticate from the frontend
+    /// this method add access token to the client when the user has
+    /// authenticate from the frontend
 
     pub fn add_access_token(mut self, access_token: String) -> Self {
         self.access_token = access_token;
@@ -51,40 +54,40 @@ impl Client {
         &self.access_token
     }
 
-    /// this method  is used to pass user data/crediteniatls to the ME method which will be used to reach the ME API
+    /// this method  is used to pass user data/crediteniatls to the ME method
+    /// which will be used to reach the ME API
 
     pub fn me(self) -> MeApi {
         MeApi::new(self.graph + &"?access_token=".to_string() + &self.access_token)
     }
 
-    ///  this method is used to pass user data/crediteniatls to the Post CONTENT  method which will
-    /// be used to post content to the  feed : Note this API can not be use for posting of vide and image
-    ///
+    ///  this method is used to pass user data/crediteniatls to the Post CONTENT
+    /// method which will be used to feed content to the  feed : Note this
+    /// API can not be use for posting of vide and image
     pub fn post(self, page_id: String, page_token: String) -> PostApi {
         let base_url = self.graph.replace("NODE", &page_id);
         PostApi::new(base_url, page_token)
     }
 
-    ///  This method passes the page_post_id and the page token to the get method which will be use to get the
-    /// content of the id that was pass
-    pub fn get_post(self, page_post_id: String, page_token: String) -> GetPostApi {
+    ///  This method passes the page_post_id and the page token to the get
+    /// method which will be use to get the content of the id that was pass
+    pub fn get_post(self, page_post_id: String, page_token: String) -> FeedApi {
         let base_url = self.graph.replace("NODE", &page_post_id);
-        GetPostApi::new(base_url, page_token)
+        FeedApi::new(base_url, page_token)
     }
 
-    ///Posting video using link ( hosted file)
-    ///  This method take the page id and the page token you want post video to.
+    /// Posting video using link ( hosted file)
+    ///  This method take the page id and the page token you want feed video to.
     pub fn get_post_video_link(self, page_id: String, page_token: &str) -> PostApi {
         let base_url = self.graph.replace("NODE", &page_id);
         PostApi::new(base_url, page_token.to_string())
     }
 
-    ///
-    ///This method allows developers to choose which viddeo uploading method they want to use.
-    /// For Large file greater than 1gb and 20 minute  user method called resumable_upload, for video
-    /// files smaller than that use method called "non_resumable".
-    ///Although facebook recommend using resumable method.
-    ///
+    /// This method allows developers to choose which viddeo uploading method
+    /// they want to use. For Large file greater than 1gb and 20 minute
+    /// user method called resumable_upload, for video files smaller than
+    /// that use method called "non_resumable". Although facebook recommend
+    /// using resumable method.
     pub fn video_upload(self, page_id: String, page_token: &str) -> VideoApi {
         let base_url = self.graph.replace("NODE", &page_id);
         VideoApi::new(base_url, page_token.to_string()) // initit videp Api
