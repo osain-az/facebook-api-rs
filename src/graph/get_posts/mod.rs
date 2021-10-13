@@ -2,7 +2,7 @@ use seed::fetch::fetch;
 use seed::prelude::{Method, Request};
 use seed::{prelude::*, *};
 use serde::{Deserialize, Serialize};
-//TODO rename it post, and move it under page folder
+// ODO rename it feed, and move it under page folder
 //#[derive(Deserialize, Debug, Default, Serialize)]
 
 pub struct Fields {
