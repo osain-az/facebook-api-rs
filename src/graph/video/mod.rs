@@ -1,26 +1,26 @@
 //! Facebook graph api for video uplaoding video by file upload
 //!
 //! This mod contains struct and methods for uploading video to facebook API.
-//!
-//!
 use seed::fetch::{fetch, FormData};
 use seed::prelude::{Method, Request};
 
 use seed::{prelude::*, *};
 use web_sys::File;
-//use gloo_file::File;
+// use gloo_file::File;
 use crate::graph::utils::FileResult;
 use serde::{Deserialize, Serialize};
 use web_sys::Blob;
 
-//Todo need link to official guide on facebook.
-//Todo move under page
+// odo need link to official guide on facebook.     done
+// https://developers.facebook.com/docs/graph-api/reference/page/videos/#Creating
+// guide     https://developers.facebook.com/docs/video-api/guides/publishing
+// odo move under page    // done
 
-/// Facebook video api accepts different paramters that could be passed posted while uploading the video.
-/// this struck will have the possible pramaters that a user might need to pass along the video upload
-/// Note : video_title, file_name, and title will not appera in your post. use "description"
-/// to describe your video  which will appear at the top of the post
-///
+/// Facebook video api accepts different paramters that could be passed posted
+/// while uploading the video. this struck will have the possible pramaters that
+/// a user might need to pass along the video upload Note : video_title,
+/// file_name, and title will not appera in your feed. use "description"
+/// to describe your video  which will appear at the top of the feed
 #[derive(Clone)]
 pub struct VideoParams {
     ///
@@ -30,25 +30,24 @@ pub struct VideoParams {
     pub content_category: ContentCategory,
     pub file_name: String,
     pub title: String,
-    //file: File,// add this file type here
+    // file: File,// add this file type here
 }
 
 pub struct UploadFile {
     pub file: File,
 }
 
-/// Enum for the different categories that the uploaded video will belong to as difined on facebook  graph api documentation.
-/// Choose any from the list, if  no data is supplied a default value of  "OTHER" is choosen.
-///
+/// Enum for the different categories that the uploaded video will belong to as
+/// difined on facebook  graph api documentation. Choose any from the list, if
+/// no data is supplied a default value of  "OTHER" is choosen.
 #[derive(Deserialize, Serialize)]
 pub struct PostResponse {
     id: String,
 }
 
-///
-/// Enum for the different categories that the uploaded video will belong to as defined on facebook graph api
-/// documentation. Choose any from the list, if no data is supplied a default value of "OTHER" is choosen.
-///
+/// Enum for the different categories that the uploaded video will belong to as
+/// defined on facebook graph api documentation. Choose any from the list, if no
+/// data is supplied a default value of "OTHER" is choosen.
 #[derive(Deserialize, Copy, Clone, Serialize)]
 pub enum ContentCategory {
     EAUTY_FASHION,
@@ -71,7 +70,8 @@ pub enum ContentCategory {
     OTHER,
 }
 
-// This struct is the response gotten when initiazing the resumable uploading process
+// This struct is the response gotten when initiazing the resumable uploading
+// process
 #[derive(Deserialize, Debug, Clone, Serialize)]
 struct InitialuzeUploadResponse {
     pub video_id: String,
@@ -79,11 +79,10 @@ struct InitialuzeUploadResponse {
     pub upload_session_id: String,
 }
 
-///
-/// This struct is the struct that is send back upon sucessfull  upload of the video.
-/// The struct is constructed  using different data gotten from different responses while using the resumable  method.
-/// if the success parameter in the struct is true then the video was uploaded sucessfully
-///
+/// This struct is the struct that is send back upon sucessfull  upload of the
+/// video. The struct is constructed  using different data gotten from different
+/// responses while using the resumable  method. if the success parameter in the
+/// struct is true then the video was uploaded sucessfully
 #[derive(Deserialize, Default, Debug, Clone, Serialize)]
 pub struct FinalResponeResumableUpload {
     // this struct will be data constructed from all the different uploads
@@ -121,16 +120,15 @@ impl FinalResponeResumableUpload {
         self
     }
 
-    ///
     /// This method will return the struct of all the paramters
-    ///
     pub fn get_response(self) -> FinalResponeResumableUpload {
         self
     }
 }
 
-// After complete uploading of the video through resumable, facebook will send reponse which will be either true or false
-// true means, the video was uplaoded successfull
+// After complete uploading of the video through resumable, facebook will send
+// reponse which will be either true or false true means, the video was uplaoded
+// successfull
 
 #[derive(Deserialize, Serialize)]
 struct ResumableUploadFinal {
@@ -143,7 +141,7 @@ struct ResumableUploadFinal {
 
 #[derive(Deserialize, Clone, Serialize)]
 struct ChunksUploadResponse {
-    start_offset: String, //Value for second chunk
+    start_offset: String, // Value for second chunk
     end_offset: String,
 }
 
@@ -154,6 +152,7 @@ impl ChunksUploadResponse {
             end_offset,
         }
     }
+
     fn get_end_offset(self) -> String {
         self.end_offset
     }
@@ -175,7 +174,7 @@ impl Default for VideoParams {
     fn default() -> Self {
         Self {
             video_title: "".to_string(),
-            description: "video post".to_string(),
+            description: "video feed".to_string(),
             thum: "".to_string(),
             content_category: ContentCategory::OTHER,
             file_name: "file".to_string(),
@@ -188,6 +187,7 @@ impl VideoParams {
     pub fn new() -> VideoParams {
         VideoParams::default()
     }
+
     pub fn update_video_params(mut self, video_params: VideoParams) -> Self {
         Self { ..video_params }
     }
@@ -232,17 +232,17 @@ impl VideoApi {
         form_data
     }
 
-    ///
-    /// This method is expecting a video file less than 1 gb,  if the vide file is within this range it post the video
-    /// but if the video is not within the range , the post will not be made but a Fetcherror will be gerated.
-    ///
+    /// This method is expecting a video file less than 1 gb,  if the vide file
+    /// is within this range it feed the video but if the video is not
+    /// within the range , the feed will not be made but a Fetcherror will be
+    /// gerated.
     pub async fn post_video(
         &self,
         video_params: VideoParams,
         file: File,
     ) -> seed::fetch::Result<PostResponse> {
         let uploaded_file = file.clone();
-        let upload_method = FileResult::file_analize(file).get_uploading_method();
+        let upload_method = FileResult::file_analize(file).uploading_method();
 
         if upload_method == "non_resumable" {
             let form_data = VideoApi::create_form_data(uploaded_file, video_params);
@@ -252,13 +252,14 @@ impl VideoApi {
             fetch(request).await?.json::<PostResponse>().await
         } else {
             let err = JsValue::from_str("the uplaoded file is above 1 gb, use Resumable method ");
-            Err(FetchError::RequestError(err)) // try to generate a customer error
+            Err(FetchError::RequestError(err)) // try to generate a customer
+                                               // error
         }
     }
 }
 
 impl VideoApi {
-    //creating formData for the  resumable video method
+    // creating formData for the  resumable video method
     fn resumable_formData(
         self,
         upload_phase: UploadPhase,
@@ -268,7 +269,8 @@ impl VideoApi {
         start_offset: String,
         video_params: VideoParams,
     ) -> FormData {
-        // phase is expected to be of the this enum , start, transfer and finis. this will control w
+        // phase is expected to be of the this enum , start, transfer and finis. this
+        // will control w
         let mut current_upload_phase = "";
         let mut form_data = FormData::new();
         // let chunked_file = file.slice_with_i32_and_i32()
@@ -279,7 +281,7 @@ impl VideoApi {
                 form_data.append_str(
                     "file_size",
                     FileResult::file_analize(uploaded_file)
-                        .get_file_size_byte_string()
+                        .file_size_byte_string()
                         .as_str(),
                 ); // add the video size
             }
@@ -288,7 +290,8 @@ impl VideoApi {
                 current_upload_phase = "transfer";
                 form_data.append_str("start_offset", &start_offset);
                 form_data.append_blob("video_file_chunk", &current_blob_file);
-                // form_data.append_blob("video_file_chunk", &current_blob_file);
+                // form_data.append_blob("video_file_chunk",
+                // &current_blob_file);
             }
 
             UploadPhase::finish => {
@@ -321,13 +324,13 @@ impl VideoApi {
         form_data
     }
 
-    ///
-    /// This method is used for uploading large video files, it does that by chunking the file and uplaoding
-    /// them individually until is complete. The method takes two parameter( file, post parameter struct).
+    /// This method is used for uploading large video files, it does that by
+    /// chunking the file and uplaoding them individually until is complete.
+    /// The method takes two parameter( file, feed parameter struct).
     /// the waiting time depend  on the video size uplaoded
     ///
-    ///Note there is an issue with chunking method that only chunk smaller size so extra time than usuall expect until
-    ///the issue is fixed.
+    /// Note there is an issue with chunking method that only chunk smaller size
+    /// so extra time than usuall expect until the issue is fixed.
     ///  
     pub async fn resumable_post(
         &self,
@@ -339,7 +342,8 @@ impl VideoApi {
         let mut end_offset = Some("0".to_string()); // this  data will be updated  frpm the respones
         let video_params = video_param.clone();
 
-        //  let video_params = VideoParams::new().update_video_params(video_param.clone()).clone();
+        //  let video_params =
+        // VideoParams::new().update_video_params(video_param.clone()).clone();
         let self_data = self.clone();
         let base_url = self.base_url.replace("EDGE", "videos").clone();
         let mut form_data = self_data.resumable_formData(
@@ -371,11 +375,13 @@ impl VideoApi {
         let chunk_size = chunked_file_data
             .clone()
             .chunk_file(0.0, 0.0)
-            .get_upload_chunking_size(); // get the size of each chunk:  Note: the zero passed in  is just a dommy data  when estimating the chunking size
-                                         // let uploaded_file = file.clone();
+            .upload_chunking_size(); // get the size of each chunk:  Note: the zero passed in  is just a dommy data
+                                     // when estimating the chunking size
+                                     // let uploaded_file = file.clone();
 
         if !start_phase_data.upload_session_id.is_empty() {
-            // check if the  first request was sucessfull, if there is an  upload_session_id it means it was successfull
+            // check if the  first request was sucessfull, if there is an  upload_session_id
+            // it means it was successfull
             let mut final_response_status = false;
             let mut current_chunk_size = chunk_size as f64;
             let mut start_chunk = 0.0;
@@ -400,7 +406,7 @@ impl VideoApi {
                             UploadPhase::transfer,
                             FileResult::file_analize(file.clone())
                                 .chunk_file(start_chunk, current_chunk_size)
-                                .get_chunked_file(),
+                                .chunked_file(),
                             file.clone(),
                             upload_session_id.to_string(),
                             start_offset_status,
@@ -427,12 +433,13 @@ impl VideoApi {
                         let self_data = self.clone();
                         let base_url = self.base_url.replace("EDGE", "videos");
 
-                        //There is and issue with the formdata for blob chunked file, it can only take
-                        // small sized of blob file, this making the upload to take longer than expect.
-                        // if larger blob file is appeded to the formData, the data will not be posted along the request
-                        // causing it erorr.
-                        // allthough the formData can take large file that are not chunked, thefore it is not certain
-                        //   where the issue is coming
+                        // There is and issue with the formdata for blob chunked file, it can only
+                        // take small sized of blob file, this making the
+                        // upload to take longer than expect. if larger blob
+                        // file is appeded to the formData, the data will not be posted along the
+                        // request causing it erorr.
+                        // allthough the formData can take large file that are not chunked, thefore
+                        // it is not certain   where the issue is coming
                         //
 
                         let form_data = self_data.resumable_formData(
@@ -459,22 +466,25 @@ impl VideoApi {
                 }
             }
 
-            // after the chunk file upload has is completed,  trigger and Ok response to send the data.
+            // after the chunk file upload has is completed,  trigger and Ok response to
+            // send the data.
             Ok(final_response.update_success(final_response_status))
         } else {
             let err = JsValue::from_str("The video upload initialization was not sucessfull, try upload again  or try with another video  ");
-            Err(FetchError::RequestError(err)) // try to generate a customer error
+            Err(FetchError::RequestError(err)) // try to generate a customer
+                                               // error
         }
     }
 }
 
-// should we implement a general method that  take file and determine which method to use or,
-// user can easily che check the file size and decide which method to use
+// should we implement a general method that  take file and determine which
+// method to use or, user can easily che check the file size and decide which
+// method to use
 
 // still under consideration
 impl VideoApi {
     pub fn general_video(self, video_params: VideoParams, file: File) {
-        let uploading_method = FileResult::file_analize(file.clone()).get_uploading_method(); // this will return the uploading method based on the size       ;
+        let uploading_method = FileResult::file_analize(file.clone()).uploading_method(); // this will return the uploading method based on the size       ;
 
         if uploading_method == "non_resumable" {
             // this means file can be upload with non  resumable method.
