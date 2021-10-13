@@ -20,9 +20,8 @@ pub struct User {
 }
 
 impl InstaPostParams {
-    ///
-    ///This method let developer update the post paramters by keeping tract of each  inputed values
-    ///
+    /// This method let developer update the feed paramters by keeping tract of
+    /// each  inputed values
     pub fn new(
         mut self,
         video_url: String,
@@ -62,13 +61,14 @@ impl InstagramPostApi {
         }
     }
 
+    /// The ig  container is required to publishing your video, the feed and its
+    /// parameter is sent in feed request to the IG container, then a
+    /// container ID is sent back that let your published your video
+    /// "publish_video " method. This method is expecting a  InstaPostParams
+    /// struct  and posting_type ("video"or photo),
     ///
-    /// The ig  container is required to publishing your video, the post and its parameter is sent in post request to the
-    /// IG container, then a container ID is sent back that let your published your video  "publish_video " method.
-    /// This method is expecting a  InstaPostParams struct  and posting_type ("video"or photo),
-    ///
-    /// Currently, it takes about video seconds to a minute for the post contsiner to be ready.
-    ///
+    /// Currently, it takes about video seconds to a minute for the feed
+    /// contsiner to be ready.
     pub async fn ig_mdeia_container(
         self,
         post_params: InstaPostParams,
@@ -122,15 +122,14 @@ impl InstagramPostApi {
             fetch(request).await?.json::<InstaMediaConatiner>().await
         } else {
             let err = JsValue::from_str("Initialzing Ig media container failed, try again ");
-            Err(FetchError::RequestError(err)) // try to generate a customer error
+            Err(FetchError::RequestError(err)) // try to generate a customer
+                                               // error
         }
     }
 
-    ///
-    /// This  should be used when the contsiner id of the post is ready, this method will publidhed the
-    /// post that you have made,
-    /// It only accept the  container id of the post you want to published.
-    ///
+    /// This  should be used when the contsiner id of the feed is ready, this
+    /// method will publidhed the feed that you have made,
+    /// It only accept the  container id of the feed you want to published.
     pub async fn publish_video(
         self,
         intsa_conatiner_id: String,
