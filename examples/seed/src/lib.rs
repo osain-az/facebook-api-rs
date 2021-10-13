@@ -9,6 +9,9 @@ use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use web_sys::{File, HtmlInputElement};
 use Msg::GetInstaAccountSuccess;
+use facebook_api_rs::prelude::search::{PagesAPI, PageSearch};
+use facebook_api_rs::prelude::feed::{FeedPostSuccess, VideoPostResponse, GetPostResponse};
+use facebook_api_rs::prelude::video::{PostResponse, FinalResponeResumableUpload, VideoParams, UploadFile};
 // ------ ------
 //     Init
 // ------ ------
@@ -24,6 +27,7 @@ fn init(url: Url, orders: &mut impl Orders<Msg>) -> Model {
     });
 
     let response = url.hash().map(|hash| Token::get_token(hash.to_string()));
+    log!("response", url.hash());
 
     Model {
         redirect_url: RedirectURL::default(),
@@ -133,16 +137,17 @@ pub struct Model {
     pages_api: PagesAPI,
     me: Option<Data<Me>>,
     selectedAccount: Option<SelectedAccount>,
-    post_type: String, // indicates the type of post the user wants to make
+    post_type: String, // indicates the type of feed the user wants to make
     post_data: Option<PostData>,
     feed_post_response: Option<FeedPostSuccess>,
-    get_post_response: Option<GetPost>,
+    get_post_response: Option<GetPostResponse>,
 
     insta_account: Option<InstaAccount>,
     insta_post_param: Option<InstaPostParams>,
     insta_media_container_id: Option<InstaMediaConatiner>,
     insta_posting_options: InstaPostingOption,
 }
+
 
 // ------ ------
 //    Update
@@ -168,7 +173,7 @@ enum Msg {
     UpdatePostData(PostData),
     PostSuccess(FeedPostSuccess),
     PostFailed(FetchError),
-    GetPostSuccess(GetPost),
+    GetPostSuccess(GetPostResponse),
     GetPostFailed(FetchError),
     PostVideoByUrl(String),
     PostVideoSucces(VideoPostResponse),
@@ -780,11 +785,11 @@ fn view(model: &Model) -> Node<Msg> {
                    St:: MarginTop =>  "20px"
                 },
                 select![
-                    option![attrs! {At::Value => ""}, "Select type post"],
+                    option![attrs! {At::Value => ""}, "Select type feed"],
                     option![attrs! {At::Value => "feed"}, "Post to feed"],
-                    option![attrs! {At::Value => "video"}, "video post"],
-                    option![attrs! {At::Value => "image"}, "Image post"],
-                    option![attrs! {At::Value => "link"}, "Link post "],
+                    option![attrs! {At::Value => "video"}, "video feed"],
+                    option![attrs! {At::Value => "image"}, "Image feed"],
+                    option![attrs! {At::Value => "link"}, "Link feed "],
                     input_ev(Ev::Input, Msg::FacebookPostType)
                 ],
                 button![
@@ -792,7 +797,7 @@ fn view(model: &Model) -> Node<Msg> {
 
                        St:: MarginRight =>  "20px"
                     },
-                    "Submit post",
+                    "Submit feed",
                     ev(Ev::Click, |_| Msg::SubmitPost),
                     attrs! {
                         At:: Disabled =>  model.selectedAccount.is_none().as_at_value()
@@ -950,7 +955,7 @@ fn post_input(model: &Model) -> Node<Msg> {
                     "".to_string(),
                     "".to_string(),
                 ))
-                //initiate or update/ build  post struct
+                //initiate or update/ build  feed struct
             })
         ]
     } else if model.post_type == "video" {
@@ -966,7 +971,7 @@ fn post_input(model: &Model) -> Node<Msg> {
                     "".to_string(),
                     vaule,
                 ))
-                //initiate or update/ build  post struct
+                //initiate or update/ build  feed struct
             })
         ]
     } else if model.post_type == "link" {
@@ -983,7 +988,7 @@ fn post_input(model: &Model) -> Node<Msg> {
                         "".to_string(),
                         "".to_string(),
                     ))
-                    //initiate or update/ build  post struct
+                    //initiate or update/ build  feed struct
                 })
             ],
             textarea![
@@ -999,7 +1004,7 @@ fn post_input(model: &Model) -> Node<Msg> {
                         link,
                         "".to_string(),
                     ))
-                    //initiate or update/ build  post struct
+                    //initiate or update/ build  feed struct
                 })
             ]
         ]
@@ -1015,7 +1020,7 @@ fn post_input(model: &Model) -> Node<Msg> {
                     "".to_string(),
                     "".to_string(),
                 ))
-                //initiate or update/ build  post struct
+                //initiate or update/ build  feed struct
             })
         ]
     } else {
@@ -1070,7 +1075,7 @@ fn display_recent_post(model: &Model) -> Node<Msg> {
                     At:: Href => recent_post.permalink_url.as_str()
                 },
                 button![
-                    "Open post on facebook",
+                    "Open feed on facebook",
                     style![
 
                         St::MarginRight=>"auto" ,
@@ -1092,7 +1097,7 @@ fn display_recent_post(model: &Model) -> Node<Msg> {
 
 fn instagram_post_params(model: &Model) -> Node<Msg> {
     div![
-        h5!["Insta post inputs "],
+        h5!["Insta feed inputs "],
         div![style! {
             St:: Display => "flex",
            St:: JustifyContent => "center",
@@ -1108,7 +1113,7 @@ fn instagram_post_params(model: &Model) -> Node<Msg> {
                     "".to_string(),
                     "#DJ, #live".to_string(),
                 ))
-                //initiate or update/ build  post struct
+                //initiate or update/ build  feed struct
             })
         ]],
         div![textarea![
@@ -1121,7 +1126,7 @@ fn instagram_post_params(model: &Model) -> Node<Msg> {
                     "".to_string(),
                     caption,
                 ))
-                //initiate or update/ build  post struct
+                //initiate or update/ build  feed struct
             })
         ]],
         div![textarea![
@@ -1134,15 +1139,15 @@ fn instagram_post_params(model: &Model) -> Node<Msg> {
                     location_id,
                     "".to_string(),
                 ))
-                //initiate or update/ build  post struct
+                //initiate or update/ build  feed struct
             })
         ]],
         div![
-            button![" sumbit  container post "],
+            button![" sumbit  container feed "],
             ev(Ev::Click, |_| { Msg::InstaMediaConatinerInit })
         ],
         div![
-            button!["publish post "],
+            button!["publish feed "],
             ev(Ev::Click, |_| { Msg::InstagramVideoPost })
         ]
     ]
@@ -1164,7 +1169,7 @@ fn insta_post_options(model: &Model) -> Node<Msg> {
                 },
                 ev(Ev::Change, |e| { Msg::HandleInstaPostingOption(e) })
             ],
-            span![" video post ? ".to_owned()],
+            span![" video feed ? ".to_owned()],
         ],
         div![
             input![
