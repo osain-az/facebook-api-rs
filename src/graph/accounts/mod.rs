@@ -2,8 +2,8 @@ use crate::graph::data::Data;
 use seed::{prelude::*, *};
 use serde::{Deserialize, Serialize};
 
-/// This struct represent the that data gotten from the response when  the
-/// account API is called, it returns the  Facebook Pages that a user owns or
+/// This struct represent  parameters gotten from the response when  the
+/// accounts API is called, it returns the  Facebook Pages that a user owns or
 /// is able to perform tasks on. the response is the list of pages and the
 /// taskes, information and action the user can perform on those pages as shown
 /// in the struct. the actual response is varies with pages but this struct data
@@ -14,11 +14,18 @@ pub struct Accounts {
     /// The access token of this given page, which used to make operation that
     /// requires permission on this page example post and get request.
     pub access_token: String,
+
+    /// The category shows the name of the major category the pages belog to
     pub category: String,
+
+    /// this is this list of categories  with their names and id  { name:"
+    /// category_name", id: ""1223333
     pub category_list: Vec<ListDetails>,
-    /// page name
+
+    /// The facebook page name
     pub name: String,
     pub id: String,
+
     /// this is the list of operation/task the user can perform on this page
     pub tasks: Vec<String>,
 }
