@@ -22,7 +22,7 @@ pub struct FileResult {
 impl FileResult {
     /// This method will take the file  and return  a struct of   struc
     /// FileResult {  size_gb: f64,   file_byte: f64,   upload_method: String }
-    pub fn file_analize(file: File) -> FileResult {
+    pub fn file_analyze(file: File) -> FileResult {
         let non_resumable_max_size_gb = 1.0; // Gb: facebook recommmended max 1 Gb for none resumabl upload
         let _resumable_max_size_gb = 4.0; // Gb: facebook recommmended max max of 4  Gb for  resumabl uploading video
 

@@ -69,7 +69,7 @@ impl InstagramPostApi {
     ///
     /// Currently, it takes about video seconds to a minute for the feed
     /// contsiner to be ready.
-    pub async fn ig_mdeia_container(
+    pub async fn ig_media_container(
         self,
         post_params: InstaPostParams,
         post_type: String,
@@ -105,12 +105,12 @@ impl InstagramPostApi {
         post_param: InstaPostParams,
     ) -> seed::fetch::Result<InstaMediaConatiner> {
         let self_data = self.clone();
-        let ig_continer_id = self
-            .ig_mdeia_container(post_param, "video".to_string())
+        let ig_container_id = self
+            .ig_media_container(post_param, "video".to_string())
             .await;
 
-        if ig_continer_id.is_ok() {
-            let container_id = ig_continer_id.unwrap().id;
+        if ig_container_id.is_ok() {
+            let container_id = ig_container_id.unwrap().id;
             let base_url = self_data.base_url.replace("EDGE", "media_publish");
             let url = base_url.to_string()
                 + "?creation_id="
@@ -132,14 +132,14 @@ impl InstagramPostApi {
     /// It only accept the  container id of the feed you want to published.
     pub async fn publish_video(
         self,
-        intsa_conatiner_id: String,
+        insta_conatiner_id: String,
     ) -> seed::fetch::Result<InstaMediaConatiner> {
         let self_data = self.clone();
 
         let base_url = self_data.base_url.replace("EDGE", "media_publish");
         let url = base_url.to_string()
             + "?creation_id="
-            + &intsa_conatiner_id
+            + &insta_conatiner_id
             + "&access_token="
             + &self_data.access_token;
         let request = Request::new(url).method(Method::Post);
