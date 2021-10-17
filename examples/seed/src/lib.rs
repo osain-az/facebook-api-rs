@@ -1,17 +1,21 @@
+use seed::{*, prelude::*};
+use wasm_bindgen::JsCast;
+use wasm_bindgen::prelude::*;
+use web_sys::{File, HtmlInputElement};
+
 use facebook_api_rs::prelude::*;
+use facebook_api_rs::prelude::account::InstaAccount;
+use facebook_api_rs::prelude::feed::{FeedPostSuccess};
+use facebook_api_rs::prelude::publish::{InstaMediaConatiner, InstaPostParams};
+use facebook_api_rs::prelude::search::{PagesAPI, PageSearch};
+use facebook_api_rs::prelude::utils::GetPostResponse;
+use facebook_api_rs::prelude::video::{FinalResponeResumableUpload, PostResponse, UploadFile, VideoParams};
+use Msg::GetInstaAccountSuccess;
+
 //use seed::prelude::js_sys::to_string;
 //use seed::prelude::js_sys::input;
 use crate::Msg::GetInstaAccountFailed;
-use facebook_api_rs::prelude::account::InstaAccount;
-use facebook_api_rs::prelude::publish::{InstaMediaConatiner, InstaPostParams};
-use seed::{prelude::*, *};
-use wasm_bindgen::prelude::*;
-use wasm_bindgen::JsCast;
-use web_sys::{File, HtmlInputElement};
-use Msg::GetInstaAccountSuccess;
-use facebook_api_rs::prelude::search::{PagesAPI, PageSearch};
-use facebook_api_rs::prelude::feed::{FeedPostSuccess, VideoPostResponse, GetPostResponse};
-use facebook_api_rs::prelude::video::{PostResponse, FinalResponeResumableUpload, VideoParams, UploadFile};
+
 // ------ ------
 //     Init
 // ------ ------
@@ -26,13 +30,13 @@ fn init(url: Url, orders: &mut impl Orders<Msg>) -> Model {
         )
     });
 
-    let response = url.hash().map(|hash| Token::get_token(hash.to_string()));
+    let response = url.hash().map(|hash| Token::extract_user_tokens(hash.to_string()));
     log!("response", url.hash());
 
     Model {
         redirect_url: RedirectURL::default(),
         error: None,
-        response: response,
+        user_tokens: response,
         image: None,
         accounts: None,
         pages_api: PagesAPI::default(),
@@ -45,6 +49,7 @@ fn init(url: Url, orders: &mut impl Orders<Msg>) -> Model {
         insta_account: None,
         insta_post_param: None,
         insta_media_container_id: None,
+        access_token_info: None,
         insta_posting_options: InstaPostingOption {
             caption: false,
             location_tag: false,
@@ -131,7 +136,7 @@ struct InstaPostingOption {
 pub struct Model {
     redirect_url: RedirectURL,
     error: Option<String>,
-    response: Option<Token>,
+    user_tokens: Option<Token>,
     image: Option<Data<Image>>,
     accounts: Option<Data<Accounts>>,
     pages_api: PagesAPI,
@@ -146,6 +151,8 @@ pub struct Model {
     insta_post_param: Option<InstaPostParams>,
     insta_media_container_id: Option<InstaMediaConatiner>,
     insta_posting_options: InstaPostingOption,
+
+    access_token_info: Option< AccessTokenInformation>
 }
 
 
@@ -176,7 +183,7 @@ enum Msg {
     GetPostSuccess(GetPostResponse),
     GetPostFailed(FetchError),
     PostVideoByUrl(String),
-    PostVideoSucces(VideoPostResponse),
+    PostVideoSucces(FinalResponeResumableUpload),
     PostVideoFailed(FetchError),
     SubmitPost,
     FileUpload(Option<File>),
@@ -200,6 +207,12 @@ enum Msg {
     PagesSearch(String),
     PageSearchResponse(PageSearch),
 
+
+     AccessTokenInformation,
+    AccessTokenInfoData(AccessTokenInformation),
+
+
+    // every error should user this
     ResponseFailed(FetchError),
 }
 
@@ -210,7 +223,7 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
         Msg::ConfigFetched(Err(fetch_error)) => error!("Config fetch failed! Be sure to have config.json at the root of your project with client_id and redirect_uri", fetch_error),
       //TODO remove or have the irght api call
         Msg::GetProfilePicture => {
-            if let Some(response) = &model.response {
+            if let Some(response) = &model.user_tokens {
                 let url = "https://graph.facebook.com/v11.0/me/picture?access_token=".to_string() + &response.access_token + "&format=json" + "&redirect=false";
                 let request = fetch::Request::new(url).method(Method::Get);
                 orders.perform_cmd(async {
@@ -225,7 +238,7 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
         Msg::GetProfilePictureFailed(_) => {}
         //TODO remove
         Msg::GetMe => {
-            if let Some(response) = &model.response {
+            if let Some(response) = &model.user_tokens {
                 let url = "https://graph.facebook.com/v11.0/me?access_token=".to_string() + &response.access_token;
                 let request = fetch::Request::new(url).method(Method::Get);
                 orders.perform_cmd(async {
@@ -240,14 +253,17 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
         },
 
         Msg::GetAccount => {
-            if let Some(response) = &model.response {
-                let client = Client::new(response.clone());
+            if let Some(user_access_tokens) = model.user_tokens.clone() {
+                let user_tokens = user_access_tokens;
+                let client = Client::new(user_tokens,"".to_string());
                 orders.perform_cmd(async {
-                    client.me()
+                    // we are interested in the page love live token, therefore we called the long live methed
+                    // by passing "long_live_token" to the method
+                    client.me_by_short_or_long_live_token("long_live_token".to_string())
                         .accounts()
                         .get()
                         .await
-                        .map_or_else(Msg::GetAccountFailed, Msg::GetAccountSuccess)
+                        .map_or_else(Msg::ResponseFailed, Msg::GetAccountSuccess)
                 });
             }
         },
@@ -276,16 +292,16 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
 
         Msg::PostFaceebookFeed => {
             if let Some(page_token) = &model.selectedAccount {
-                let token = page_token.access_token.clone();
+                let page_access_token = page_token.access_token.clone();
                 let page_id = page_token.id.clone();
 
                 if let Some(post_message) = &model.post_data {
                     let post_description = post_message.message.clone();
 
                     orders.perform_cmd(async move {
-                        Client::new(Token::default())
-                            .post(page_id, token)
-                            .feed_post(&post_description)
+                        Client::new(Token::default(),page_access_token)
+                            .feeds(page_id)
+                            .post(&post_description)
                             .await
                             .map_or_else(Msg::PostFailed, Msg::PostSuccess)
                     });
@@ -299,16 +315,16 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
             log!(model.post_type);
             if model.post_type == "feed" {
                 if let Some(page_token) = &model.selectedAccount {
-                    let token = page_token.access_token.clone();
+                    let page_access_token = page_token.access_token.clone();
                     let page_id = page_token.id.clone();
 
                     if let Some(post_message) = &model.post_data {
                         let post_description = post_message.message.clone();
 
                         orders.perform_cmd(async move {
-                            Client::new(Token::default())
-                                .post(page_id, token)
-                                .feed_post(&post_description)
+                            Client::new(Token::default(),page_access_token)
+                                .feeds(page_id)
+                                .post(&post_description)
                                 .await
                                 .map_or_else(Msg::PostFailed, Msg::PostSuccess)
                         });
@@ -321,14 +337,14 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
                 if let Some(video_url) = &model.post_data {
                     let video_url = video_url.video_url.to_owned();
                     if let Some(selected_page) = &model.selectedAccount {
-                        let page_token = selected_page.access_token.to_owned();
+                        let page_access_token = selected_page.access_token.to_owned();
                         let page_id = selected_page.id.to_owned();
                         orders.perform_cmd(async move {
-                            Client::new(Token::default())
-                                .get_post_video_link(page_id, &page_token)
+                            Client::new(Token::default(),page_access_token)
+                                .video_upload(page_id)
                                 .post_by_link(&video_url)
                                 .await
-                                .map_or_else(Msg::PostVideoFailed, Msg::PostVideoSucces)
+                                .map_or_else(Msg::ResponseFailed, Msg::PostVideoSucces)
                         });
                     }
                 }
@@ -348,13 +364,13 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
             if let Some(post_response) = &model.feed_post_response {
                 let page_post_id = post_response.id.to_string();
                 if let Some(selected_page) = &model.selectedAccount {
-                    let page_token = selected_page.access_token.to_string();
+                    let page_access_token = selected_page.access_token.to_string();
                     orders.perform_cmd(async move {
-                        Client::new(Token::default())
-                            .get_post(page_post_id, page_token)
+                        Client::new(Token::default(),page_access_token)
+                            .post(page_post_id)
                             .get()
                             .await
-                            .map_or_else(Msg::GetPostFailed, Msg::GetPostSuccess)
+                            .map_or_else(Msg::ResponseFailed, Msg::GetPostSuccess)
                     });
                 }
             }
@@ -387,7 +403,7 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
 
             //  if let Some( video_url)  = &model.post_data{
             if let Some(selected_page) = &model.selectedAccount {
-                let page_token = selected_page.access_token.to_owned();
+                let page_access_token = selected_page.access_token.to_owned();
                 let page_id = selected_page.id.to_owned();
 
                 // used the defaukt paramters
@@ -399,11 +415,11 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
                 };
                 orders.perform_cmd(async move {
                     //This test is for nonresumable
-                    Client::new(Token::default())
-                        .video_upload(page_id, &page_token)
-                        .post_video(video_params, file_uploaded)
+                    Client::new(Token::default(),page_access_token)
+                        .video_upload(page_id)
+                        .non_resumable_post(video_params, file_uploaded)
                         .await
-                        .map_or_else(Msg::VideoUploadByFileFailed, Msg::VideoUploadByFileSucess)
+                        .map_or_else(Msg::ResponseFailed, Msg::VideoUploadByFileSucess)
                 });
             }
         }
@@ -422,7 +438,7 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
             let file_uploaded = file.clone();
             //  if let Some( video_url)  = &model.post_data{
             if let Some(selected_page) = &model.selectedAccount {
-                let page_token = selected_page.access_token.to_owned();
+                let page_access_token = selected_page.access_token.to_owned();
                 let page_id = selected_page.id.to_owned();
 
                 // used the defaukt paramters
@@ -433,11 +449,11 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
                     file
                 };
                 orders.perform_cmd(async move {
-                    Client::new(Token::default())
-                        .video_upload(page_id, &page_token)
+                    Client::new(Token::default(),page_access_token)
+                        .video_upload(page_id)
                         .resumable_post(file_uploaded, video_params)
                         .await
-                        .map_or_else(Msg::ResumableUploadFailed, Msg::ResumableUploadSucess)
+                        .map_or_else(Msg::ResponseFailed, Msg::ResumableUploadSucess)
                 });
             }
         }
@@ -455,12 +471,12 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
             if model.selectedAccount.is_some(){
 
                 if let Some(selected_page) = &model.selectedAccount {
-                    let page_token = selected_page.access_token.to_owned();
-                    let page_id = selected_page.id.to_owned();
+                    let page_access_token = selected_page.access_token.to_owned();
+                    let facebook_page_id = selected_page.id.clone();
 
                     orders.perform_cmd(async move {
-                        Client::new(Token::default())
-                            .get_instagram_account(&page_token,page_id, )
+                        Client::new(Token::default(),page_access_token.clone())
+                            .instagram_account( facebook_page_id )
                             .insta_account()
                             .await
                             .map_or_else(Msg::GetInstaAccountFailed, GetInstaAccountSuccess)
@@ -511,14 +527,14 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
                 if let Some(selected_page)  = &model.selectedAccount {
                     if let Some(instag_account) = &model.insta_account {
                         if let Some(insta_media_container_id) = &model.insta_media_container_id {
-                            let page_token = selected_page.access_token.to_owned();
+                            let page_access_token = selected_page.access_token.to_owned();
                             let page_id = selected_page.id.to_owned();
                             let insta_page_id = instag_account.instagram_business_account.id.clone();
                             let insta_media_conatiner = insta_media_container_id.id.clone();
                             if let Some(post_param) = model.insta_post_param.clone() {
                                 orders.perform_cmd(async move {
-                                    Client::new(Token::default())
-                                        .instagram(insta_page_id, &page_token)
+                                    Client::new(Token::default(),page_access_token)
+                                        .instagram(insta_page_id, )
                                         .publish_video(insta_media_conatiner)
                                         .await
                                         .map_or_else(Msg::InstaPostFailed, Msg::InstaPostSucessful)
@@ -545,15 +561,15 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
 
                 if let Some(instag_account) = &model.insta_account {
                     log!(instag_account);
-                    let page_token = selected_page.access_token.to_owned();
+                    let page_access_token = selected_page.access_token.to_owned();
                     let page_id = selected_page.id.to_owned();
                     let insta_page_id = instag_account.instagram_business_account.id.clone();
 
                     if let Some(post_param) = model.insta_post_param.clone() {
                         orders.perform_cmd(async move {
-                            Client::new(Token::default())
-                                .instagram(insta_page_id, &page_token)
-                                .ig_mdeia_container(post_param,"video".to_string())
+                            Client::new(Token::default(),page_access_token)
+                                .instagram(insta_page_id)
+                                .ig_media_container(post_param, "video".to_string())
                                 .await
                                 .map_or_else(Msg::InstaPostFailed, Msg::InstaContainerResponse)
                         });
@@ -613,14 +629,14 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
 
                 if let Some(instag_account) = &model.insta_account {
                     log!(instag_account);
-                    let page_token = selected_page.access_token.to_owned();
+                    let page_access_token = selected_page.access_token.to_owned();
                     let page_id = selected_page.id.to_owned();
                     let insta_page_id = instag_account.instagram_business_account.id.clone();
 
                         log!(e);
                         orders.perform_cmd(async move {
-                            Client::new(Token::default())
-                                .search_pages( &page_token)
+                            Client::new(Token::default(),page_access_token)
+                                .search_pages()
                                 .init_search()
                                 .await
                                 .map_or_else(Msg::ResponseFailed, Msg::PageSearchResponse)
@@ -635,6 +651,32 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
             log!(resp)
         }
 
+
+        Msg::AccessTokenInformation  => {
+
+                if let Some(user_tokens) = &model.user_tokens {
+                    let short_live_token = user_tokens.access_token.to_owned();
+                    let long_live_token = user_tokens.long_lived_token.to_owned();
+
+                     log!(short_live_token==long_live_token);
+                   orders.perform_cmd(async move {
+                         AccessTokenInformation::access_token_information(short_live_token, long_live_token)
+                            .await
+                            .map_or_else(Msg::ResponseFailed, Msg::AccessTokenInfoData)
+                    });
+
+            }
+        }
+
+        Msg::AccessTokenInfoData(resp) => {
+            log!(resp)
+        }
+
+
+
+
+
+        // all errro should user this, except the eeror neededs to be analyzed and do something about it
         Msg::ResponseFailed(resp) => {
             log!(resp)
         }
@@ -702,13 +744,14 @@ fn view(model: &Model) -> Node<Msg> {
                 "Get my Profile Picture!",
                 ev(Ev::Click, |_| { Msg::GetProfilePicture }),
                 attrs! {
-                    At:: Disabled => model.response.is_none().as_at_value()
+                    At:: Disabled => model.user_tokens.is_none().as_at_value()
                 },
                 style! {
                     St::Height => "50px",
                     St::MarginRight => px(10),
                 },
             ],
+
             attrs! {
                 At::Src => format!("{:?}",model.accounts),
             },
@@ -719,8 +762,20 @@ fn view(model: &Model) -> Node<Msg> {
                 "Get my Account!",
                 ev(Ev::Click, |_| { Msg::GetAccount }),
                 attrs! {
-                    At:: Disabled => model.response.is_none().as_at_value()
+                    At:: Disabled => model.user_tokens.is_none().as_at_value()
                 }
+            ],
+
+               button![
+                "Test long live token !",
+                ev(Ev::Click, |_| { Msg:: AccessTokenInformation}),
+                attrs! {
+                    At:: Disabled => model.user_tokens.is_none().as_at_value()
+                },
+                style! {
+                    St::Height => "50px",
+                    St::MarginRight => px(10),
+                },
             ],
         ],
         div![
