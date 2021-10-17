@@ -1,9 +1,14 @@
 use crate::graph::client::Client;
 use seed::prelude::IndexMap;
+use seed::prelude::{Method, Request};
+use seed::{prelude::*, *};
+use serde::{Deserialize, Serialize};
+
+use seed::fetch::fetch;
 
 /// The following struct is used to describe a token which may be retrieved from
 /// the login flow of Facebook.
-#[derive(Clone, Default, Debug)]
+#[derive(Deserialize, Default, Clone, Debug, Serialize)]
 pub struct Token {
     /// access_token is used for API calls and it contains response data such as
     /// scopes
@@ -32,13 +37,13 @@ pub struct Token {
 }
 
 impl Token {
-    pub fn get_access_token(&self) -> &String {
-        &self.access_token
+    pub fn user_access_tokens(self) -> Self {
+        self
     }
 
-    /// Gets gets a Token from the current URL by extracting the query query of
+    /// Gets  Token from the current URL by extracting the query query of
     /// the URL
-    pub fn get_token(hash: String) -> Token {
+    pub fn extract_user_tokens(hash: String) -> Token {
         let query = extract_query_fragments(hash);
 
         let iterations = query.iter();
@@ -68,10 +73,28 @@ impl Token {
         response
     }
 
-    // pub fn long_live_access_token() {}
-
-    pub fn handle_access_information() {
+    /// this method is used to get information regarding a given token,
+    /// it accepts a valid access token and the toekn you intend to get
+    /// information, for more inform  check facbook deocumentation https://developers.facebook.com/docs/facebook-login/access-tokens/debugging-and-error-handling
+    pub async fn access_token_information(
+        self,
+        valid_access_token: String,
+        long_live_token: String,
+    ) -> seed::fetch::Result<AccessTokenInformation> {
         // https://developers.facebook.com/docs/facebook-login/access-tokens/debugging-and-error-handling
+        let url = "https://graph.facebook.com/debug_token?".to_owned()
+            + "input_token="
+            + &long_live_token
+            + "&access_token="
+            + &valid_access_token;
+        let request = Request::new(url).method(Method::Post);
+        fetch(request).await?.json::<AccessTokenInformation>().await
+        // let test = result.as_ref()
+
+        //  let response = test.unwrap().expires_at.to_owned();
+        //   let expired_time = response / (1.12_f32.powf(8.0)) as u64;
+        //  log!("expired_time", expired_time);
+        //  result
     }
 
     // also the need to hanlde
@@ -104,4 +127,40 @@ pub fn extract_query_fragments(hash: String) -> IndexMap<String, String> {
     query
 }
 
-// ODO: create method to verify the token recieved.
+#[derive(Deserialize, Copy, Default, Clone, Debug, Serialize)]
+pub struct AccessTokenInformation {
+    data: ResponseData,
+}
+
+#[derive(Deserialize, Copy, Default, Clone, Debug, Serialize)]
+
+pub struct ResponseData {
+    pub expires_at: u64,
+    pub is_valid: bool,
+}
+impl AccessTokenInformation {
+    /// this method is used to get information regarding a given token,
+    /// it accepts a valid access token and the toekn you intend to get
+    /// information, for more inform  check facbook deocumentation https://developers.facebook.com/docs/facebook-login/access-tokens/debugging-and-error-handling
+    ///                                                                         
+    pub async fn access_token_information(
+        access_token: String,
+        long_live_token: String,
+    ) -> seed::fetch::Result<AccessTokenInformation> {
+        let url = "https://graph.facebook.com/debug_token?".to_owned()
+            + "input_token="
+            + &long_live_token
+            + "&access_token="
+            + &access_token;
+        let request = Request::new(url).method(Method::Get);
+        let result = fetch(request).await?.json::<AccessTokenInformation>().await;
+        let test = result.as_ref();
+
+        let response = test.unwrap().data.expires_at.to_owned();
+        let expired_time = response / (1.12_f32.powf(8.0)) as u64;
+
+        // Note: time is in unix time sampe
+        log!("expired_time", expired_time);
+        result
+    }
+}
