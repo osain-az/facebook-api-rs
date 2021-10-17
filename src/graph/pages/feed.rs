@@ -1,91 +1,43 @@
+///  The feed API OF Facebook Page let you published and get data of the page
+/// the API have different end points depending on the operation you want to
+/// perform  on the page. For more information on different endpoint for get and
+/// publish post check facebook document https://developers.facebook.com/docs/graph-api/reference/v12.0/page/feed#publish
 use seed::fetch::fetch;
 use seed::prelude::{Method, Request};
 use seed::{prelude::*, *};
 use serde::{Deserialize, Serialize};
-// rename it feed, and move it under page folder
-/// This
-/// ! https://developers.facebook.com/docs/graph-api/reference/v12.0/page/feed
 
-#[derive(Deserialize, Debug, Serialize)]
-pub struct Fields {
-    fields: Vec<String>,
-}
+use crate::graph::pages::utils::{Fields, GetPostResponse};
 
-impl Default for Fields {
-    fn default() -> Self {
-        let field_list = vec![
-            "from",
-            "id",
-            "message_tags",
-            "story",
-            "story_tags",
-            "permalink_url",
-            "message",
-            "shares",
-            "comments",
-            "likes",
-            "reactions",
-        ];
-        let fields = field_list.iter().map(|&field| field.into()).collect();
-        Self { fields }
-    }
-}
-
-// This will be in another files
-#[derive(Deserialize, Debug, Default, Serialize)]
-pub struct GetPostResponse {
-    pub id: String,
-    pub message: String,
-    pub from: From,
-    pub permalink_url: String,
-}
-
-#[derive(Deserialize, Debug, Default, Serialize)]
-pub struct From {
-    pub id: String,
-    pub name: String,
-}
-
+///  The feed API OF Facebook Page let you published and get data of the page
+/// the API have different end points depending on the operation you want to
+/// perform  on the page. For more information on different endpoint for get and
+/// publish post check facebook document https://developers.facebook.com/docs/graph-api/reference/v12.0/page/feed#publish
 pub struct FeedApi {
     base_url: String,
-    access_token: String,
+    page_access_token: String,
 }
 
 impl FeedApi {
+    /// this is a static method used to create an instane of the feedApi
+    /// Note: this method is called inside of the Client method
     pub fn new(base_url: String, access_token: String) -> FeedApi {
         FeedApi {
             base_url,
-            access_token,
+            page_access_token: access_token,
         }
     }
 
-    pub async fn get(self) -> seed::fetch::Result<GetPostResponse> {
-        let mut url = self.base_url.replace("EDGE", "?fields=");
-
-        let field_count = Fields::default().fields.len();
-        for (count, field) in Fields::default().fields.into_iter().enumerate() {
-            if count < field_count - 1 {
-                url = url + &field + ",";
-            } else {
-                url = url + &field; // remove the comma in the last filed
-            }
-        }
-
-        let base_url = url + "&access_token=" + &self.access_token;
-        let request = Request::new(base_url).method(Method::Get);
-        fetch(request).await?.json::<GetPostResponse>().await
+    /// Method used for posting content to page feed, it can post You can
+    /// publish to Pages by using this edge. Either link or message must be
+    /// supplied. this method can not feed media like  video and photo
+    /// for more information check facbook documentation  https://developers.facebook.com/docs/graph-api/reference/page/feed/#publish
+    pub async fn post(&self, message: &str) -> seed::fetch::Result<FeedPostSuccess> {
+        let base_url = self.base_url.replace("EDGE", "feed");
+        let url = base_url + "?message=" + message + "&access_token=" + &self.page_access_token;
+        let request = Request::new(url).method(Method::Post);
+        fetch(request).await?.json::<FeedPostSuccess>().await
     }
-}
-
-//  https://developers.facebook.com/docs/graph-api/reference/post#updating
-
-// move it under page module
-/// Struct that will hold different data for the making a feed request which are
-/// upadted from the client method
-#[derive(Deserialize, Debug, Default, Serialize)]
-pub struct PostApi {
-    base_url: String,
-    access_token: String,
 }
 
 /// Return response for posting feeds ( message or link) to the page, the
@@ -160,40 +112,3 @@ pub enum CallToActionList {
     WATCH_VID, // O. Call to action shows up as Watch Video.
 }
 pub struct CallToAction {}
-
-/// Return response for posting feeds ( picture or video) to a page or user
-/// account feed
-#[derive(Deserialize, Debug, Default, Serialize)]
-pub struct VideoPostResponse {
-    pub id: String,
-    pub video_id: String,
-    pub success: bool,
-}
-
-impl PostApi {
-    pub fn new(base_url: String, access_token: String) -> PostApi {
-        PostApi {
-            base_url,
-            access_token,
-        }
-    }
-
-    /// Method used for posting to content to the account or page feed, this
-    /// method can not feed media like  video and photo
-    pub async fn feed_post(&self, message: &str) -> seed::fetch::Result<FeedPostSuccess> {
-        let base_url = self.base_url.replace("EDGE", "feed");
-        let url = base_url + "?message=" + message + "&access_token=" + &self.access_token;
-        let request = Request::new(url).method(Method::Post);
-        fetch(request).await?.json::<FeedPostSuccess>().await
-    }
-
-    // video upload by  link
-    /// this Method is used for posting video hosted online (video url ) to the
-    /// account or page feed.
-    pub async fn post_by_link(&self, file_url: &str) -> seed::fetch::Result<VideoPostResponse> {
-        let base_url = self.base_url.replace("EDGE", "videos");
-        let url = base_url + "?file_url=" + file_url + "&access_token=" + &self.access_token;
-        let request = Request::new(url).method(Method::Post);
-        fetch(request).await?.json::<VideoPostResponse>().await
-    }
-}
