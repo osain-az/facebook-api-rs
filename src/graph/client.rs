@@ -1,6 +1,7 @@
 use crate::graph::me::MeApi;
 
 use crate::graph::pages::feed::FeedApi;
+use crate::graph::pages::post::PostApi;
 use crate::graph::prelude::account::InstagramApi;
 use crate::graph::prelude::publish::InstagramPostApi;
 use crate::login::token::{AccessTokenInformation, Token};
@@ -8,7 +9,6 @@ use crate::prelude::search::PagesSearchAPI;
 use crate::prelude::video::VideoApi;
 use seed::{prelude::*, *};
 use std::option::Option::Some;
-use crate::graph::pages::post::PostApi;
 
 /// This mod will server as method binder that allow other mothod to feed
 /// content to the api, it also hold all the user creditenials that will pass to
@@ -72,11 +72,15 @@ impl Client {
         self
     }
 
-    /// this method  is used to pass user data/crediteniatls to the ME method
-    /// which will be used to reach the ME API
-
-    pub fn me_by_short_or_long_live_token(self, toke_live_type: String) -> MeApi {
-        if toke_live_type == "short_live" {
+    /// This method  is used to pass user data/crediteniatls to the ME method
+    /// which will be used to reach the ME API.
+    /// since facebbok allows two access token ( short and long live )  to used
+    /// or get a long live token for your page passed in "long_live"  while
+    /// if you intented to used a short live token then pass in "short_live"
+    /// . For more information on facebook documenation check
+    /// https://developers.facebook.com/docs/facebook-login/access-tokens/
+    pub fn me_by_short_or_long_live_token(self, token_live_type: String) -> MeApi {
+        if token_live_type == "short_live" {
             MeApi::new(
                 self.graph + &"?access_token=".to_string() + &self.short_live_user_access_token,
             )
@@ -87,39 +91,31 @@ impl Client {
         }
     }
 
-    /// this method  is used to pass user data/crediteniatls to the ME method
-    /// which will be used to reach the ME API
-
-    ///  this method is used to pass user data/crediteniatls to the Post CONTENT
-    /// method which will be used to feed content to the  feed : Note this
+    ///  This method is used to pass user data/crediteniatls to the Post CONTENT
+    /// method which will be used to post  to content to the  feed : Note this
     /// API can not be use for posting of vide and image
+    // pub fn feeds(self, page_id: String) -> FeedApi {
+    //  let base_url = self.graph.replace("NODE", &page_id);
+    //  FeedApi::new(base_url, self.page_access_token)
+    // }
+    pub fn feeds(self, page_id: String) -> FeedApi {
+        let base_url = self.graph.replace("NODE", &page_id);
+        FeedApi::new(base_url, self.page_access_token)
+    }
+
     //   pub fn post(self, page_id: String, page_token: String) -> PostApi {
     // let base_url = self.graph.replace("NODE", &page_id);
     // PostApi::new(base_url, page_token)
     // }
+    ///  This method is used to get the different data avaliable on the page
+    /// feed, it takes the "page_post_id" ( combination of the page and the post
+    /// id
 
-    ///  This method used to get the different methods avaliable on the page
-    /// feed API
-    pub fn feeds(self, page_post_id: String) -> FeedApi {
-        let base_url = self.graph.replace("NODE", &page_post_id);
-        FeedApi::new(base_url, self.page_access_token)
-    }
-
-
-    ///  This method used to get the different methods avaliable on the page
-    /// feed API
     pub fn post(self, page_post_id: String) -> PostApi {
         let base_url = self.graph.replace("NODE", &page_post_id);
         PostApi::new(base_url, self.page_access_token)
     }
-    
 
-    /// Posting video using link ( hosted file)
-    ///  This method take the page id and the page token you want feed video to.
-    // pub fn get_post_video_link(self, page_id: String, page_token: &str) -> PostApi {
-    // let base_url = self.graph.replace("NODE", &page_id);
-    // PostApi::new(base_url, page_token.to_string())
-    // }
     /// This method allows developers to choose which viddeo uploading method
     /// they want to use. For Large file greater than 1gb and 20 minute
     /// user method called resumable_upload, for video files smaller than
