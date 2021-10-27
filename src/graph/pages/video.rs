@@ -1,40 +1,35 @@
-//! Facebook graph api for video uplaoding video by file upload
-
-/// The Video API allows you to publish Videos on Pages and Groups. Publishing
-/// on Users is not supported.
-///
-/// The process for publishing Videos involves choosing an upload protocol and
-/// sending a POST request to the targeted Page or Group's /videos edge. The API
-/// supports  potting by video_url, Resumable and Non-Resumableupload protocols.
-/// facebook recommend that you use the Resumable Upload protocol as it is more
-/// versatile and can gracefully handle connection interruptions.
-///
-/// To post to either page or group pass either of the id.  (/event-id/videos,
-/// /page-id/videos /group-id/videos
-///
-/// for other information you can also check on facebook documentation  for
-/// video API  shown below https://developers.facebook.com/docs/video-api/guides/publishing
-/// For information on different opertaion on facebook page  check  // https://developers.facebook.com/docs/graph-api/reference/page/videos/#Creating
+//! The Facebook Video API allows you to publish Videos on Pages and Groups.
+//! Publishing on Users is not supported.
+//!
+//! The process for publishing Videos involves choosing an upload protocol and
+//! sending a POST request to the targeted Page or Group's  to end point /videos
+//! edge. The API  supports  postting video by video_url, Resumable and
+//! Non-Resumableupload protocols.
+//! Facebook recommend that you use the Resumable Upload protocol
+//! as it is more  versatile and can gracefully handle connection interruptions.
+//! To post to either page or group pass either of the id.  (/event-id/videos,
+//! /page-id/videos /group-id/videos
+//!
+//! For other information check on facebook documentation  for
+//! video API  <https://developers.facebook.com/docs/video-api/guides/publishing>
+//! For information on different opertaions on facebook page  check  <https://developers.facebook.com/docs/graph-api/reference/page/videos/#Creating>
+use crate::graph::utils::FileResult;
 use seed::fetch::{fetch, FormData};
 use seed::prelude::{Method, Request};
-
 use seed::{prelude::*, *};
-use web_sys::File;
-// use gloo_file::File;
-use crate::graph::utils::FileResult;
 use serde::{Deserialize, Serialize};
 use web_sys::Blob;
+use web_sys::File;
 
 /// Facebook video api accepts different parameters that could be passed to the
 /// post request while uploading the video. this struck will have the possible
-/// parameters that a user might need to pass along the video upload Note :
-/// video_title, file_name, and title will not appear in your feed. use
+/// parameters that a user might need to pass along the video while publishing.
+/// Note : video_title, file_name, and title will not appear in your feed. use
 /// "description" to describe your video  which will appear at the top of the
-/// feed
+/// post.
 #[derive(Clone)]
 pub struct VideoParams {
     /// The video_title parameter will not be display on your post feed
-    ///     
     pub video_title: String,
     /// The description parameter is used to describe your video  which will
     /// appear at the top of the post
@@ -46,26 +41,25 @@ pub struct VideoParams {
     /// aspect ratio as your video.
     pub thum: String,
 
-    /// Enum for the different categories that the uploaded video will belong to
+    /// Enum for different categories that the uploaded video will belong to
     /// as defined on facebook  graph api documentation. Choose any from the
     /// list, if no data is supplied a default value of  "OTHER" is chosen.
     pub content_category: ContentCategory,
 
     pub title: String,
-    /* pub video_source: String,
-     * file: File,// add this file type here */
 }
 
 pub struct UploadFile {
     pub file: File,
 }
 
+/// Response for successful uploading of video using no_resumable method
 #[derive(Deserialize, Serialize)]
 pub struct PostResponse {
     id: String,
 }
 
-/// Enum for the different categories that the uploaded video will belong to as
+/// Enum for different categories that the uploaded video will belong to as
 /// defined on facebook graph api documentation. Choose any from the list, if no
 /// data is supplied a default value of "OTHER" is chosen.
 #[derive(Deserialize, Copy, Clone, Serialize)]
@@ -90,21 +84,22 @@ pub enum ContentCategory {
     OTHER,
 }
 
-// This struct is the response gotten when initializing the resumable uploading
-// method process
+/// This struct is the response gotten when initializing the resumable uploading
+/// method process.
 #[derive(Deserialize, Debug, Clone, Serialize)]
-struct InitialuzeUploadResponse {
+struct InitializeUploadResponse {
     pub video_id: String,
     pub end_offset: String,
     pub upload_session_id: String,
 }
 
-/// This struct is the struct that is send back upon successfully  upload of the
-/// video. The struct is constructed  using different data gotten from different
-/// responses while using the resumable  method. if the success parameter in the
-/// struct is true then the video was uploaded successfully
+/// This struct is the response upon successful  upload of video using resumable
+/// method. The struct is constructed  using different data gotten from
+/// different responses while using the resumable  method. if the success
+/// parameter in the struct is true then the video was uploaded successfully
 /// Note: for video uploaded using the video_ur method, only the video_id
-/// parameter will have a value other will be empty.
+/// parameter will have a value other will be empty  since other parameter are
+/// not used.
 #[derive(Deserialize, Default, Debug, Clone, Serialize)]
 pub struct FinalResponeResumableUpload {
     // this struct will be data constructed from all the different uploads
@@ -116,7 +111,7 @@ pub struct FinalResponeResumableUpload {
 // this will be used to update this method upon each round of chunked upload
 impl FinalResponeResumableUpload {
     /// This method is used to update  the struct during a resumabl upload
-    /// method.
+    /// method since each chunk upload different data are sent back.
     fn update_params(
         mut self,
         video_id: String,
@@ -156,9 +151,8 @@ impl FinalResponeResumableUpload {
 }
 
 /// After complete uploading of the video through resumable, facebook will send
-/// reponse which will be either true or false true means, the video was
+/// reponse which will be either true or false. true means, the video was
 /// uplaoded successfull
-
 #[derive(Deserialize, Serialize)]
 struct ResumableUploadFinal {
     // response from facebook, true or false
@@ -167,7 +161,6 @@ struct ResumableUploadFinal {
 
 /// During each chunk blob file uploaded, facebook will send a response back,
 /// This struct is the response gotten for each video chunk  sent
-
 #[derive(Deserialize, Clone, Serialize)]
 struct ChunksUploadResponse {
     start_offset: String, // Value for second chunk
@@ -175,6 +168,7 @@ struct ChunksUploadResponse {
 }
 
 impl ChunksUploadResponse {
+    /// creating an instance of the chunking paramters
     fn new(start_offset: String, end_offset: String) -> ChunksUploadResponse {
         ChunksUploadResponse {
             start_offset,
@@ -191,6 +185,12 @@ impl ChunksUploadResponse {
     }
 }
 
+/// While using the resumable upload method, there are 4 enums which are used to
+/// track the  progress/stage and status of the uploading processs which are
+/// send along each upload. "start" is send when initialzing the upload process,
+/// "transfer" is send when uploading is in progress, "finished is send when the
+/// chunk files are finish uploading, and "cancel" is send when for you decide
+/// to stop the uploading.
 enum UploadPhase {
     start,
     transfer,
@@ -218,10 +218,12 @@ impl VideoParams {
         VideoParams::default()
     }
 
+    /// This method will update an existing data in your VideoPramas
     pub fn update_video_params(self, video_params: VideoParams) -> Self {
         Self { ..video_params }
     }
 
+    /// This method will return the existing data in your VideoPramas
     pub fn video_params(self) -> VideoParams {
         self
     }
@@ -241,8 +243,7 @@ impl VideoApi {
         }
     }
 
-    // This form method will be used by Non_resumable uplaod method
-
+    /// This method is used by creating FormData for Non_resumable uplaod method
     fn create_form_data(file: File, video_params: VideoParams) -> FormData {
         let mut form_data = FormData::new();
         form_data.append_blob("source", &file); // appped  the  current chunked file   to the form
@@ -281,6 +282,7 @@ impl VideoApi {
         let uploaded_file = file.clone();
         let upload_method = FileResult::file_analyze(file).uploading_method();
 
+        // check if the uploading method
         if upload_method == "non_resumable" {
             let form_data = VideoApi::create_form_data(uploaded_file, video_params);
             let base_url = self.base_url.replace("EDGE", "videos");
@@ -288,7 +290,7 @@ impl VideoApi {
             let request = Request::new(url).method(Method::Post).form_data(form_data);
             fetch(request).await?.json::<PostResponse>().await
         } else {
-            let err = JsValue::from_str("the uplaoded file is above 1 gb, use Resumable method ");
+            let err = JsValue::from_str("The uplaoded file is above 1 gb, use Resumable method ");
             Err(FetchError::RequestError(err)) // try to generate a customer
                                                // error
         }
@@ -296,7 +298,7 @@ impl VideoApi {
 }
 
 impl VideoApi {
-    // creating formData for the  resumable video method
+    /// This method is used by creating FormData for resumable uplaod method
     fn resumable_form_data(
         self,
         upload_phase: UploadPhase,
@@ -360,11 +362,11 @@ impl VideoApi {
 
     /// This method is used for uploading large video files, it does that by
     /// chunking the file and uplaoding them individually until is complete.
-    /// The method takes two parameter( file, feed parameter struct).
+    /// The method takes two parameter( file, video parameter struct).
     /// the waiting time depend  on the video size uplaoded
     ///
     /// Note there is an issue with chunking method that only chunk smaller size
-    /// so extra time than usuall expect until the issue is fixed.
+    /// so extra time than usuall is expect until the issue is fixed.
     ///  
     /// for more infromation  check  https://developers.facebook.com/docs/video-api/guides/publishing
     pub async fn resumable_post(
@@ -393,7 +395,7 @@ impl VideoApi {
 
         let response = fetch(request)
             .await?
-            .json::<InitialuzeUploadResponse>()
+            .json::<InitializeUploadResponse>()
             .await;
 
         let start_phase_data = response.unwrap();
@@ -429,6 +431,7 @@ impl VideoApi {
                     current_chunk_size = file.size()
                 };
 
+                // check if there is a response data from the initialzition request
                 if let Some(start_offset_status) = start_offset.clone() {
                     //   start_offset_status = tee.clone();
                     let self_data = self.clone();
@@ -499,8 +502,8 @@ impl VideoApi {
                 }
             }
 
-            // after the chunk file upload has is completed,  trigger and Ok response to
-            // send the data.
+            // after the chunk file upload is completed,  trigger and Ok response to send
+            // the data.
             Ok(final_response.update_success(final_response_status))
         } else {
             let err = JsValue::from_str("The video upload initialization was not sucessfull, try upload again  or try with another video  ");
@@ -509,8 +512,6 @@ impl VideoApi {
         }
     }
 }
-
-// Posting  video  by  video url
 
 #[derive(Deserialize, Debug, Default, Serialize)]
 struct FeedPostSuccess {

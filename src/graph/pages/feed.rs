@@ -1,26 +1,26 @@
-///  The feed API OF Facebook Page let you published and get data of the page
-/// the API have different end points depending on the operation you want to
-/// perform  on the page. For more information on different endpoint for get and
-/// publish post check facebook document https://developers.facebook.com/docs/graph-api/reference/v12.0/page/feed#publish
+//! The feed API of Facebook Page let you published and get data of facebok page
+//! the API have different end points depending on the operation you want to
+//! perform  on the page. For more information on different endpoint for get and
+//! publish post check facebook document <https://developers.facebook.com/docs/graph-api/reference/v12.0/page/feed#publish>.
+
+use crate::graph::pages::utils::{Fields, GetPostResponse};
 use seed::fetch::fetch;
 use seed::prelude::{Method, Request};
 use seed::{prelude::*, *};
 use serde::{Deserialize, Serialize};
 
-use crate::graph::pages::utils::{Fields, GetPostResponse};
-
-///  The feed API OF Facebook Page let you published and get data of the page
+/// The feed API of Facebook Page let you publish and get data of the page,
 /// the API have different end points depending on the operation you want to
 /// perform  on the page. For more information on different endpoint for get and
-/// publish post check facebook document https://developers.facebook.com/docs/graph-api/reference/v12.0/page/feed#publish
+/// publish post check Facebook document https://developers.facebook.com/docs/graph-api/reference/v12.0/page/feed#publish.
 pub struct FeedApi {
     base_url: String,
     page_access_token: String,
 }
 
 impl FeedApi {
-    /// this is a static method used to create an instane of the feedApi
-    /// Note: this method is called inside of the Client method
+    /// This is a static method used to create an instance of the feedApi
+    /// Note: this method is called inside the Client.
     pub fn new(base_url: String, access_token: String) -> FeedApi {
         FeedApi {
             base_url,
@@ -28,10 +28,11 @@ impl FeedApi {
         }
     }
 
-    /// Method used for posting content to page feed, it can post You can
-    /// publish to Pages by using this edge. Either link or message must be
-    /// supplied. this method can not feed media like  video and photo
-    /// for more information check facbook documentation  https://developers.facebook.com/docs/graph-api/reference/page/feed/#publish
+    /// This Method is used for posting content to page feed,  you can
+    /// publish to Pages by using this method to post either link or message
+    /// this method can not post media like  video and photo.
+    /// This method is expecting the post message you want to post on your feed.
+    /// For more information check Facebook documentation  <https://developers.facebook.com/docs/graph-api/reference/page/feed/#publish>.
     pub async fn post(&self, message: &str) -> seed::fetch::Result<FeedPostSuccess> {
         let base_url = self.base_url.replace("EDGE", "feed");
         let url = base_url + "?message=" + message + "&access_token=" + &self.page_access_token;
@@ -41,26 +42,26 @@ impl FeedApi {
 }
 
 /// Return response for posting feeds ( message or link) to the page, the
-/// response id is tthe combination of page_post_id
+/// response id is the combination of page_id and post_id.
 #[derive(Deserialize, Debug, Default, Serialize)]
 pub struct FeedPostSuccess {
     pub id: String,
 }
 
-/// Return response for posting feeds ( picture or video)
+/// Return response for posting feeds ( picture or video).
 #[derive(Deserialize, Debug, Default, Serialize)]
 pub struct MediaPostSuccess {
     id: String,
     post_id: String,
 }
 
-/// This struct i sthe
-
+/// Todo: implement call to action method.
 pub struct PostFields {
     link: String,
     call_to_action: CallToAction,
     action: CallToActionList,
 }
+
 pub enum CallToActionList {
     // Determines the call to action button text. One of allowed values:
     BOOK_TRAVEL,
@@ -111,4 +112,5 @@ pub enum CallToActionList {
 
     WATCH_VID, // O. Call to action shows up as Watch Video.
 }
+
 pub struct CallToAction {}

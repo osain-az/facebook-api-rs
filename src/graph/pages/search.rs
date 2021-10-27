@@ -1,7 +1,7 @@
-/// The Pages API allows apps to access and update a Facebook Page's settings
-/// and content, create and get Posts, get Comments on Page owned content, get
-/// Page insights, update actions that Users are able to perform on a Page, and
-/// much more.
+//! The API let you search for different pages on facebook  which  including
+//! names, locations, and more. Find Pages to @Mention, Page locations, and tag
+//! a Page. For more information check <https://developers.facebook.com/docs/pages/searching>.
+
 use crate::graph::accounts::Accounts;
 use seed::fetch::fetch;
 use seed::prelude::{Method, Request};
@@ -31,11 +31,11 @@ impl PagesAPI {
         self
     }
 
-    pub fn get_access_token(&self) -> &String {
+    pub fn access_token(&self) -> &String {
         &self.page_access_token
     }
 
-    pub fn get_page_id(&self) -> &String {
+    pub fn page_id(&self) -> &String {
         &self.page_id
     }
 
@@ -57,6 +57,8 @@ pub struct PageSearch {
     pub link: String,
 }
 
+/// this struct represent the data of the location of a page, Note: this data is
+/// only available if the page has enabled the location.
 #[derive(Deserialize, Serialize, Default)]
 pub struct Location {
     pub city: String,
@@ -84,13 +86,15 @@ impl PagesSearchAPI {
     /// This method is used to search for different facebook pages, which will
     /// return the struct as shown in the PageSearch
     pub async fn init_search(self) -> seed::fetch::Result<PageSearch> {
-        // this method has not be offically tested to be working proper since any
+        // this method has not be officially tested to be working properly since any
         // attempt to test return error off permission error due to the app
         // still in development mode
 
-        // the note should be a dynamica value that will be pass in
+        //  note: g should be a dynamic value that will be pass in
+        let q = "oslo";
         let url = self.base_url
-            + "?q=Oslo"
+            + "?q="
+            + q
             + "&fields=id,name,location,link"
             + "&access_token="
             + &self.page_acess_token;

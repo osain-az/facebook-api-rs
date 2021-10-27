@@ -1,5 +1,7 @@
-use crate::graph::me::MeApi;
+//!  This mod will server as method binder that allow  to access different end
+//! poinst availiable on the facebook-api.rs
 
+use crate::graph::me::MeApi;
 use crate::graph::pages::feed::FeedApi;
 use crate::graph::pages::post::PostApi;
 use crate::graph::prelude::account::InstagramApi;
@@ -9,10 +11,6 @@ use crate::prelude::search::PagesSearchAPI;
 use crate::prelude::video::VideoApi;
 use seed::{prelude::*, *};
 use std::option::Option::Some;
-
-/// This mod will server as method binder that allow other mothod to feed
-/// content to the api, it also hold all the user creditenials that will pass to
-/// each method.
 
 /// Client Struct for making calls to Facebook Graph
 #[derive(Debug)]
@@ -43,7 +41,7 @@ impl Default for Client {
 }
 
 impl Client {
-    /// this method add access token to the client, the method is expecting two
+    /// This method add access token to the client, the method is expecting two
     /// input ( access token and access token type ). Since the access token
     /// type could be user token or page token , use access_token_type  to
     /// indicate which token is being passed in.
@@ -55,7 +53,7 @@ impl Client {
         Client::default().add_access_tokens(user_access_token, pag_access_token)
     }
 
-    /// this method add access token to the client when the user has
+    /// This method add access token to the client when the user has
     /// authenticate from the frontend
     pub fn add_access_tokens(
         mut self,
@@ -78,13 +76,15 @@ impl Client {
     /// or get a long live token for your page passed in "long_live"  while
     /// if you intented to used a short live token then pass in "short_live"
     /// . For more information on facebook documenation check
-    /// https://developers.facebook.com/docs/facebook-login/access-tokens/
+    /// <https://developers.facebook.com/docs/facebook-login/access-tokens/>
     pub fn me_by_short_or_long_live_token(self, token_live_type: String) -> MeApi {
         if token_live_type == "short_live" {
+            log!("token_live_type short", token_live_type);
             MeApi::new(
                 self.graph + &"?access_token=".to_string() + &self.short_live_user_access_token,
             )
         } else {
+            log!("token_live_type long", token_live_type);
             MeApi::new(
                 self.graph + &"?access_token=".to_string() + &self.long_live_user_access_token,
             )
@@ -94,23 +94,14 @@ impl Client {
     ///  This method is used to pass user data/crediteniatls to the Post CONTENT
     /// method which will be used to post  to content to the  feed : Note this
     /// API can not be use for posting of vide and image
-    // pub fn feeds(self, page_id: String) -> FeedApi {
-    //  let base_url = self.graph.replace("NODE", &page_id);
-    //  FeedApi::new(base_url, self.page_access_token)
-    // }
     pub fn feeds(self, page_id: String) -> FeedApi {
         let base_url = self.graph.replace("NODE", &page_id);
         FeedApi::new(base_url, self.page_access_token)
     }
 
-    //   pub fn post(self, page_id: String, page_token: String) -> PostApi {
-    // let base_url = self.graph.replace("NODE", &page_id);
-    // PostApi::new(base_url, page_token)
-    // }
     ///  This method is used to get the different data avaliable on the page
-    /// feed, it takes the "page_post_id" ( combination of the page and the post
-    /// id
-
+    /// feed, it takes the "page_post_id" ( combination of the page_ and the
+    /// post_id)
     pub fn post(self, page_post_id: String) -> PostApi {
         let base_url = self.graph.replace("NODE", &page_post_id);
         PostApi::new(base_url, self.page_access_token)
@@ -118,9 +109,11 @@ impl Client {
 
     /// This method allows developers to choose which viddeo uploading method
     /// they want to use. For Large file greater than 1gb and 20 minute
-    /// user method called resumable_upload, for video files smaller than
-    /// that use method called "non_resumable". Although facebook recommend
-    /// using resumable method.
+    ///  method called resumable_upload must be used, for video files smaller
+    /// than that either of the method can be used  ("non_resumable",
+    /// "resumable_upload"), for video hosted online(video_url), the method
+    /// called "post_by_link" can be used. Note: facebook recommend  using
+    /// resumable method when uploading direct directly.
     pub fn video_upload(self, page_id: String) -> VideoApi {
         let base_url = self.graph.replace("NODE", &page_id);
         VideoApi::new(base_url, self.page_access_token) // initit videp Api
@@ -144,8 +137,9 @@ impl Client {
         PagesSearchAPI::new(base_url, self.page_access_token)
     }
 
-    pub fn token_info(self) -> AccessTokenInformation {
-        AccessTokenInformation::default()
+    pub fn token_info(self) -> Token {
+        // AccessTokenInformation::default()
+        Token::default()
     }
 }
 

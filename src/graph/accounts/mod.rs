@@ -1,15 +1,24 @@
+//! This mod represent strucs and API needed for getting different accounts
+//! (facebook page) a user have access to. accounts API is called, it returns
+//! the  Facebook Pages that a user owns or is able to perform tasks on.
+//! This endpoint let you create facebook page or get different pages
+//!
+//! the response is the list of pages and the taskes, information and action the
+//! user can perform on those pages as shown in the struct. the actual response
+//! is varies with pages but this struct data will be present in every page For
+//! more details check facebook official documentation   https://developers.facebook.com/docs/graph-api/reference/user/accounts/
+
 use crate::graph::data::Data;
 use seed::{prelude::*, *};
 use serde::{Deserialize, Serialize};
 
-/// This struct represent  parameters gotten from the response when  the
-/// accounts API is called, it returns the  Facebook Pages that a user owns or
-/// is able to perform tasks on. the response is the list of pages and the
+/// This struct represent some of the data that will be returned when the
+/// account end point is called, the response is the list of pages and the
 /// taskes, information and action the user can perform on those pages as shown
 /// in the struct. the actual response is varies with pages but this struct data
-/// will be present in every page For more details check facebook official documentation     https://developers.facebook.com/docs/graph-api/reference/user/accounts/
-
-#[derive(Deserialize, Debug, Default, Serialize)]
+/// will be present in every page For more details check facebook official
+/// documentation   <https://developers.facebook.com/docs/graph-api/reference/user/accounts/>
+#[derive(Deserialize, Debug, Default, Clone, Serialize)]
 pub struct Accounts {
     /// The access token of this given page, which used to make operation that
     /// requires permission on this page example post and get request.
@@ -32,7 +41,7 @@ pub struct Accounts {
 
 /// This is the struct of name and id of category that page belong to
 
-#[derive(Deserialize, Debug, Default, Serialize)]
+#[derive(Deserialize, Debug, Clone, Default, Serialize)]
 pub struct ListDetails {
     id: String,
     name: String,
@@ -92,8 +101,9 @@ impl AccountsAPI {
     /// constructed to only take data that will be returned on every page
     /// since the actual reponse from facebook varies with pages
     ///
-    /// To check the possoble data that is possible to be in the response which
-    /// varies with pages check facebook documentation     https://developers.facebook.com/docs/graph-api/reference/user/accounts/
+    /// To check the possible data that is possible to be in the response which
+    /// varies with pages check facebook documentation    
+    /// <https://developers.facebook.com/docs/graph-api/reference/user/accounts/>
 
     pub async fn get(&self) -> seed::fetch::Result<Data<Accounts>> {
         log!(self.url);

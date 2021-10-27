@@ -1,10 +1,19 @@
+//! An access token is an opaque string that identifies a user, app, or Page
+//! and can be used by the app to make graph API calls.
+//!
+//! When someone connects with an app using Facebook Login and approves the
+//! request for permissions, the app obtains an access token that provides
+//! temporary, secure access to Facebook APIs. Access tokens are obtained via a
+//! number of methods.
+//! form more information check <https://developers.facebook.com/docs/facebook-login/access-tokens/?translation>
 use crate::graph::client::Client;
+use chrono::prelude::*;
+use chrono::{DateTime, TimeZone, Utc};
+use seed::fetch::fetch;
 use seed::prelude::IndexMap;
 use seed::prelude::{Method, Request};
 use seed::{prelude::*, *};
 use serde::{Deserialize, Serialize};
-
-use seed::fetch::fetch;
 
 /// The following struct is used to describe a token which may be retrieved from
 /// the login flow of Facebook.
@@ -74,27 +83,69 @@ impl Token {
     }
 
     /// this method is used to get information regarding a given token,
-    /// it accepts a valid access token and the toekn you intend to get
-    /// information, for more inform  check facbook deocumentation https://developers.facebook.com/docs/facebook-login/access-tokens/debugging-and-error-handling
+    /// it accepts a valid access token (valid_access_token) and the token you
+    /// intend to get  information about.
+    /// The respose data are struct
+    /// pub struct AccessTokenInformation {
+    //     pub expires_at: u64,//expire date in your unix time
+    //     pub token_type: String,  // The type of token ( USER/PAGE
+    //     pub expires_at_local_date: String, //expire date in your lcal time
+    //     pub is_valid: bool,
+    //     pub data_access_expires_at: u64, // when the token can not access data anymore in unix
+    // time     pub data_access_expires_at_local_date: String,// when the token can not access
+    // data anymore, in your local time }
+    /// Note: when you try to debug a long live token, the expires_at value will
+    /// be  "expires_at: 0" which means it never exoires for information
+    /// check facbook deocumentation
+    // <https://developers.facebook.com/docs/facebook-login/access-tokens/debugging-and-error-handling>
     pub async fn access_token_information(
         self,
         valid_access_token: String,
-        long_live_token: String,
+        debug_access_token: String,
     ) -> seed::fetch::Result<AccessTokenInformation> {
         // https://developers.facebook.com/docs/facebook-login/access-tokens/debugging-and-error-handling
         let url = "https://graph.facebook.com/debug_token?".to_owned()
             + "input_token="
-            + &long_live_token
+            + &debug_access_token
             + "&access_token="
             + &valid_access_token;
-        let request = Request::new(url).method(Method::Post);
-        fetch(request).await?.json::<AccessTokenInformation>().await
-        // let test = result.as_ref()
+        let request = Request::new(url).method(Method::Get);
+        let result = fetch(request)
+            .await?
+            .json::<TokenResponseInformation>()
+            .await;
+        let response = result.as_ref();
+        let access_token_response =
+            response.unwrap_or_else(|_| panic!("Token information result was not avaliable "));
+        let access_token_expiring_date = access_token_response.data.expires_at.to_owned();
+        let mut access_token_information = AccessTokenInformation::default();
 
-        //  let response = test.unwrap().expires_at.to_owned();
-        //   let expired_time = response / (1.12_f32.powf(8.0)) as u64;
-        //  log!("expired_time", expired_time);
-        //  result
+        // convert unix timestamp  date to human readable formate  and update the new
+        // constrcuted struct
+        if access_token_expiring_date != 0 {
+            let token_expiring_date_utc = Utc.timestamp(access_token_expiring_date as i64, 0);
+            let token_expiring_date_local: DateTime<Local> =
+                DateTime::from(token_expiring_date_utc);
+            access_token_information.expires_at_local_date = token_expiring_date_local.to_rfc2822();
+        } else {
+            access_token_information.expires_at_local_date = access_token_expiring_date.to_string();
+        }
+
+        let token_expiring_data_time =
+            Utc.timestamp(access_token_response.data.data_access_expires_at as i64, 0);
+        let token_expiring_data_time_local: DateTime<Local> =
+            DateTime::from(token_expiring_data_time);
+
+        access_token_information.data_access_expires_at_local_date =
+            token_expiring_data_time_local.to_rfc2822();
+        access_token_information.expires_at = access_token_response.data.expires_at;
+
+        access_token_information.data_access_expires_at =
+            access_token_response.data.data_access_expires_at;
+        access_token_information.is_valid = access_token_response.data.is_valid;
+        access_token_information.token_type = access_token_response.data.r#type.clone();
+
+        Ok(access_token_information)
     }
 
     // also the need to hanlde
@@ -127,40 +178,26 @@ pub fn extract_query_fragments(hash: String) -> IndexMap<String, String> {
     query
 }
 
-#[derive(Deserialize, Copy, Default, Clone, Debug, Serialize)]
+#[derive(Deserialize, Default, Clone, Debug, Serialize)]
 pub struct AccessTokenInformation {
-    data: ResponseData,
-}
-
-#[derive(Deserialize, Copy, Default, Clone, Debug, Serialize)]
-
-pub struct ResponseData {
-    pub expires_at: u64,
+    pub expires_at: u64,               // expire date in your unix time
+    pub token_type: String,            // The type of token ( USER/PAGE
+    pub expires_at_local_date: String, // expire date in your lcal time
     pub is_valid: bool,
+    pub data_access_expires_at: u64, // when the token can not access data anymore in unix time
+    pub data_access_expires_at_local_date: String, /* when the token can not access data
+                                      * anymore, in your local time */
 }
-impl AccessTokenInformation {
-    /// this method is used to get information regarding a given token,
-    /// it accepts a valid access token and the toekn you intend to get
-    /// information, for more inform  check facbook deocumentation https://developers.facebook.com/docs/facebook-login/access-tokens/debugging-and-error-handling
-    ///                                                                         
-    pub async fn access_token_information(
-        access_token: String,
-        long_live_token: String,
-    ) -> seed::fetch::Result<AccessTokenInformation> {
-        let url = "https://graph.facebook.com/debug_token?".to_owned()
-            + "input_token="
-            + &long_live_token
-            + "&access_token="
-            + &access_token;
-        let request = Request::new(url).method(Method::Get);
-        let result = fetch(request).await?.json::<AccessTokenInformation>().await;
-        let test = result.as_ref();
 
-        let response = test.unwrap().data.expires_at.to_owned();
-        let expired_time = response / (1.12_f32.powf(8.0)) as u64;
+#[derive(Deserialize, Default, Clone, Debug, Serialize)]
+struct TokenResponseInformation {
+    data: TokenResponseData,
+}
 
-        // Note: time is in unix time sampe
-        log!("expired_time", expired_time);
-        result
-    }
+#[derive(Deserialize, Default, Clone, Debug, Serialize)]
+struct TokenResponseData {
+    expires_at: u64,
+    r#type: String,
+    is_valid: bool,
+    data_access_expires_at: u64,
 }

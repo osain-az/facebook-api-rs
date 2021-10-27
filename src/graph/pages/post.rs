@@ -1,15 +1,16 @@
-/// The Post API let  you perform operation on individual post in a profile's
-/// feed. The profile could be a user, page, app, or group. (get post, update);
-/// Note: This end point does not allow you to create post or delete.
-/// for more details check facebook documentation on post Api.
-/// https://developers.facebook.com/docs/graph-api/reference/post
+//! The Post API let you perform operation (get post, update) on individual post
+//! in a profile's feed.
+//!
+//! The profile could be a user, page, app, or group.;
+//! Note: This end point does not allow you to create post or delete.
+//! for more details check facebook documentation on post Api.
+//! https://developers.facebook.com/docs/graph-api/reference/post
 use crate::graph::pages::utils::{Fields, GetPostResponse};
 use seed::fetch::fetch;
 use seed::prelude::{Method, Request};
 use seed::{prelude::*, *};
-use serde::{Deserialize, Serialize};
-
 use seed::{prelude::*, *};
+use serde::{Deserialize, Serialize};
 
 /// The Post API let  you perform operation on individual post in a profile's
 /// feed. The profile could be a user, page, app, or group. (get post, update);
