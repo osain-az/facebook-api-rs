@@ -1,3 +1,7 @@
+//! This api is connected to Represents an Instagram Photo, Video, Story, Album, or Instagram TV media. Reels are not supported.
+//! It allow´ you  get media details ( comments, like, etc).
+//! for details check <https://developers.facebook.com/docs/instagram-api/reference/ig-media>.
+
 use seed::fetch::fetch;
 use seed::prelude::{Method, Request};
 use seed::{prelude::*, *};
@@ -12,7 +16,6 @@ pub struct InstagramMediaApi {
     base_url: String,
 }
 
-
 impl InstagramMediaApi {
     pub fn new(access_token: String, base_url: String) -> InstagramMediaApi {
         InstagramMediaApi {
@@ -20,8 +23,8 @@ impl InstagramMediaApi {
             base_url,
         }
     }
-
-    ///https://developers.facebook.com/docs/instagram-api/reference/ig-media/comments
+    /// this method allow´s you to post on a give media.
+    // for details check <https://developers.facebook.com/docs/instagram-api/reference/ig-media/comments>
     pub async fn post_comments(
         self,
         comment_message:String,
@@ -59,6 +62,9 @@ impl InstagramMediaApi {
         fetch(request).await?.json::<MediaContainerData>().await
     }
 
+ /// This method allows you to check the status for a given media, this is important to check before
+ /// calling the publish_media method.
+ /// for details check <https://developers.facebook.com/docs/instagram-api/reference/ig-container#reading>
     pub async fn status(self)
                         -> seed::fetch::Result<MediaContainerStatus> {
         let base_url = self.base_url.replace("EDGE", "?fields=status_code");
@@ -71,13 +77,10 @@ impl InstagramMediaApi {
     }
 }
 
-
 #[derive(Deserialize, Debug, Clone, Serialize)]
 pub struct  MediaContainerStatus {
     pub      status_code:String
 }
-
-
 
 #[derive(Deserialize, Debug, Clone, Default, Serialize)]
 pub struct MediaContainerData {
