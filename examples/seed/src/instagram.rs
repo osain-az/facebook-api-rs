@@ -218,7 +218,7 @@ pub fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
                         orders.perform_cmd(async move {
                             Client::new(Token::default(), page_access_token)
                                 .instagram_publish(insta_page_id)
-                                .ig_media_container(post_param, "video".to_string()) //note: for photo passing in "photo" instead of "video" that was passed in
+                                .post_media(post_param, "video".to_string()) //note: for photo passing in "photo" instead of "video" that was passed in
                                 .await
                                 .map_or_else(Msg::ResponseFailed, Msg::InstaContainerResponse)
                         });
