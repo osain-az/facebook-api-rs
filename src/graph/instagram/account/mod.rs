@@ -1,6 +1,8 @@
+//! this Api is used to to get instagram business account needed to any give facebook page
+//! <https://developers.facebook.com/docs/instagram-api/reference/page>
+
 use seed::fetch::fetch;
 use seed::prelude::{Method, Request};
-
 use seed::{prelude::*, *};
 use serde::{Deserialize, Serialize};
 use seed::prelude::js_sys::encode_uri;
@@ -33,6 +35,8 @@ impl InstagramApi {
         }
     }
 
+    /// this method get the instagram business account id.
+    /// for reference check <https://developers.facebook.com/docs/instagram-api/reference/page>
     pub async fn account_id(self) -> seed::fetch::Result<InstaAccount> {
         let base_url = self.base_url.replace("EDGE", "?");
         let url = base_url
@@ -44,6 +48,8 @@ impl InstagramApi {
         fetch(request).await?.json::<InstaAccount>().await
     }
 
+    /// this method get the instagram business account with its details.
+    /// for reference check <https://developers.facebook.com/docs/instagram-api/reference/ig-user>
     pub async fn account_details(self) -> seed::fetch::Result<InstagramAccount> {
         let base_url = "https://graph.facebook.com/v11.0/";
 
