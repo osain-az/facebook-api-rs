@@ -54,7 +54,7 @@ pub struct UploadFile {
 }
 
 /// Response for successful uploading of video using no_resumable method
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize,Debug, Serialize)]
 pub struct PostResponse {
     id: String,
 }

@@ -48,7 +48,7 @@ impl PagesAPI {
     }
 }
 
-#[derive(Deserialize, Serialize, Default)]
+#[derive(Deserialize,Debug, Serialize, Default)]
 
 pub struct PageSearch {
     pub name: String,
@@ -59,7 +59,7 @@ pub struct PageSearch {
 
 /// this struct represent the data of the location of a page, Note: this data is
 /// only available if the page has enabled the location.
-#[derive(Deserialize, Serialize, Default)]
+#[derive(Deserialize, Serialize, Debug, Default)]
 pub struct Location {
     pub city: String,
     pub country: String,
