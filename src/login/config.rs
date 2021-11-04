@@ -15,12 +15,19 @@ pub struct Config {
 }
 
 impl Config {
+
+    pub fn new(facebook_oath_url: String, client_id: String, redirect_uri: String) -> Self {
+        Config { facebook_oath_url, client_id, redirect_uri }
+    }
+
     pub fn facebook_oath_url(&self) -> &str {
         &self.facebook_oath_url
     }
+
     pub fn client_id(&self) -> &str {
         &self.client_id
     }
+
     pub fn redirect_uri(&self) -> &str {
         &self.redirect_uri
     }
