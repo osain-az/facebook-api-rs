@@ -35,7 +35,7 @@ impl InstagramApi {
         }
     }
 
-    /// this method get the instagram business account id.
+    /// This method is use to get instagram business account id.
     /// for reference check <https://developers.facebook.com/docs/instagram-api/reference/page>
     pub async fn account_id(self) -> seed::fetch::Result<InstaAccount> {
         let base_url = self.base_url.replace("EDGE", "?");
@@ -48,7 +48,7 @@ impl InstagramApi {
         fetch(request).await?.json::<InstaAccount>().await
     }
 
-    /// this method get the instagram business account with its details.
+    /// This method is used to get instagram business account with its details (name, user, id ,etc).
     /// for reference check <https://developers.facebook.com/docs/instagram-api/reference/ig-user>
     pub async fn account_details(self) -> seed::fetch::Result<InstagramAccount> {
         let base_url = "https://graph.facebook.com/v11.0/";
@@ -117,7 +117,7 @@ pub struct InstagramAccount {
     ///This is not a public fields, which means it may be returned depending on the user setting.
     pub   media_count: u32,
 
-    //This is not a public fields, which means it may be returned depending on the user setting.
+    ///This is not a public fields, which means it may be returned depending on the user setting.
     pub   name: String,
 
     //This is not a public fields, which means it may be returned depending on the user setting.
@@ -134,7 +134,7 @@ pub struct Fields {
 }
 
 impl Default for Fields {
-    /// This parameters are used as fields which are passed in as a query
+    /// These parameters are used as fields which are passed in as a query
     /// parameters to the get post request and feeds request
     fn default() -> Self {
         let field_list = vec![
@@ -154,8 +154,3 @@ impl Default for Fields {
         Self { fields }
     }
 }
-// This is only used for serialize
-/*#[allow(clippy::trivially_copy_pass_by_ref)]
-fn is_undefined(num: String) -> bool {
-    *num ==
-}*/
