@@ -1,4 +1,4 @@
-//! this Api is used to to get instagram business account needed to any give facebook page
+//! This Api is used to get instagram business account for any given facebook page
 //! <https://developers.facebook.com/docs/instagram-api/reference/page>
 
 use seed::fetch::fetch;
