@@ -1,5 +1,5 @@
-//! This api is connected to Represents an Instagram Photo, Video, Story, Album, or Instagram TV media. Reels are not supported.
-//! It allow´ you  get media details ( comments, like, etc).
+//! This mode Represents Instagram api for  Photo, Video, Story, Album, or Instagram TV media. Reels are not supported.
+//! It allow´ you to get media details ( comments, like, etc).
 //! for details check <https://developers.facebook.com/docs/instagram-api/reference/ig-media>.
 
 use seed::fetch::fetch;
@@ -23,7 +23,7 @@ impl InstagramMediaApi {
             base_url,
         }
     }
-    /// this method allow´s you to post on a give media.
+    /// this method allow´s you to post on a give media container.
     // for details check <https://developers.facebook.com/docs/instagram-api/reference/ig-media/comments>
     pub async fn post_comments(
         self,
