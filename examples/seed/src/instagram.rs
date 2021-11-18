@@ -1,5 +1,5 @@
 use crate::instagram::Msg::{InstagramAccountIdSuccess, InstagramAccountDetailsSuccess};
-use facebook_api_rs::prelude::account::{InstaAccount, InstagramAccount};
+use facebook_api_rs::prelude::account::{InstaAccount, InstagramAccount, InstaAccountId};
 use facebook_api_rs::prelude::publish::{InstaMediaContainerId, InstaPostParams};
 use facebook_api_rs::prelude::search::{PageSearch, PagesAPI};
 use facebook_api_rs::prelude::*;
@@ -101,11 +101,16 @@ pub enum Msg {
     InstaPostSuccessful(InstaMediaContainerId),
     HandleInstaPostingOption(web_sys::Event),
     PagesSearch(String),
-     GetInstagramAccountDetails,
+     GetInstagramAccountDetails(InstaAccount),
     InstagramAccountDetailsSuccess(InstagramAccount),
     PageSearchResponse(PageSearch),
+
     MediaContainerStatus,
     MediaContainerStatusResponse(MediaContainerStatus),
+
+    FetchInstagramAccountId,
+    FetchInstagramAccountIdSuccess(InstaAccount),
+
     // every error should user this
     ResponseFailed(FetchError),
 }
@@ -137,8 +142,7 @@ pub fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
         Msg::InstagramAccountIdSuccess(resp) => {
             model.insta_account = Some(resp);
         }
-
-        Msg::GetInstagramAccountDetails => {
+        Msg::FetchInstagramAccountId => {
             if model.selected_account.is_some() {
                 if let Some(selected_page) = &model.selected_account {
                     let page_access_token = selected_page.access_token.to_owned();
@@ -147,6 +151,26 @@ pub fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
                     orders.perform_cmd(async move {
                         Client::new(Token::default(), page_access_token.clone())
                             .instagram_account(facebook_page_id)
+                            .account_id()
+                            .await
+                            .map_or_else(Msg::ResponseFailed, Msg::FetchInstagramAccountIdSuccess)
+                    });
+                }
+            };
+
+        }
+       Msg::FetchInstagramAccountIdSuccess(insta_id) => {
+           orders.send_msg(Msg::GetInstagramAccountDetails(insta_id));
+       }
+        Msg::GetInstagramAccountDetails(insta_id) => {
+             let instagram_id =  insta_id.instagram_business_account.id.clone();
+            if model.selected_account.is_some() {
+                if let Some(selected_page) = &model.selected_account {
+                    let page_access_token = selected_page.access_token.to_owned();
+
+                    orders.perform_cmd(async move {
+                        Client::new(Token::default(), page_access_token.clone())
+                            .instagram_account(instagram_id)
                             .account_details()
                             .await
                             .map_or_else(Msg::ResponseFailed, InstagramAccountDetailsSuccess)
@@ -398,7 +422,7 @@ pub fn view(model: &Model) -> Node<Msg> {
                 ],
                  button![
                     "Get Instagram Account details ",
-                    ev(Ev::Click, |_| { Msg::GetInstagramAccountDetails }),
+                    ev(Ev::Click, |_| { Msg::FetchInstagramAccountId }),
                     attrs! {
                        At:: Disabled => model.selected_account.is_none().as_at_value()
                     }
