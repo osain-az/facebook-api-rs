@@ -52,22 +52,8 @@ impl InstagramApi {
     /// It accepts the instagram page id.
     /// for reference check <https://developers.facebook.com/docs/instagram-api/reference/ig-user>
     pub async fn account_details(self) -> seed::fetch::Result<InstagramAccount> {
-              log!("the base url ", self.base_url);
-
             let mut url = self.base_url.replace("EDGE", "?");
-
-            // add required filed needed to be returned
-            let  fields_count = Fields::default().fields.len();
-             let mut url_fields = "".to_string();
-
-            for (count, field) in Fields::default().fields.into_iter().enumerate() {
-                if count < fields_count - 1 {
-                    url_fields = url_fields+ &field + ",";
-                } else {
-                    url_fields= url_fields+ &field; // remove the comma in the last filed
-                }
-            }
-            url_fields = String::from(encode(url_fields.as_str())); // encode the url
+            let  url_fields = Fields::default().build_url_with_fields(); // build urlenconded url withe regired fields
 
              let mut request_url = url
                  + "fields="
@@ -136,5 +122,21 @@ impl Default for Fields {
 
         let fields = field_list.iter().map(|&field| field.into()).collect();
         Self { fields }
+    }
+}
+
+impl Fields {
+    pub fn build_url_with_fields(self) -> String {
+        let mut url_fields= "".to_string();
+        let  fields_count = Fields::default().fields.len();
+        for (count, field) in Fields::default().fields.into_iter().enumerate() {
+            if count < fields_count - 1 {
+                url_fields = url_fields+ &field + ",";
+            } else {
+                url_fields= url_fields+ &field; // remove the comma in the last filed
+            }
+        }
+        url_fields = String::from(encode(url_fields.as_str())); // encode the url
+        url_fields
     }
 }
