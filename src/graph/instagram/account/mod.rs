@@ -49,50 +49,20 @@ impl InstagramApi {
     }
 
     /// This method is used to get instagram business account with its details (name, user, id ,etc).
+    /// It accepts the instagram page id.
     /// for reference check <https://developers.facebook.com/docs/instagram-api/reference/ig-user>
     pub async fn account_details(self) -> seed::fetch::Result<InstagramAccount> {
-        let base_url = "https://graph.facebook.com/v11.0/";
-
-         let self_data = self.clone();
-
-       let result =  self.account_id().await;
-        if result.is_ok(){
-            let instagram_id = result.unwrap();
-            let mut url = base_url.to_owned()
-                + &instagram_id.instagram_business_account.id.as_str();
-
-            // added required filed needed
-            let mut fields_count = Fields::default().fields.len();
-             let mut url_fields = "".to_string();
-            for (count, field) in Fields::default().fields.into_iter().enumerate() {
-                if count < fields_count - 1 {
-                    url_fields = url_fields+ &field + ",";
-                } else {
-                    url_fields= url_fields+ &field; // remove the comma in the last filed
-                }
-            }
-            url_fields = String::from(encode(url_fields.as_str()));
+            let mut url = self.base_url.replace("EDGE", "?");
+            let  url_fields = Fields::default().build_url_with_fields(); // build urlenconded url withe regired fields
 
              let mut request_url = url
-                 + "?fields="
+                 + "fields="
                  +url_fields.as_str()
                 + "&access_token="
-                + &self_data.page_access_token;
-
-               log!(request_url);
+                + &self.page_access_token;
             let request = Request::new(request_url).method(Method::Get);
            fetch(request).await?.json::<InstagramAccount>().await
-
-        }else {
-            let err = JsValue::from_str("The first get request call to fetch the instagram id was not successful,\
-             therefore the request to get instagram account failed. Try making the request again.");
-            Err(FetchError::RequestError(err)) // try to generate a customer
-            // error
-        }
-
     }
-
-
 }
 
 
@@ -152,5 +122,21 @@ impl Default for Fields {
 
         let fields = field_list.iter().map(|&field| field.into()).collect();
         Self { fields }
+    }
+}
+
+impl Fields {
+    pub fn build_url_with_fields(self) -> String {
+        let mut url_fields= "".to_string();
+        let  fields_count = Fields::default().fields.len();
+        for (count, field) in Fields::default().fields.into_iter().enumerate() {
+            if count < fields_count - 1 {
+                url_fields = url_fields+ &field + ",";
+            } else {
+                url_fields= url_fields+ &field; // remove the comma in the last filed
+            }
+        }
+        url_fields = String::from(encode(url_fields.as_str())); // encode the url
+        url_fields
     }
 }
