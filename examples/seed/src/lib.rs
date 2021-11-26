@@ -75,7 +75,8 @@ enum Msg {
     ConfigFetched(fetch::Result<Config>),
     GetAccount,
     GetAccountSuccess(Data<Accounts>),
-
+    GetMeDetails,
+    GetMeDetailsSuccess(Me),
     AccessTokenInformation,
     AccessTokenInfoData(AccessTokenInformation),
 
@@ -95,6 +96,7 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
         Msg::ConfigFetched(Err(fetch_error)) => error!("Config fetch failed! Be sure to have config.json at the root of your project with client_id and redirect_uri", fetch_error),
 
         Msg::GetAccount => {
+            orders.send_msg(Msg::GetMeDetails);
             if let Some(user_access_tokens) = model.user_tokens.clone() {
                 let user_tokens = user_access_tokens;
                 let client = Client::new(user_tokens, "".to_string());
@@ -109,6 +111,26 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
                         .map_or_else(Msg::ResponseFailed, Msg::GetAccountSuccess)
                 });
             }
+        }
+
+        Msg::GetMeDetails => {
+            if let Some(user_access_tokens) = model.user_tokens.clone() {
+                let user_tokens = user_access_tokens;
+                let user_token = user_tokens.long_lived_token.clone();
+                let client = Client::new(user_tokens, "".to_string());
+                orders.perform_cmd(async {
+                    // we are interested in the page long live token, therefore we called the long
+                    // live methed by passing "long_live_token" to the method
+                    client
+                        .me_by_short_or_long_live_token("short_live".to_string())
+                        .details()
+                        .await
+                        .map_or_else(Msg::ResponseFailed, Msg::GetMeDetailsSuccess)
+                });
+            }
+        }
+        Msg:: GetMeDetailsSuccess(resp) => {
+
         }
 
         Msg:: GetAccountSuccess(accounts) => {
