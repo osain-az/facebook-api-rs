@@ -24,19 +24,47 @@ use crate::graph::prelude::Accounts;
 pub struct Me {
     name: String,
     id: String,
+    last_name:String,
     first_name:String,
-    picture: FacebookPictureUserPicture,
+    picture: PictureData,
     email:String,
+}
+
+impl Me {
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+    pub fn id(&self) -> &str {
+        &self.id
+    }
+    pub fn first_name(&self) -> &str {
+        &self.first_name
+    }
+    pub fn picture(&self) -> &PictureData {
+        &self.picture
+    }
+    pub fn email(&self) -> &str {
+        &self.email
+    }
+    pub fn last_name(&self) -> &str {
+        &self.last_name
+    }
 }
 
 #[derive(Deserialize, Serialize)]
  pub struct PictureData{
-     data: FacebookPictureUserPicture
+   pub data: FacebookPictureUserPicture
 }
 
 #[derive(Deserialize, Serialize)]
 pub struct  FacebookPictureUserPicture {
     url: String,
+}
+
+impl FacebookPictureUserPicture {
+    pub fn url(&self) -> &str {
+        &self.url
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -50,7 +78,6 @@ impl MeApi {
             url: graph_base.replace("NODE", "me"),
         }
     }
-
     pub fn url(&self) -> &str {
         &self.url
     }
