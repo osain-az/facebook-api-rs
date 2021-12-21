@@ -11,6 +11,7 @@ use crate::prelude::search::PagesSearchAPI;
 use crate::prelude::video::VideoApi;
 use seed::{prelude::*, *};
 use std::option::Option::Some;
+use crate::graph::instagram::media::InstagramMediaApi;
 
 /// Client Struct for making calls to Facebook Graph
 #[derive(Debug)]
@@ -30,6 +31,7 @@ pub struct Client {
 impl Default for Client {
     fn default() -> Self {
         let graph = "https://graph.facebook.com/v11.0/NODE/EDGE".to_string();
+      //  let insta_graph = "https://graph.instagram.com/v11.0/NODE/EDGE".to_string();
 
         Self {
             graph,
@@ -69,6 +71,10 @@ impl Client {
     pub fn page_user_access_token(self) -> Self {
         self
     }
+
+    pub fn base_url (self) -> String{
+     self.graph
+}
 
     /// This method  is used to pass user data/crediteniatls to the ME method
     /// which will be used to reach the ME API.
@@ -126,10 +132,16 @@ impl Client {
         InstagramApi::new(self.page_access_token, base_url)
     }
 
-    pub fn instagram(self, instagarm_id: String) -> InstagramPostApi {
-        let base_url = self.graph.replace("NODE", &instagarm_id);
+    pub fn instagram_publish(self, instagram_id: String) -> InstagramPostApi {
+        let base_url = self.graph.replace("NODE", &instagram_id);
 
         InstagramPostApi::new(self.page_access_token, base_url)
+    }
+
+    pub fn instagram_media_container(self, media_container_id: String) -> InstagramMediaApi{
+        let base_url = self.graph.replace("NODE", &media_container_id);
+
+        InstagramMediaApi::new(self.page_access_token, base_url)
     }
 
     pub fn search_pages(self) -> PagesSearchAPI {
