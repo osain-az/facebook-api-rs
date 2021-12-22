@@ -117,6 +117,7 @@ impl RedirectURL {
         self
     }
 
+
     pub fn facebook_oath_url(&self) -> &String {
         &self.facebook_oath_url
     }
@@ -148,7 +149,6 @@ impl RedirectURL {
     fn set_facebook_oath_url(&mut self, facebook_oath_url: String) {
         self.facebook_oath_url = facebook_oath_url;
     }
-
     fn set_client_id(&mut self, client_id: String) {
         self.client_id = client_id;
     }
