@@ -19,7 +19,7 @@ pub struct ReqwestClient {
 
 #[maybe_async::maybe_async]
 impl HttpClient for ReqwestClient {
-    fn new<U: Into<Option<HeaderMap>>>(headers: U) -> Result<Self, ClientError> {
+    fn new<U: Into<Option<HeaderMap>>>(headers: U) -> Result<Self, ClientErr> {
         let client = Client::builder().gzip(true);
         let headers = match headers.into() {
             Some(h) => h,
@@ -30,10 +30,10 @@ impl HttpClient for ReqwestClient {
             .default_headers(headers.clone())
             .build()
             .map(|c| ReqwestClient { client: c, headers })
-            .map_err(|e| ClientError::HttpClient(format!("{:?}", e)))
+            .map_err(|e| ClientErr::HttpClient(format!("{:?}", e)))
     }
 
-    fn clone_with_transaction(&self, transaction_id: String) -> Result<Self, ClientError> {
+    fn clone_with_transaction(&self, transaction_id: String) -> Result<Self, ClientErr> {
         let mut headers = HeaderMap::new();
         for (name, value) in self.headers.iter() {
             headers.insert(name, value.clone());
@@ -46,14 +46,14 @@ impl HttpClient for ReqwestClient {
     async fn request(
         &self,
         request: http::Request<String>,
-    ) -> Result<http::Response<String>, ClientError> {
+    ) -> Result<http::Response<String>, ClientErr> {
         let req = request.try_into().unwrap();
 
         let resp = self
             .client
             .execute(req)
             .await
-            .map_err(|e| ClientError::HttpClient(format!("{:?}", e)))?;
+            .map_err(|e| ClientErr::HttpClient(format!("{:?}", e)))?;
 
         let status_code = resp.status();
         let headers = resp.headers().clone();
@@ -61,7 +61,7 @@ impl HttpClient for ReqwestClient {
         let content = resp
             .text()
             .await
-            .map_err(|e| ClientError::HttpClient(format!("{:?}", e)))?;
+            .map_err(|e| ClientErr::HttpClient(format!("{:?}", e)))?;
         let mut build = http::Response::builder();
 
         for header in headers.iter() {
@@ -72,6 +72,6 @@ impl HttpClient for ReqwestClient {
             .status(status_code)
             .version(version)
             .body(content)
-            .map_err(|e| ClientError::HttpClient(format!("{:?}", e)))
+            .map_err(|e| ClientErr::HttpClient(format!("{:?}", e)))
     }
 }

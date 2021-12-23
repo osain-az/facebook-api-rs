@@ -9,7 +9,7 @@
 use http::{HeaderMap, Request, Response};
 use url::Url;
 
-use crate::ClientError;
+use crate::universal::errors::ClientErr;
 
 #[cfg(all(feature = "reqwest_async"))]
 compile_error!(
@@ -38,28 +38,26 @@ pub mod reqwest;
 pub mod surf;
 mod client_request;
 
+pub(crate) mod errors;
+
 
 #[maybe_async::maybe_async]
 pub trait HttpClient: Sync + Clone {
-    fn new<U: Into<Option<HeaderMap>>>(headers: U) -> Result<Self, ClientError>
-        where
-            Self: Sized;
-
-    fn clone_with_transaction(&self, transaction_id: String) -> Result<Self, ClientError>
+    fn new<U: Into<Option<HeaderMap>>>(headers: U) -> Result<Self, ()>
         where
             Self: Sized;
 
     #[inline]
-    async fn get<T>(&self, url: Url, text: T) -> Result<Response<String>, ClientError>
+    async fn get<T>(&self, url: Url, request_body: T) -> Result<Response<String>, ClientErr>
         where
             Self: Sized,
             T: Into<String> + Send,
     {
-        self.request(Request::get(url.to_string()).body(text.into()).unwrap())
+        self.request(Request::get(url.to_string()).body(request_body.into()).unwrap())
             .await
     }
     #[inline]
-    async fn post<T>(&self, url: Url, text: T) -> Result<Response<String>, ClientError>
+    async fn post<T>(&self, url: Url, text: T) -> Result<Response<String>, ClientErr>
         where
             Self: Sized,
             T: Into<String> + Send,
@@ -68,7 +66,7 @@ pub trait HttpClient: Sync + Clone {
             .await
     }
     #[inline]
-    async fn put<T>(&self, url: Url, text: T) -> Result<Response<String>, ClientError>
+    async fn put<T>(&self, url: Url, text: T) -> Result<Response<String>, ClientErr>
         where
             Self: Sized,
             T: Into<String> + Send,
@@ -77,7 +75,7 @@ pub trait HttpClient: Sync + Clone {
             .await
     }
     #[inline]
-    async fn delete<T>(&self, url: Url, text: T) -> Result<Response<String>, ClientError>
+    async fn delete<T>(&self, url: Url, text: T) -> Result<Response<String>, ClientErr>
         where
             Self: Sized,
             T: Into<String> + Send,
@@ -86,7 +84,7 @@ pub trait HttpClient: Sync + Clone {
             .await
     }
     #[inline]
-    async fn patch<T>(&self, url: Url, text: T) -> Result<Response<String>, ClientError>
+    async fn patch<T>(&self, url: Url, text: T) -> Result<Response<String>, ClientErr>
         where
             Self: Sized,
             T: Into<String> + Send,
@@ -96,17 +94,7 @@ pub trait HttpClient: Sync + Clone {
     }
 
     #[inline]
-    async fn connect<T>(&self, url: Url, text: T) -> Result<Response<String>, ClientError>
-        where
-            Self: Sized,
-            T: Into<String> + Send,
-    {
-        self.request(Request::connect(url.to_string()).body(text.into()).unwrap())
-            .await
-    }
-
-    #[inline]
-    async fn head<T>(&self, url: Url, text: T) -> Result<Response<String>, ClientError>
+    async fn head<T>(&self, url: Url, text: T) -> Result<Response<String>, ClientErr>
         where
             Self: Sized,
             T: Into<String> + Send,
@@ -116,7 +104,7 @@ pub trait HttpClient: Sync + Clone {
     }
 
     #[inline]
-    async fn options<T>(&self, url: Url, text: T) -> Result<Response<String>, ClientError>
+    async fn options<T>(&self, url: Url, text: T) -> Result<Response<String>, ClientErr>
         where
             Self: Sized,
             T: Into<String> + Send,
@@ -125,17 +113,7 @@ pub trait HttpClient: Sync + Clone {
             .await
     }
 
-    #[inline]
-    async fn trace<T>(&self, url: Url, text: T) -> Result<Response<String>, ClientError>
-        where
-            Self: Sized,
-            T: Into<String> + Send,
-    {
-        self.request(Request::trace(url.to_string()).body(text.into()).unwrap())
-            .await
-    }
-
-    async fn request(&self, request: Request<String>) -> Result<Response<String>, ClientError>
+    async fn request(&self, request: Request<String>) -> Result<Response<String>, ClientErr>
         where
             Self: Sized;
 }

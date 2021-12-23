@@ -1,13 +1,17 @@
 #![allow(dead_code)]
 
+use std::sync::Arc;
 use crate::login::config::Config;
 use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
+use seed::fetch::StatusCategory::ClientError;
 use serde::{Deserialize, Serialize};
+use crate::universal::HttpClient;
+use crate::universal::errors::ClientErr;
 
 /// Contains the Config struct and is used for building the login flow
 #[derive(Deserialize, Debug, Default, Serialize)]
-pub struct RedirectURL {
+pub struct RedirectURL<HttpC:HttpClient> {
     /// The Facebook url preamble for the oath dialog.
     facebook_oath_url: String,
 
@@ -31,9 +35,12 @@ pub struct RedirectURL {
 
     /// The full url of the login flow.
     full_url: String,
+
+    //this will be used for the http_clint
+    http_client: Arc<HttpC>
 }
 
-impl RedirectURL {
+impl < HttpC:HttpClient> RedirectURL<HttpC> {
     /// Constructor of the RedirectURL
     /// facebook_oath_url, client_id, and redirect_uri are retrieved from the
     /// config.json file. which the user has to configure.
@@ -42,7 +49,7 @@ impl RedirectURL {
     /// of the application, or else the response will default to code upon
     /// the login flow redirect. scope is optional, but inclusion must
     /// fulfill a valid scope.
-    pub fn new(config: Config) -> RedirectURL {
+    pub fn new(config: Config) -> RedirectURL<HttpC> {
         RedirectURL::default()
             .add_facebook_oath_url(&config.facebook_oath_url())
             .add_client_id(&config.client_id())
@@ -116,8 +123,18 @@ impl RedirectURL {
         self.full_url = self.build_redirect_url_as_string();
         self
     }
-
-
+    pub fn http_session(&self) -> Arc<HttpClient> {
+        Arc::clone(&self.http_client)
+    }
+  pub async fn login (&self)  -> Result<(), ClientErr>{
+      let client  = HttpClient::new(None)?;
+       if(self.full_url.is_empty()){
+           Err(ClientErr::FacebookError("there was an eror".to_string()))
+       }else {
+           let resp = client.get(&self.full_url,"");
+          Ok(())
+       }
+   }
     pub fn facebook_oath_url(&self) -> &String {
         &self.facebook_oath_url
     }
