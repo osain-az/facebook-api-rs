@@ -39,6 +39,8 @@ pub mod surf;
 mod client_request;
 
 pub(crate) mod errors;
+mod web_sys;
+mod seedClient;
 
 
 #[maybe_async::maybe_async]
@@ -48,7 +50,7 @@ pub trait HttpClient: Sync + Clone {
             Self: Sized;
 
     #[inline]
-    async fn get<T>(&self, url: Url, request_body: T) -> Result<Response<String>, ClientErr>
+    async fn get<T>(&self, url: Url, request_body: T) -> Result<Response<T>, ClientErr>
         where
             Self: Sized,
             T: Into<String> + Send,
@@ -57,44 +59,44 @@ pub trait HttpClient: Sync + Clone {
             .await
     }
     #[inline]
-    async fn post<T>(&self, url: Url, text: T) -> Result<Response<String>, ClientErr>
+    async fn post<T,Tr>(&self, url: Url, request_body: T) -> Result<Response<Tr>, ClientErr>
         where
             Self: Sized,
             T: Into<String> + Send,
     {
-        self.request(Request::post(url.to_string()).body(text.into()).unwrap())
+        self.request(Request::post(url.to_string()).body(request_body.into()).unwrap())
             .await
     }
     #[inline]
-    async fn put<T>(&self, url: Url, text: T) -> Result<Response<String>, ClientErr>
+    async fn put<T>(&self, url: Url,  request_body: T) -> Result<Response<String>, ClientErr>
         where
             Self: Sized,
             T: Into<String> + Send,
     {
-        self.request(Request::put(url.to_string()).body(text.into()).unwrap())
+        self.request(Request::put(url.to_string()).body( request_body.into()).unwrap())
             .await
     }
     #[inline]
-    async fn delete<T>(&self, url: Url, text: T) -> Result<Response<String>, ClientErr>
+    async fn delete<T>(&self, url: Url,  request_body: T) -> Result<Response<String>, ClientErr>
         where
             Self: Sized,
             T: Into<String> + Send,
     {
-        self.request(Request::delete(url.to_string()).body(text.into()).unwrap())
+        self.request(Request::delete(url.to_string()).body( request_body.into()).unwrap())
             .await
     }
     #[inline]
-    async fn patch<T>(&self, url: Url, text: T) -> Result<Response<String>, ClientErr>
+    async fn patch<T>(&self, url: Url,  request_body: T) -> Result<Response<String>, ClientErr>
         where
             Self: Sized,
             T: Into<String> + Send,
     {
-        self.request(Request::patch(url.to_string()).body(text.into()).unwrap())
+        self.request(Request::patch(url.to_string()).body( request_bodyinto()).unwrap())
             .await
     }
 
     #[inline]
-    async fn head<T>(&self, url: Url, text: T) -> Result<Response<String>, ClientErr>
+    async fn head<T>(&self, url: Url,  request_body: T) -> Result<Response<String>, ClientErr>
         where
             Self: Sized,
             T: Into<String> + Send,
@@ -104,12 +106,12 @@ pub trait HttpClient: Sync + Clone {
     }
 
     #[inline]
-    async fn options<T>(&self, url: Url, text: T) -> Result<Response<String>, ClientErr>
+    async fn options<T>(&self, url: Url,  request_body: T) -> Result<Response<String>, ClientErr>
         where
             Self: Sized,
             T: Into<String> + Send,
     {
-        self.request(Request::options(url.to_string()).body(text.into()).unwrap())
+        self.request(Request::options(url.to_string()).body( request_body.into()).unwrap())
             .await
     }
 

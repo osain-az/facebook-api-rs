@@ -7,8 +7,8 @@ use ::reqwest::blocking::Client;
 use ::reqwest::Client;
 use http::header::HeaderMap;
 
-use super::*;
-use crate::client::ClientExt;
+
+use crate::universal::HttpClient;
 use crate::transaction::TRANSACTION_HEADER;
 
 #[derive(Debug, Clone)]

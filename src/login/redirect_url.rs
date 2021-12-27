@@ -116,6 +116,7 @@ impl < HttpC:HttpClient> RedirectURL<HttpC> {
             + &*self.state
             + "&scope="
             + &self.scope.iter().cloned().collect::<String>();
+        self.full_url = full_url.clone();
         full_url
     }
 
@@ -126,10 +127,12 @@ impl < HttpC:HttpClient> RedirectURL<HttpC> {
     pub fn http_session(&self) -> Arc<HttpClient> {
         Arc::clone(&self.http_client)
     }
+
+    //Todo::this method is under experimental
   pub async fn login (&self)  -> Result<(), ClientErr>{
       let client  = HttpClient::new(None)?;
        if(self.full_url.is_empty()){
-           Err(ClientErr::FacebookError("there was an eror".to_string()))
+           Err(ClientErr::FacebookError("build the url before calling the login method".to_string()))
        }else {
            let resp = client.get(&self.full_url,"");
           Ok(())
