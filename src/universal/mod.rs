@@ -12,45 +12,46 @@ use url::Url;
 use crate::universal::errors::ClientErr;
 
 #[cfg(all(feature = "reqwest_async"))]
-compile_error!(
+/*compile_error!(
     r#"feature "reqwest_async" and "reqwest_blocking" cannot be set at the same time.
 If what you want is "reqwest_blocking", please turn off default features by adding "default-features=false" in your Cargo.toml"#
-);
+);*/
 
-#[cfg(all(feature = "reqwest_async", feature = "surf_async"))]
+#[cfg(all(feature = "reqwest_async", feature = "seed_async"))]
 compile_error!(
     r#"feature "reqwest_async" and "surf_async" cannot be set at the same time.
-If what you want is "surf_async", please turn off default features by adding "default-features=false" in your Cargo.toml"#
+If what you want is "seed_async", please turn off default features by adding "default-features=false" in your Cargo.toml"#
 );
 
 #[cfg(all(
 feature = "reqwest_async",
-feature = "reqwest_blocking",
-feature = "surf_async"
+feature = "seed_async"
 ))]
 compile_error!(
-    r#"only one of features "reqwest_async", "reqwest_blocking" and "surf_async" can be"#
+    r#"only one of features "reqwest_async", "seed_async" and "..." can be"#
 );
 
-#[cfg(any(feature = "reqwest_async", feature = "reqwest_blocking"))]
+#[cfg(any(feature = "reqwest_async"))]
 pub mod reqwest;
-#[cfg(any(feature = "surf_async"))]
-pub mod surf;
-mod client_request;
+
+//mod client_request;
 
 pub(crate) mod errors;
-mod web_sys;
-mod seedClient;
+//mod web_sys;
 
+#[cfg(any(feature = "seed_async"))]
+pub mod seed_client;
+pub mod response;
 
+//#[derive(Deserialize, Debug)]
 #[maybe_async::maybe_async]
 pub trait HttpClient: Sync + Clone {
-    fn new<U: Into<Option<HeaderMap>>>(headers: U) -> Result<Self, ()>
+    fn new<U: Into<Option<HeaderMap>>>(headers: U) -> Result<Self, ClientErr>
         where
             Self: Sized;
 
     #[inline]
-    async fn get<T>(&self, url: Url, request_body: T) -> Result<Response<T>, ClientErr>
+    async fn get<T>(&self, url: Url, request_body: T) -> Result<Response<String>, ClientErr>
         where
             Self: Sized,
             T: Into<String> + Send,
@@ -59,7 +60,7 @@ pub trait HttpClient: Sync + Clone {
             .await
     }
     #[inline]
-    async fn post<T,Tr>(&self, url: Url, request_body: T) -> Result<Response<Tr>, ClientErr>
+    async fn post<T>(&self, url: Url, request_body: T) -> Result<Response<String>, ClientErr>
         where
             Self: Sized,
             T: Into<String> + Send,
@@ -91,7 +92,7 @@ pub trait HttpClient: Sync + Clone {
             Self: Sized,
             T: Into<String> + Send,
     {
-        self.request(Request::patch(url.to_string()).body( request_bodyinto()).unwrap())
+        self.request(Request::patch(url.to_string()).body( request_body.into()).unwrap())
             .await
     }
 
@@ -101,7 +102,7 @@ pub trait HttpClient: Sync + Clone {
             Self: Sized,
             T: Into<String> + Send,
     {
-        self.request(Request::head(url.to_string()).body(text.into()).unwrap())
+        self.request(Request::head(url.to_string()).body(request_body.into()).unwrap())
             .await
     }
 

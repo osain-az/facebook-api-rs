@@ -1,15 +1,13 @@
 //! Reqwest HTTP client
 use std::convert::TryInto;
 
-#[cfg(feature = "reqwest_blocking")]
-use ::reqwest::blocking::Client;
 #[cfg(feature = "reqwest_async")]
 use ::reqwest::Client;
 use http::header::HeaderMap;
 
 
 use crate::universal::HttpClient;
-use crate::transaction::TRANSACTION_HEADER;
+use crate::universal::errors::ClientErr;
 
 #[derive(Debug, Clone)]
 pub struct ReqwestClient {
@@ -31,16 +29,6 @@ impl HttpClient for ReqwestClient {
             .build()
             .map(|c| ReqwestClient { client: c, headers })
             .map_err(|e| ClientErr::HttpClient(format!("{:?}", e)))
-    }
-
-    fn clone_with_transaction(&self, transaction_id: String) -> Result<Self, ClientErr> {
-        let mut headers = HeaderMap::new();
-        for (name, value) in self.headers.iter() {
-            headers.insert(name, value.clone());
-        }
-
-        headers.insert(TRANSACTION_HEADER, transaction_id.parse().unwrap());
-        ReqwestClient::new(headers)
     }
 
     async fn request(

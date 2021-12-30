@@ -8,6 +8,7 @@ use seed::fetch::StatusCategory::ClientError;
 use serde::{Deserialize, Serialize};
 use crate::universal::HttpClient;
 use crate::universal::errors::ClientErr;
+use crate::universal::response::{ClientResult, deserialize_response};
 
 /// Contains the Config struct and is used for building the login flow
 #[derive(Deserialize, Debug, Default, Serialize)]
@@ -37,10 +38,10 @@ pub struct RedirectURL<HttpC:HttpClient> {
     full_url: String,
 
     //this will be used for the http_clint
-    http_client: Arc<HttpC>
+  pub  http_client: Arc<HttpC>
 }
 
-impl < HttpC:HttpClient> RedirectURL<HttpC> {
+impl < HttpC:HttpClient + std::default::Default> RedirectURL<HttpC> {
     /// Constructor of the RedirectURL
     /// facebook_oath_url, client_id, and redirect_uri are retrieved from the
     /// config.json file. which the user has to configure.
@@ -124,19 +125,19 @@ impl < HttpC:HttpClient> RedirectURL<HttpC> {
         self.full_url = self.build_redirect_url_as_string();
         self
     }
-    pub fn http_session(&self) -> Arc<HttpClient> {
-        Arc::clone(&self.http_client)
-    }
 
     //Todo::this method is under experimental
-  pub async fn login (&self)  -> Result<(), ClientErr>{
-      let client  = HttpClient::new(None)?;
-       if(self.full_url.is_empty()){
+  pub async fn login (&self)  -> Result<TestResponse, ClientErr>{
+    //  let client  = HttpClient::new(None)?;
+        let resp = self.http_client.get((&self.full_url.to_string()).parse().unwrap(), "").await?;
+          let result  :ClientResult<TestResponse> = deserialize_response(resp.body())?;
+      /*  if(self.full_url.is_empty()){
            Err(ClientErr::FacebookError("build the url before calling the login method".to_string()))
        }else {
-           let resp = client.get(&self.full_url,"");
+           let resp = self.http_client.get((&self.full_url.to_string()).parse().unwrap(), "");
           Ok(())
-       }
+       }*/
+        Ok(result.unwrap())
    }
     pub fn facebook_oath_url(&self) -> &String {
         &self.facebook_oath_url
@@ -190,6 +191,10 @@ impl < HttpC:HttpClient> RedirectURL<HttpC> {
     }
 }
 
+#[derive(Debug, Deserialize)]
+pub struct  TestResponse {
+   pub  ok: String
+}
 #[cfg(test)]
 mod tests {
     use crate::login::config::Config;

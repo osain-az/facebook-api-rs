@@ -3,16 +3,15 @@ use std::fmt;
 use serde::Deserialize;
 use thiserror::Error;
 
-use crate::connection::Permission;
-
+//use crate::connection::Permission;
 #[derive(Error, Debug)]
 pub enum ClientErr {
     #[error("Insufficient permission ({permission:?}) to operate: {operation}")]
     InsufficientPermission {
-        permission: Permission,
+        permission: String,
         operation: String,
     },
-    #[error("Server is not ArangoDB: {0}")]
+    #[error("facebook error: {0}")]
     FacebookError(String),
     #[error("Error from server: {0}")]
     Facebook(#[from] FacebookAPiError),
