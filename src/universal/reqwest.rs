@@ -52,6 +52,7 @@ impl HttpClient for ReqwestClient {
             .map_err(|e| ClientErr::HttpClient(format!("{:?}", e)))?;
         let mut build = http::Response::builder();
 
+
         for header in headers.iter() {
             build = build.header(header.0, header.1);
         }

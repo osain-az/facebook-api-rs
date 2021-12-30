@@ -11,7 +11,7 @@ pub enum ClientErr {
         permission: String,
         operation: String,
     },
-    #[error("facebook error: {0}")]
+    #[error("facebook error:  {0}")]
     FacebookError(String),
     #[error("Error from server: {0}")]
     Facebook(#[from] FacebookAPiError),

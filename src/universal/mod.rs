@@ -13,7 +13,7 @@ use crate::universal::errors::ClientErr;
 
 #[cfg(all(feature = "reqwest_async"))]
 /*compile_error!(
-    r#"feature "reqwest_async" and "reqwest_blocking" cannot be set at the same time.
+    r#"feature "reqwest_async" and  "reqwest_blocking" cannot be set at the same time.
 If what you want is "reqwest_blocking", please turn off default features by adding "default-features=false" in your Cargo.toml"#
 );*/
 

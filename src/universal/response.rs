@@ -1,12 +1,4 @@
-//! types to deserialize responses from arangoDB server via HTTP request, as
-//! well as convenient functions to deserialize `Response`.
-//!
-//! For response with `error` and `code` fields indicating the whether the
-//! request is successful, use `deserialize_response` to abstract over request
-//! status and data of concerns.
-//!
-//! For response storing all information in `result` filed, use
-//! `ArangoResult`.
+
 use std::ops::Deref;
 
 use serde::{
@@ -17,13 +9,8 @@ use serde_json::value::Value;
 
 use crate::universal::errors::{ClientErr, FacebookAPiError};
 
-/// Deserialize response from arango server
+
 ///
-/// There are different type of json object when requests to arangoDB
-/// server is accepted or not. Here provides an abstraction for
-/// response of success and failure.
-///
-/// When ArangoDB server response error code, then an error would be cast.
 pub(crate) fn deserialize_response<T>(text: &str) -> Result<T, ClientErr>
     where
         T: DeserializeOwned,
@@ -32,15 +19,7 @@ pub(crate) fn deserialize_response<T>(text: &str) -> Result<T, ClientErr>
     Ok(Into::<Result<T, FacebookAPiError>>::into(response)?)
 }
 
-/// An helper enum to divide into successful and failed response
-///
-/// Request to server can failed at application level, like insufficient
-/// permission, database not found and etc. Response from arangoDB can tell
-/// whether the query succeeded and why if it failed.
-///
-/// The function of this enum is almost the same as `Result`, except that it's
-/// used to deserialize from server response. This enum is to facilitate
-/// deserialization and it should be converted to `Result<T, ArangoError>`
+
 /// eventually.
 #[derive(Debug)]
 pub(crate) enum Response<T> {
@@ -84,8 +63,7 @@ impl<'de, T> Deserialize<'de> for Response<T>
     }
 }
 
-/// Helper struct to deserialize json result that store
-/// information in "result" field
+
 #[derive(Deserialize, Debug)]
 pub(crate) struct ClientResult<T> {
     #[serde(rename = "result")]
