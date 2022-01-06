@@ -1,4 +1,3 @@
-
 use std::ops::Deref;
 
 use serde::{
@@ -9,18 +8,15 @@ use serde_json::value::Value;
 
 use crate::universal::errors::{ClientErr, FacebookAPiError};
 
-
 ///
 pub(crate) fn deserialize_response<T>(text: &str) -> Result<T, ClientErr>
-    where
-        T: DeserializeOwned,
+where
+    T: DeserializeOwned,
 {
     let response: Response<T> = serde_json::from_str(text)?;
     Ok(Into::<Result<T, FacebookAPiError>>::into(response)?)
 }
 
-
-/// eventually.
 #[derive(Debug)]
 pub(crate) enum Response<T> {
     Ok(T),
@@ -37,12 +33,12 @@ impl<T> Into<Result<T, FacebookAPiError>> for Response<T> {
 }
 
 impl<'de, T> Deserialize<'de> for Response<T>
-    where
-        T: Deserialize<'de>,
+where
+    T: Deserialize<'de>,
 {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-        where
-            D: Deserializer<'de>,
+    where
+        D: Deserializer<'de>,
     {
         let map = serde_json::Map::deserialize(deserializer)?;
         let error = map
@@ -62,7 +58,6 @@ impl<'de, T> Deserialize<'de> for Response<T>
         }
     }
 }
-
 
 #[derive(Deserialize, Debug)]
 pub(crate) struct ClientResult<T> {

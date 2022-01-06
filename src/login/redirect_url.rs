@@ -1,18 +1,23 @@
 #![allow(dead_code)]
 
-use std::sync::Arc;
 use crate::login::config::Config;
+use crate::universal::client::HttpConnection;
+use crate::universal::errors::ClientErr;
+use log::info;
+
+use async_trait::async_trait;
+//use crate::universal::reqwest::ReqwestClient;
+use crate::universal::response::{deserialize_response, ClientResult};
+use crate::universal::seed_client::SeedClient;
+use crate::universal::HttpClient;
 use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
 use seed::fetch::StatusCategory::ClientError;
 use serde::{Deserialize, Serialize};
-use crate::universal::HttpClient;
-use crate::universal::errors::ClientErr;
-use crate::universal::response::{ClientResult, deserialize_response};
+use std::sync::Arc;
 
-/// Contains the Config struct and is used for building the login flow
-#[derive(Deserialize, Debug, Default, Serialize)]
-pub struct RedirectURL<HttpC:HttpClient> {
+#[derive(Deserialize, Debug, Default, Clone, Serialize)]
+pub struct RedirectURL {
     /// The Facebook url preamble for the oath dialog.
     facebook_oath_url: String,
 
@@ -36,12 +41,9 @@ pub struct RedirectURL<HttpC:HttpClient> {
 
     /// The full url of the login flow.
     full_url: String,
-
-    //this will be used for the http_clint
-  pub  http_client: Arc<HttpC>
 }
 
-impl < HttpC:HttpClient + std::default::Default> RedirectURL<HttpC> {
+impl RedirectURL {
     /// Constructor of the RedirectURL
     /// facebook_oath_url, client_id, and redirect_uri are retrieved from the
     /// config.json file. which the user has to configure.
@@ -50,7 +52,7 @@ impl < HttpC:HttpClient + std::default::Default> RedirectURL<HttpC> {
     /// of the application, or else the response will default to code upon
     /// the login flow redirect. scope is optional, but inclusion must
     /// fulfill a valid scope.
-    pub fn new(config: Config) -> RedirectURL<HttpC> {
+    pub fn new(config: Config) -> RedirectURL {
         RedirectURL::default()
             .add_facebook_oath_url(&config.facebook_oath_url())
             .add_client_id(&config.client_id())
@@ -126,19 +128,6 @@ impl < HttpC:HttpClient + std::default::Default> RedirectURL<HttpC> {
         self
     }
 
-    //Todo::this method is under experimental
-  pub async fn login (&self)  -> Result<TestResponse, ClientErr>{
-    //  let client  = HttpClient::new(None)?;
-        let resp = self.http_client.get((&self.full_url.to_string()).parse().unwrap(), "").await?;
-          let result  :ClientResult<TestResponse> = deserialize_response(resp.body())?;
-      /*  if(self.full_url.is_empty()){
-           Err(ClientErr::FacebookError("build the url before calling the login method".to_string()))
-       }else {
-           let resp = self.http_client.get((&self.full_url.to_string()).parse().unwrap(), "");
-          Ok(())
-       }*/
-        Ok(result.unwrap())
-   }
     pub fn facebook_oath_url(&self) -> &String {
         &self.facebook_oath_url
     }
@@ -164,7 +153,17 @@ impl < HttpC:HttpClient + std::default::Default> RedirectURL<HttpC> {
     }
 
     pub fn get_full_url(&self) -> &String {
+        info!("It works!");
         &self.full_url
+    }
+
+    pub async fn login(&self) -> Result<(), ClientErr> {
+        //  let client  = HttpClient::new(None)?;
+        println!("this is the backed api");
+        info!("It works!");
+        let url = self.full_url.clone();
+        let resp = HttpConnection::login(url, "".to_string()).await?;
+        Ok(resp)
     }
 
     fn set_facebook_oath_url(&mut self, facebook_oath_url: String) {
@@ -191,9 +190,30 @@ impl < HttpC:HttpClient + std::default::Default> RedirectURL<HttpC> {
     }
 }
 
+#[derive(Deserialize, Debug, Default, Serialize)]
+pub struct FaceebookLogin<HttpC: HttpClient> {
+    pub http_client: Arc<HttpC>,
+}
+
+//Todo::this method is under experimental
+
+impl<HttpC: HttpClient> FaceebookLogin<HttpC> {
+    pub fn new(request_client: Arc<HttpC>) -> Self {
+        FaceebookLogin {
+            http_client: request_client,
+        }
+    }
+    pub async fn login(&self, build_url: String) -> Result<TestResponse, ClientErr> {
+        //  let client  = HttpClient::new(None)?;
+        let resp = self.http_client.get(build_url.parse().unwrap(), "").await?;
+        let result: ClientResult<TestResponse> = deserialize_response(resp.body())?;
+        Ok(result.unwrap())
+    }
+}
+
 #[derive(Debug, Deserialize)]
-pub struct  TestResponse {
-   pub  ok: String
+pub struct TestResponse {
+    pub ok: String,
 }
 #[cfg(test)]
 mod tests {

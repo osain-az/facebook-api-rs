@@ -5,9 +5,8 @@ use std::convert::TryInto;
 use ::reqwest::Client;
 use http::header::HeaderMap;
 
-
-use crate::universal::HttpClient;
 use crate::universal::errors::ClientErr;
+use crate::universal::HttpClient;
 
 #[derive(Debug, Clone)]
 pub struct ReqwestClient {
@@ -51,7 +50,6 @@ impl HttpClient for ReqwestClient {
             .await
             .map_err(|e| ClientErr::HttpClient(format!("{:?}", e)))?;
         let mut build = http::Response::builder();
-
 
         for header in headers.iter() {
             build = build.header(header.0, header.1);

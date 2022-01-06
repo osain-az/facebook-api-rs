@@ -4,7 +4,9 @@ use web_sys::{File, HtmlInputElement};
 
 use facebook_api_rs::prelude::*;
 
+use facebook_api_rs::prelude::errors::ClientErr;
 use seed_routing::{ParsePath, View, *};
+
 mod facebook;
 mod instagram;
 add_router!();
@@ -87,6 +89,10 @@ enum Msg {
 
     // every error should user this
     ResponseFailed(FetchError),
+    TestErr(ClientErr),
+    Test(()),
+    //testing universal gate
+    FacboomLogin,
 }
 
 // `update` describes how to handle each `Msg`.
@@ -125,7 +131,7 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
                         .me_by_short_or_long_live_token("short_live".to_string())
                         .details()
                         .await
-                        .map_or_else(Msg::ResponseFailed, Msg::GetMeDetailsSuccess)
+                        .map_or_else(Msg::TestErr, Msg::GetMeDetailsSuccess)
                 });
             }
         }
@@ -186,7 +192,21 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
                 r.init(model, orders);
             }
         }
+       Msg:: FacboomLogin  => {
+           log!("trrrgg!");
+         let build_url =   model.redirect_url.get_full_url();
+           let client = model.redirect_url.clone();
+           orders.perform_cmd( async move {
+               log!(client.get_full_url());
+             client.clone().login().await.map_or_else(Msg::TestErr,Msg::Test)
+           });
+        }
+        Msg::Test(_) => {
+      log!("rurururuurru");
+        } Msg::TestErr(er) => {
+            log!(er);
 
+        }
         // all errro should user this, except the eeror neededs to be analyzed and do something about it
         Msg::ResponseFailed(resp) => {
             log!(resp)
@@ -220,9 +240,9 @@ fn view(model: &Model) -> Node<Msg> {
                St:: MarginTop =>  "20px"
             ],
             a![
-                attrs! {
+                /* attrs! {
                     At::Href => model.redirect_url.get_full_url()
-                },
+                },*/
                 button![
                     img![
                         attrs! {
@@ -254,7 +274,9 @@ fn view(model: &Model) -> Node<Msg> {
                      St::Width => "270px", // 240 - 400 px
                      St::Height => "50px",
                       St:: FontSize => "1.2em"
+
                     ],
+                    ev(Ev::Click, |_| Msg::FacboomLogin),
                 ]
             ],
             attrs! {
