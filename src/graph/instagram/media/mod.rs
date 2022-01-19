@@ -2,13 +2,11 @@
 //! It allow´ you to get media details ( comments, like, etc).
 //! for details check <https://developers.facebook.com/docs/instagram-api/reference/ig-media>.
 
-use seed::fetch::fetch;
-use seed::prelude::{Method, Request};
-use seed::{prelude::*, *};
+use crate::graph::client::Client;
+use crate::prelude::errors::ClientErr;
+use crate::prelude::HttpConnection;
 use serde::{Deserialize, Serialize};
 use urlencoding::encode;
-use std::{thread, time};
-use crate::graph::client::Client;
 
 #[derive(Deserialize, Clone, Serialize)]
 pub struct InstagramMediaApi {
@@ -27,72 +25,68 @@ impl InstagramMediaApi {
     // for details check <https://developers.facebook.com/docs/instagram-api/reference/ig-media/comments>
     pub async fn post_comments(
         self,
-        comment_message:String,
-    ) -> seed::fetch::Result<InstaMediaContainerId> {
+        comment_message: String,
+    ) -> Result<InstaMediaContainerId, ClientErr> {
         let self_data = self.clone();
-         let  base_url = self.base_url.replace("EDGE", "comments");
-        let comment = comment_message ;
+        let base_url = self.base_url.replace("EDGE", "comments");
+        let comment = comment_message;
         let message = encode(&comment);
         let url = base_url.to_string()
             + "?message="
             + (&message).as_ref()
             + "&access_token="
             + &self_data.access_token;
-        let request = Request::new(url).method(Method::Post);
-        fetch(request).await?.json::<InstaMediaContainerId>().await
+
+        let resp =
+            HttpConnection::post::<InstaMediaContainerId, String>(url, "".to_string()).await?;
+        Ok(resp)
     }
 
-    pub async fn data(self)  -> seed::fetch::Result<MediaContainerData>  {
+    pub async fn data(self) -> Result<MediaContainerData, ClientErr> {
         let mut url = self.base_url.replace("EDGE", "?fields=");
 
         let mut fields_count = Fields::default().fields.len();
         for (count, field) in Fields::default().fields.into_iter().enumerate() {
             if count < fields_count - 1 {
-                url = url+ &field + ",";
+                url = url + &field + ",";
             } else {
-                url= url+ &field; // remove the comma in the last filed
+                url = url + &field; // remove the comma in the last filed
             }
         }
-        url = url
-            + "&access_token="
-            + &self.access_token;
+        url = url + "&access_token=" + &self.access_token;
 
-
-        let request = Request::new(url).method(Method::Get);
-        fetch(request).await?.json::<MediaContainerData>().await
+        let resp = HttpConnection::get::<MediaContainerData>(url, "".to_string()).await?;
+        Ok(resp)
     }
 
- /// This method allows you to check the status for a given media, this is important to check before
- /// calling the publish_media method.
- /// for details check <https://developers.facebook.com/docs/instagram-api/reference/ig-container#reading>
-    pub async fn status(self)
-                        -> seed::fetch::Result<MediaContainerStatus> {
+    /// This method allows you to check the status for a given media, this is important to check before
+    /// calling the publish_media method.
+    /// for details check <https://developers.facebook.com/docs/instagram-api/reference/ig-container#reading>
+    pub async fn status(self) -> Result<MediaContainerStatus, ClientErr> {
         let base_url = self.base_url.replace("EDGE", "?fields=status_code");
-        let url = base_url
-            + "&access_token="
-            + &self.access_token;
+        let url = base_url + "&access_token=" + &self.access_token;
 
-        let request = Request::new(url).method(Method::Get);
-        fetch(request).await?.json::<MediaContainerStatus>().await
+        let resp = HttpConnection::get::<MediaContainerStatus>(url, "".to_string()).await?;
+        Ok(resp)
     }
 }
 
 #[derive(Deserialize, Debug, Clone, Serialize)]
-pub struct  MediaContainerStatus {
-    pub      status_code:String
+pub struct MediaContainerStatus {
+    pub status_code: String,
 }
 
 #[derive(Deserialize, Debug, Clone, Default, Serialize)]
 pub struct MediaContainerData {
-    media_type:String,
+    media_type: String,
     media_url: String,
-    owner:  Owner,
+    owner: Owner,
     timestamp: String,
     username: String,
     permalink: String,
     like_count: String,
     comments_count: String,
-    caption : String
+    caption: String,
 }
 
 #[derive(Deserialize, Debug, Clone, Default, Serialize)]
@@ -102,7 +96,7 @@ pub struct InstaMediaContainerId {
 
 #[derive(Deserialize, Debug, Clone, Default, Serialize)]
 pub struct Owner {
-    id: String
+    id: String,
 }
 
 pub struct Fields {
@@ -126,7 +120,7 @@ impl Default for Fields {
             "owner",
             "permalink",
             "thumbnail_url",
-            "timestamp " ,
+            "timestamp ",
             "username",
             "video_title",
         ];

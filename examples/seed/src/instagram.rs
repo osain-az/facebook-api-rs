@@ -1,11 +1,12 @@
-use crate::instagram::Msg::{InstagramAccountIdSuccess, InstagramAccountDetailsSuccess};
-use facebook_api_rs::prelude::account::{InstaAccount, InstagramAccount, InstaAccountId};
+use crate::instagram::Msg::{InstagramAccountDetailsSuccess, InstagramAccountIdSuccess};
+use facebook_api_rs::prelude::account::{InstaAccountIds, InstagramAccount};
+use facebook_api_rs::prelude::errors::ClientErr;
+use facebook_api_rs::prelude::media::MediaContainerStatus;
 use facebook_api_rs::prelude::publish::{InstaMediaContainerId, InstaPostParams};
 use facebook_api_rs::prelude::search::{PageSearch, PagesAPI};
 use facebook_api_rs::prelude::*;
 use seed::{prelude::*, *};
 use wasm_bindgen::JsCast;
-use facebook_api_rs::prelude::media::MediaContainerStatus;
 
 // ------ ------
 //     Init
@@ -22,7 +23,7 @@ pub fn init(_: Url, _: &mut Model, _: &mut impl Orders<Msg>) -> Model {
         insta_post_param: None,
         insta_media_container_id: None,
         access_token_info: None,
-        instagram_account:None,
+        instagram_account: None,
         media_container_status: None,
         insta_posting_options: InstaPostingOption {
             caption: false,
@@ -75,13 +76,13 @@ pub struct Model {
     pub accounts: Option<Data<Accounts>>,
     pub pages_api: PagesAPI,
     pub selected_account: Option<SelectedAccount>,
-    pub insta_account: Option<InstaAccount>, // this is just the instagram id
+    pub insta_account: Option<InstaAccountIds>, // this is just the instagram id
     pub insta_post_param: Option<InstaPostParams>,
     pub insta_media_container_id: Option<InstaMediaContainerId>,
     pub insta_posting_options: InstaPostingOption,
     pub access_token_info: Option<AccessTokenInformation>,
     instagram_account: Option<InstagramAccount>,
-    media_container_status: Option<MediaContainerStatus>
+    media_container_status: Option<MediaContainerStatus>,
 }
 
 // ------ ------
@@ -95,13 +96,13 @@ pub enum Msg {
     GetInstagramAccountId,
     InstaMediaContainerInit,
     InstaContainerResponse(InstaMediaContainerId),
-    InstagramAccountIdSuccess(InstaAccount),
-    UpdateInstaPostParams(InstaPostParams,String),
+    InstagramAccountIdSuccess(InstaAccountIds),
+    UpdateInstaPostParams(InstaPostParams, String),
     InstagramVideoPost,
     InstaPostSuccessful(InstaMediaContainerId),
     HandleInstaPostingOption(web_sys::Event),
     PagesSearch(String),
-     GetInstagramAccountDetails(InstaAccount),
+    GetInstagramAccountDetails(InstaAccountIds),
     InstagramAccountDetailsSuccess(InstagramAccount),
     PageSearchResponse(PageSearch),
 
@@ -109,10 +110,11 @@ pub enum Msg {
     MediaContainerStatusResponse(MediaContainerStatus),
 
     FetchInstagramAccountId,
-    FetchInstagramAccountIdSuccess(InstaAccount),
+    FetchInstagramAccountIdSuccess(InstaAccountIds),
 
     // every error should user this
-    ResponseFailed(FetchError),
+    TestFailed(ClientErr),
+    ResponseFailed(ClientErr),
 }
 
 // `update` describes how to handle each `Msg`.
@@ -133,7 +135,7 @@ pub fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
                             .instagram_account(facebook_page_id)
                             .account_id()
                             .await
-                            .map_or_else(Msg::ResponseFailed, InstagramAccountIdSuccess)
+                            .map_or_else(Msg::TestFailed, InstagramAccountIdSuccess)
                     });
                 }
             }
@@ -153,17 +155,16 @@ pub fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
                             .instagram_account(facebook_page_id)
                             .account_id()
                             .await
-                            .map_or_else(Msg::ResponseFailed, Msg::FetchInstagramAccountIdSuccess)
+                            .map_or_else(Msg::TestFailed, Msg::FetchInstagramAccountIdSuccess)
                     });
                 }
             };
-
         }
-       Msg::FetchInstagramAccountIdSuccess(insta_id) => {
-           orders.send_msg(Msg::GetInstagramAccountDetails(insta_id));
-       }
+        Msg::FetchInstagramAccountIdSuccess(insta_id) => {
+            orders.send_msg(Msg::GetInstagramAccountDetails(insta_id));
+        }
         Msg::GetInstagramAccountDetails(insta_id) => {
-             let instagram_id =  insta_id.instagram_business_account.id.clone();
+            let instagram_id = insta_id.instagram_business_account.id.clone();
             if model.selected_account.is_some() {
                 if let Some(selected_page) = &model.selected_account {
                     let page_access_token = selected_page.access_token.to_owned();
@@ -173,34 +174,30 @@ pub fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
                             .instagram_account(instagram_id)
                             .account_details()
                             .await
-                            .map_or_else(Msg::ResponseFailed, InstagramAccountDetailsSuccess)
+                            .map_or_else(Msg::TestFailed, InstagramAccountDetailsSuccess)
                     });
                 }
             }
-
         }
 
-        Msg:: InstagramAccountDetailsSuccess(insta_account_details) => {
+        Msg::InstagramAccountDetailsSuccess(insta_account_details) => {
             model.instagram_account = Some(insta_account_details)
-
         }
 
-        Msg::UpdateInstaPostParams(post_input,input_type) => {
-            if let   Some(post_params) = model.insta_post_param.clone(){
-                 let mut post_data = post_params;
-                if input_type =="url"{
+        Msg::UpdateInstaPostParams(post_input, input_type) => {
+            if let Some(post_params) = model.insta_post_param.clone() {
+                let mut post_data = post_params;
+                if input_type == "url" {
                     post_data.url = post_input.url;
-                }else if input_type == "caption"  {
+                } else if input_type == "caption" {
                     post_data.caption = post_input.caption;
                 }
                 model.insta_post_param = Some(post_data);
-            }else {
+            } else {
                 model.insta_post_param = Some(post_input);
-
             }
 
-
-            log!( model.insta_post_param);
+            log!(model.insta_post_param);
         }
         // this method let you post videos to instagram
         Msg::InstagramVideoPost => {
@@ -209,8 +206,7 @@ pub fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
                     if let Some(insta_account) = &model.insta_account {
                         if let Some(insta_media_container_id) = &model.insta_media_container_id {
                             let page_access_token = selected_page.access_token.to_owned();
-                            let insta_page_id =
-                                insta_account.instagram_business_account.id.clone();
+                            let insta_page_id = insta_account.instagram_business_account.id.clone();
                             let insta_media_container = insta_media_container_id.id.clone();
                             if model.insta_post_param.clone().is_some() {
                                 orders.perform_cmd(async move {
@@ -222,7 +218,8 @@ pub fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
                                 });
                             }
                         }
-                    }   }
+                    }
+                }
             }
         }
 
@@ -234,7 +231,7 @@ pub fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
         Msg::InstaMediaContainerInit => {
             if let Some(selected_page) = &model.selected_account {
                 if let Some(insta_account) = &model.insta_account {
-                    log!(insta_account);
+                    log!("accountgggugugugu gugug", insta_account);
                     let page_access_token = selected_page.access_token.to_owned();
                     let insta_page_id = insta_account.instagram_business_account.id.clone();
 
@@ -267,7 +264,7 @@ pub fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
                 .and_then(|target| target.dyn_into::<web_sys::HtmlInputElement>().ok())
                 .map(|file_input| file_input.name())
                 .unwrap();
-               log!(event_type);
+            log!(event_type);
             if event_type == "is_post_video" {
                 if checked {
                     model.insta_posting_options.is_post_video = false;
@@ -290,31 +287,26 @@ pub fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
             log!(checked)
         }
 
-        Msg::MediaContainerStatus =>{
-
+        Msg::MediaContainerStatus => {
             if model.selected_account.is_some() {
                 if let Some(selected_page) = &model.selected_account {
-                        if let Some(insta_media_container_id) = &model.insta_media_container_id {
-                            let page_access_token = selected_page.access_token.to_owned();
+                    if let Some(insta_media_container_id) = &model.insta_media_container_id {
+                        let page_access_token = selected_page.access_token.to_owned();
 
-                            let insta_media_container = insta_media_container_id.id.clone();
-                                orders.perform_cmd(async move {
-                                    Client::new(Token::default(), page_access_token)
-                                        .instagram_media_container(insta_media_container)
-                                        .status()
-                                        .await
-                                        .map_or_else(Msg::ResponseFailed, Msg::MediaContainerStatusResponse)
-                                });
-
-                        }
+                        let insta_media_container = insta_media_container_id.id.clone();
+                        orders.perform_cmd(async move {
+                            Client::new(Token::default(), page_access_token)
+                                .instagram_media_container(insta_media_container)
+                                .status()
+                                .await
+                                .map_or_else(Msg::ResponseFailed, Msg::MediaContainerStatusResponse)
+                        });
+                    }
                 }
             }
-
         }
 
-        Msg::MediaContainerStatusResponse(status) => {
-           model.media_container_status = Some(status)
-        }
+        Msg::MediaContainerStatusResponse(status) => model.media_container_status = Some(status),
 
         Msg::PagesSearch(e) => {
             log!(e);
@@ -339,6 +331,9 @@ pub fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
         // all error should user this, except the error needed to be analyzed and do something
         // about it
         Msg::ResponseFailed(resp) => {
+            log!(resp)
+        }
+        Msg::TestFailed(resp) => {
             log!(resp)
         }
     }
@@ -476,11 +471,10 @@ fn instagram_post_params(model: &Model) -> Node<Msg> {
                 At:: Placeholder => "url to photo or video"
             },
             input_ev(Ev::Input, move |post_url| {
-                Msg::UpdateInstaPostParams(insta_post_params(
-                    post_url,
-                    "".to_string(),
-                    "#DJ, #live".to_string(),
-                ), "url".to_string())
+                Msg::UpdateInstaPostParams(
+                    insta_post_params(post_url, "".to_string(), "#DJ, #live".to_string()),
+                    "url".to_string(),
+                )
                 // initiate or update/ build  feed struct
             })
         ]],
@@ -489,11 +483,10 @@ fn instagram_post_params(model: &Model) -> Node<Msg> {
                 At:: Placeholder => "Caption "
             },
             input_ev(Ev::Input, move |caption| {
-                Msg::UpdateInstaPostParams(insta_post_params(
-                    "".to_string(),
-                    "".to_string(),
-                    caption,
-                ),"caption".to_string())
+                Msg::UpdateInstaPostParams(
+                    insta_post_params("".to_string(), "".to_string(), caption),
+                    "caption".to_string(),
+                )
             })
         ]],
         div![textarea![
@@ -501,55 +494,55 @@ fn instagram_post_params(model: &Model) -> Node<Msg> {
                 At:: Placeholder => "   Location tag id"
             },
             input_ev(Ev::Input, move |location_id| {
-                Msg::UpdateInstaPostParams(insta_post_params(
-                    "".to_string(),
-                    location_id,
-                    "".to_string(),
-                ),"location".to_string())
+                Msg::UpdateInstaPostParams(
+                    insta_post_params("".to_string(), location_id, "".to_string()),
+                    "location".to_string(),
+                )
             })
         ]],
         div![
-             style![
+            style![
                 St:: MarginTop => px(10)
             ],
-            button![" submit  container feed ",
-             ev(Ev::Click, |_| { Msg::InstaMediaContainerInit })
-
+            button![
+                " submit  container feed ",
+                ev(Ev::Click, |_| { Msg::InstaMediaContainerInit })
             ],
         ],
         div![
             style! [
 
-                   St:: Display => "flex",
-                   St:: JustifyContent => "center",
-                   St:: MarginTop =>  "10px"
-                ],
-
-            button!["Check container media status ",
-           ev(Ev::Click, |_| { Msg::MediaContainerStatus }),
+               St:: Display => "flex",
+               St:: JustifyContent => "center",
+               St:: MarginTop =>  "10px"
             ],
-
-            if let Some( media_status) = &model.media_container_status {
-               div![ span!["media status  ".to_owned() + &media_status.status_code]]
-
+            button![
+                "Check container media status ",
+                ev(Ev::Click, |_| { Msg::MediaContainerStatus }),
+            ],
+            if let Some(media_status) = &model.media_container_status {
+                div![span![
+                    "media status  ".to_owned() + &media_status.status_code
+                ]]
             } else {
-                  div![span!["Note: only published the item when the status is 'FINISHED', check above ".to_owned()]]
+                div![span![
+                    "Note: only published the item when the status is 'FINISHED', check above "
+                        .to_owned()
+                ]]
             }
-
         ],
         div![
-             style![
+            style![
                 St:: MarginTop => px(10)
             ],
-            button!["publish feed ",
-            ev(Ev::Click, |_| { Msg::InstagramVideoPost }),
-              attrs! {
-                At:: Disabled => model.media_container_status.is_none().as_at_value(),
-             },
-
+            button![
+                "publish feed ",
+                ev(Ev::Click, |_| { Msg::InstagramVideoPost }),
+                attrs! {
+                   At:: Disabled => model.media_container_status.is_none().as_at_value(),
+                },
             ],
         ],
-
     ]
 }
 

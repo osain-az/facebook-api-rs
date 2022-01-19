@@ -1,12 +1,20 @@
 #![allow(dead_code)]
 
 use crate::login::config::Config;
+use crate::universal::client::HttpConnection;
+use crate::universal::errors::ClientErr;
+
+use async_trait::async_trait;
+//use crate::universal::reqwest::ReqwestClient;
+use crate::universal::response::{deserialize_response, ClientResult};
+//use crate::universal::seed_client::SeedClient;
+use crate::universal::HttpClient;
 use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
 use serde::{Deserialize, Serialize};
+use std::sync::Arc;
 
-/// Contains the Config struct and is used for building the login flow
-#[derive(Deserialize, Debug, Default, Serialize)]
+#[derive(Deserialize, Debug, Default, Clone, Serialize)]
 pub struct RedirectURL {
     /// The Facebook url preamble for the oath dialog.
     facebook_oath_url: String,
@@ -109,6 +117,7 @@ impl RedirectURL {
             + &*self.state
             + "&scope="
             + &self.scope.iter().cloned().collect::<String>();
+        self.full_url = full_url.clone();
         full_url
     }
 
@@ -145,10 +154,19 @@ impl RedirectURL {
         &self.full_url
     }
 
+    pub async fn login(&self) -> Result<(), ClientErr> {
+        //  let client  = HttpClient::new(None)?;
+
+        // login is no working yet.
+        let url = self.full_url.clone();
+        let resp = HttpConnection::get(url, "".to_string()).await?;
+        // let resp = HttpConnection::login(url, "".to_string()).await?;
+        Ok(resp)
+    }
+
     fn set_facebook_oath_url(&mut self, facebook_oath_url: String) {
         self.facebook_oath_url = facebook_oath_url;
     }
-
     fn set_client_id(&mut self, client_id: String) {
         self.client_id = client_id;
     }
@@ -170,6 +188,31 @@ impl RedirectURL {
     }
 }
 
+#[derive(Deserialize, Debug, Default, Serialize)]
+pub struct FaceebookLogin<HttpC: HttpClient> {
+    pub http_client: Arc<HttpC>,
+}
+
+//Todo::this method is under experimental
+
+impl<HttpC: HttpClient> FaceebookLogin<HttpC> {
+    pub fn new(request_client: Arc<HttpC>) -> Self {
+        FaceebookLogin {
+            http_client: request_client,
+        }
+    }
+    pub async fn login(&self, build_url: String) -> Result<TestResponse, ClientErr> {
+        //  let client  = HttpClient::new(None)?;
+        let resp = self.http_client.get(build_url.parse().unwrap(), "").await?;
+        let result: ClientResult<TestResponse> = deserialize_response(resp.body())?;
+        Ok(result.unwrap())
+    }
+}
+
+#[derive(Debug, Deserialize)]
+pub struct TestResponse {
+    pub ok: String,
+}
 #[cfg(test)]
 mod tests {
     use crate::login::config::Config;

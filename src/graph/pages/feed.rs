@@ -4,9 +4,8 @@
 //! publish post check facebook document <https://developers.facebook.com/docs/graph-api/reference/v12.0/page/feed#publish>.
 
 use crate::graph::pages::utils::{Fields, GetPostResponse};
-use seed::fetch::fetch;
-use seed::prelude::{Method, Request};
-use seed::{prelude::*, *};
+use crate::prelude::errors::ClientErr;
+use crate::prelude::HttpConnection;
 use serde::{Deserialize, Serialize};
 
 /// The feed API of Facebook Page let you publish and get data of the page,
@@ -33,11 +32,12 @@ impl FeedApi {
     /// this method can not post media like  video and photo.
     /// This method is expecting the post message you want to post on your feed.
     /// For more information check Facebook documentation  <https://developers.facebook.com/docs/graph-api/reference/page/feed/#publish>.
-    pub async fn post(&self, message: &str) -> seed::fetch::Result<FeedPostSuccess> {
+    pub async fn post(&self, message: &str) -> Result<FeedPostSuccess, ClientErr> {
         let base_url = self.base_url.replace("EDGE", "feed");
         let url = base_url + "?message=" + message + "&access_token=" + &self.page_access_token;
-        let request = Request::new(url).method(Method::Post);
-        fetch(request).await?.json::<FeedPostSuccess>().await
+
+        let resp = HttpConnection::get::<FeedPostSuccess>(url, "".to_string()).await?;
+        Ok(resp)
     }
 }
 

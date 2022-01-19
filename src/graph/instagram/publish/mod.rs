@@ -17,15 +17,14 @@
 //! Publishing to Instagram TV is not supported.
 //!
 
-use seed::fetch::fetch;
-use seed::prelude::{Method, Request};
-use seed::{prelude::*, *};
+use crate::prelude::errors::ClientErr;
+use crate::prelude::HttpConnection;
 use serde::{Deserialize, Serialize};
 use urlencoding::encode;
 
 /// This struct present  possible data  for posting to instagram account,
 /// only the url is required for posting.
-#[derive(Deserialize, Debug, Clone,  Default, Serialize)]
+#[derive(Deserialize, Debug, Clone, Default, Serialize)]
 pub struct InstaPostParams {
     pub url: String,
     pub caption: String,
@@ -33,13 +32,12 @@ pub struct InstaPostParams {
     pub tag_users: Vec<User>,
 }
 
-#[derive(Deserialize,Clone, Debug, Default, Serialize)]
+#[derive(Deserialize, Clone, Debug, Default, Serialize)]
 pub struct User {
     username: String,
     x: f32,
     y: f32,
 }
-
 
 impl InstaPostParams {
     /// This method let developer update the feed parameters by keeping tract of
@@ -115,7 +113,7 @@ impl InstagramPostApi {
         self,
         post_params: InstaPostParams,
         media_type: String,
-    ) -> seed::fetch::Result<InstaMediaContainerId> {
+    ) -> Result<InstaMediaContainerId, ClientErr> {
         let base_url = self.base_url.replace("EDGE", "media");
         let mut url: String;
         let caption = encode(&post_params.caption);
@@ -138,9 +136,9 @@ impl InstagramPostApi {
             url = url + "&caption=" + &caption.to_string()
         };
 
-        let request = Request::new(url).method(Method::Post);
-    fetch(request).await?.json::<InstaMediaContainerId>().await
-
+        let resp =
+            HttpConnection::post::<InstaMediaContainerId, String>(url, "".to_string()).await?;
+        Ok(resp)
     }
 
     /// This  should be used when the container id of the feed is ready, this
@@ -156,7 +154,7 @@ impl InstagramPostApi {
     pub async fn publish_media(
         self,
         insta_container_id: String,
-    ) -> seed::fetch::Result<InstaMediaContainerId> {
+    ) -> Result<InstaMediaContainerId, ClientErr> {
         let self_data = self.clone();
 
         let base_url = self_data.base_url.replace("EDGE", "media_publish");
@@ -165,7 +163,8 @@ impl InstagramPostApi {
             + &insta_container_id
             + "&access_token="
             + &self_data.access_token;
-        let request = Request::new(url).method(Method::Post);
-        fetch(request).await?.json::<InstaMediaContainerId>().await
+
+        let resp = HttpConnection::post(url, "".to_string()).await?;
+        Ok(resp)
     }
 }

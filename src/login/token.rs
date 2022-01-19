@@ -9,10 +9,10 @@
 use crate::graph::client::Client;
 use chrono::prelude::*;
 use chrono::{DateTime, TimeZone, Utc};
-use seed::fetch::fetch;
-use seed::prelude::IndexMap;
-use seed::prelude::{Method, Request};
-use seed::{prelude::*, *};
+use indexmap::IndexMap;
+
+use crate::prelude::errors::ClientErr;
+use crate::prelude::HttpConnection;
 use serde::{Deserialize, Serialize};
 
 /// The following struct is used to describe a token which may be retrieved from
@@ -102,21 +102,20 @@ impl Token {
         self,
         valid_access_token: String,
         debug_access_token: String,
-    ) -> seed::fetch::Result<AccessTokenInformation> {
+    ) -> Result<AccessTokenInformation, ClientErr> {
         // https://developers.facebook.com/docs/facebook-login/access-tokens/debugging-and-error-handling
         let url = "https://graph.facebook.com/debug_token?".to_owned()
             + "input_token="
             + &debug_access_token
             + "&access_token="
             + &valid_access_token;
-        let request = Request::new(url).method(Method::Get);
+        /*  let request = Request::new(url).method(Method::Get);
         let result = fetch(request)
             .await?
             .json::<TokenResponseInformation>()
-            .await;
-        let response = result.as_ref();
+            .await;*/
         let access_token_response =
-            response.unwrap_or_else(|_| panic!("Token information result was not avaliable "));
+            HttpConnection::get::<TokenResponseInformation>(url, "".to_string()).await?;
         let access_token_expiring_date = access_token_response.data.expires_at.to_owned();
         let mut access_token_information = AccessTokenInformation::default();
 

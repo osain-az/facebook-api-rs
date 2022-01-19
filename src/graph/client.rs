@@ -1,6 +1,7 @@
 //!  This mod will server as method binder that allow  to access different end
 //! poinst availiable on the facebook-api.rs
 
+use crate::graph::instagram::media::InstagramMediaApi;
 use crate::graph::me::MeApi;
 use crate::graph::pages::feed::FeedApi;
 use crate::graph::pages::post::PostApi;
@@ -9,9 +10,7 @@ use crate::graph::prelude::publish::InstagramPostApi;
 use crate::login::token::{AccessTokenInformation, Token};
 use crate::prelude::search::PagesSearchAPI;
 use crate::prelude::video::VideoApi;
-use seed::{prelude::*, *};
 use std::option::Option::Some;
-use crate::graph::instagram::media::InstagramMediaApi;
 
 /// Client Struct for making calls to Facebook Graph
 #[derive(Debug)]
@@ -31,7 +30,7 @@ pub struct Client {
 impl Default for Client {
     fn default() -> Self {
         let graph = "https://graph.facebook.com/v11.0/NODE/EDGE".to_string();
-      //  let insta_graph = "https://graph.instagram.com/v11.0/NODE/EDGE".to_string();
+        //  let insta_graph = "https://graph.instagram.com/v11.0/NODE/EDGE".to_string();
 
         Self {
             graph,
@@ -72,9 +71,9 @@ impl Client {
         self
     }
 
-    pub fn base_url (self) -> String{
-     self.graph
-}
+    pub fn base_url(self) -> String {
+        self.graph
+    }
 
     /// This method  is used to pass user data/crediteniatls to the ME method
     /// which will be used to reach the ME API.
@@ -85,12 +84,10 @@ impl Client {
     /// <https://developers.facebook.com/docs/facebook-login/access-tokens/>
     pub fn me_by_short_or_long_live_token(self, token_live_type: String) -> MeApi {
         if token_live_type == "short_live" {
-            log!("token_live_type short", token_live_type);
             MeApi::new(
                 self.graph + &"?access_token=".to_string() + &self.short_live_user_access_token,
             )
         } else {
-            log!("token_live_type long", token_live_type);
             MeApi::new(
                 self.graph + &"?access_token=".to_string() + &self.long_live_user_access_token,
             )
@@ -138,7 +135,7 @@ impl Client {
         InstagramPostApi::new(self.page_access_token, base_url)
     }
 
-    pub fn instagram_media_container(self, media_container_id: String) -> InstagramMediaApi{
+    pub fn instagram_media_container(self, media_container_id: String) -> InstagramMediaApi {
         let base_url = self.graph.replace("NODE", &media_container_id);
 
         InstagramMediaApi::new(self.page_access_token, base_url)

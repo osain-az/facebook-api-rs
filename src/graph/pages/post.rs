@@ -6,10 +6,8 @@
 //! for more details check facebook documentation on post Api.
 //! https://developers.facebook.com/docs/graph-api/reference/post
 use crate::graph::pages::utils::{Fields, GetPostResponse};
-use seed::fetch::fetch;
-use seed::prelude::{Method, Request};
-use seed::{prelude::*, *};
-use seed::{prelude::*, *};
+use crate::prelude::errors::ClientErr;
+use crate::prelude::HttpConnection;
 use serde::{Deserialize, Serialize};
 
 /// The Post API let  you perform operation on individual post in a profile's
@@ -35,7 +33,7 @@ impl PostApi {
     ///  this method sends a get request to the facebook api (GET
     /// /v12.0/{post-id}). it returns the data of the post_id  you have
     /// provided
-    pub async fn get(self) -> seed::fetch::Result<GetPostResponse> {
+    pub async fn get(self) -> Result<GetPostResponse, ClientErr> {
         let mut url = self.base_url.replace("EDGE", "?fields=");
 
         let field_count = Fields::default().fields.len();
@@ -47,7 +45,8 @@ impl PostApi {
             }
         }
         let base_url = url + "&access_token=" + &self.page_access_token;
-        let request = Request::new(base_url).method(Method::Get);
-        fetch(request).await?.json::<GetPostResponse>().await
+
+        let resp = HttpConnection::get::<GetPostResponse>(base_url, "".to_string()).await?;
+        Ok(resp)
     }
 }

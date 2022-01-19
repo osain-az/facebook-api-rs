@@ -1,8 +1,6 @@
 //! This utils will contain different methods and struct that are shared within the pages  mod
-//! 
+//!
 
-use seed::fetch::fetch;
-use seed::prelude::{Method, Request};
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Debug, Serialize)]

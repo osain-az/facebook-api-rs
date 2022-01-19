@@ -14,12 +14,17 @@
 //! video API  <https://developers.facebook.com/docs/video-api/guides/publishing>
 //! For information on different opertaions on facebook page  check  <https://developers.facebook.com/docs/graph-api/reference/page/videos/#Creating>
 use crate::graph::utils::FileResult;
-use seed::fetch::{fetch, FormData};
-use seed::prelude::{Method, Request};
-use seed::{prelude::*, *};
+use crate::prelude::errors::ClientErr;
+use crate::prelude::HttpConnection;
+//use seed::fetch::{fetch, FormData};
+//use seed::{prelude::*, *};
+use crate::prelude::file_analyze::FileResultServer;
+#[cfg(any(feature = "reqwest_async"))]
+use ::reqwest::multipart::Form;
 use serde::{Deserialize, Serialize};
-use web_sys::Blob;
-use web_sys::File;
+#[cfg(any(feature = "seed_async"))]
+use web_sys::{Blob, File, FormData};
+//use seed::fetch::FormData;
 
 /// Facebook video api accepts different parameters that could be passed to the
 /// post request while uploading the video. this struck will have the possible
@@ -27,7 +32,7 @@ use web_sys::File;
 /// Note : video_title, file_name, and title will not appear in your feed. use
 /// "description" to describe your video  which will appear at the top of the
 /// post.
-#[derive(Clone)]
+#[derive(Clone, Deserialize, Serialize)]
 pub struct VideoParams {
     /// The video_title parameter will not be display on your post feed
     pub video_title: String,
@@ -47,14 +52,26 @@ pub struct VideoParams {
     pub content_category: ContentCategory,
 
     pub title: String,
+
+    pub file_path: String,
 }
 
 pub struct UploadFile {
+    #[cfg(any(feature = "seed_async"))]
     pub file: File,
+    pub file_path: String,
 }
 
-/// Response for successful uploading of video using no_resumable method
-#[derive(Deserialize,Debug, Serialize)]
+/// UsageType is an enum that is use to indication where  you are using the method,  Client or Server
+#[derive(Deserialize, Debug, Serialize)]
+pub enum UsageType {
+    ///Client is when you are using it for at frontend or wasm
+    Client,
+    ///Server is when you are using this method at the backend
+    Server,
+}
+/// Response for successful uploading of video using non_resumable method
+#[derive(Deserialize, Debug, Serialize)]
 pub struct PostResponse {
     id: String,
 }
@@ -126,7 +143,6 @@ impl FinalResponeResumableUpload {
     /// during a resumable upload
     pub fn new(
         video_id: String,
-
         upload_session_id: String,
         success: bool,
     ) -> FinalResponeResumableUpload {
@@ -207,8 +223,7 @@ impl Default for VideoParams {
             thum: "".to_string(),
             content_category: ContentCategory::OTHER,
             title: " ".to_string(),
-            /* video_url: "".to_string(),
-             *  video_source: "by_url".to_string(), */
+            file_path: "".to_string(),
         }
     }
 }
@@ -227,6 +242,9 @@ impl VideoParams {
     pub fn video_params(self) -> VideoParams {
         self
     }
+    pub fn set_file_path(&mut self, file_path: String) {
+        self.file_path = file_path;
+    }
 }
 
 #[derive(Deserialize, Clone, Serialize)]
@@ -244,20 +262,22 @@ impl VideoApi {
     }
 
     /// This method is used by creating FormData for Non_resumable uplaod method
+    #[cfg(any(feature = "seed_async"))]
     fn create_form_data(file: File, video_params: VideoParams) -> FormData {
-        let mut form_data = FormData::new();
-        form_data.append_blob("source", &file); // appped  the  current chunked file   to the form
+        let mut form_data = FormData::new().unwrap();
+
+        form_data.append_with_blob("source", &file); // appped  the  current chunked file   to the form
 
         if !video_params.video_title.is_empty() {
-            form_data.append_str("video_title", &video_params.video_title);
+            form_data.append_with_str("video_title", &video_params.video_title);
         }
 
         if !video_params.description.is_empty() {
-            form_data.append_str("description", &video_params.description);
+            form_data.append_with_str("description", &video_params.description);
         }
 
         if !video_params.thum.is_empty() {
-            form_data.append_str("thum", &video_params.thum);
+            form_data.append_with_str("thum", &video_params.thum);
         };
 
         form_data
@@ -277,28 +297,43 @@ impl VideoApi {
     pub async fn non_resumable_post(
         &self,
         video_params: VideoParams,
-        file: File,
-    ) -> seed::fetch::Result<PostResponse> {
+        #[cfg(any(feature = "seed_async"))] file: File,
+        //  #[cfg(any(feature = "reqwest_async"))] file: String,
+    ) -> Result<PostResponse, ClientErr> {
         let uploaded_file = file.clone();
-        let upload_method = FileResult::file_analyze(file).uploading_method();
+
+        #[cfg(any(feature = "reqwest_async"))]
+        let file_result = FileResultServer::file_analyze(video_params.file_path.clone());
+
+        #[cfg(any(feature = "seed_async"))]
+        let file_result = FileResult::file_analyze(file);
 
         // check if the uploading method
-        if upload_method == "non_resumable" {
+        if file_result.uploading_method() == "non_resumable" {
             let form_data = VideoApi::create_form_data(uploaded_file, video_params);
+
             let base_url = self.base_url.replace("EDGE", "videos");
             let url = base_url + "?access_token=" + &self.page_access_token;
-            let request = Request::new(url).method(Method::Post).form_data(form_data);
-            fetch(request).await?.json::<PostResponse>().await
+
+            #[cfg(any(feature = "seed_async"))]
+            let resp = HttpConnection::video_post::<PostResponse>(url, form_data).await?;
+
+            #[cfg(any(feature = "reqwest_async"))]
+            let resp =
+                HttpConnection::video_post::<PostResponse>(url, video_params.clone()).await?;
+            Ok(resp)
         } else {
-            let err = JsValue::from_str("The uplaoded file is above 1 gb, use Resumable method ");
-            Err(FetchError::RequestError(err)) // try to generate a customer
-                                               // error
+            Err(ClientErr::FacebookError(
+                "The uplaoded file is above 1 gb, use Resumable method ".to_string(),
+            )) // try to generate a customer
+               // error
         }
     }
 }
-
+#[cfg(any(feature = "seed_async"))]
 impl VideoApi {
     /// This method is used by creating FormData for resumable uplaod method
+    #[cfg(any(feature = "seed_async"))]
     fn resumable_form_data(
         self,
         upload_phase: UploadPhase,
@@ -311,12 +346,12 @@ impl VideoApi {
         // phase is expected to be of an enum of either , start, transfer, and end
         // depending on the  uplaoding stage
         let mut current_upload_phase = "";
-        let mut form_data = FormData::new();
+        let mut form_data = FormData::new().unwrap();
 
         match upload_phase {
             UploadPhase::start => {
                 current_upload_phase = "start";
-                form_data.append_str(
+                form_data.append_with_str(
                     "file_size",
                     FileResult::file_analyze(uploaded_file)
                         .file_size_byte_string()
@@ -326,36 +361,36 @@ impl VideoApi {
 
             UploadPhase::transfer => {
                 current_upload_phase = "transfer";
-                form_data.append_str("start_offset", &start_offset);
-                form_data.append_blob("video_file_chunk", &current_blob_file);
+                form_data.append_with_str("start_offset", &start_offset);
+                form_data.append_with_blob("video_file_chunk", &current_blob_file);
             }
 
             UploadPhase::finish => {
                 current_upload_phase = "finish";
 
-                form_data.append_str("upload_session_id", &upload_session_id);
+                form_data.append_with_str("upload_session_id", &upload_session_id);
                 if !video_params.video_title.is_empty() {
-                    form_data.append_str("video_title", &video_params.video_title);
+                    form_data.append_with_str("video_title", &video_params.video_title);
                 }
 
                 if !video_params.description.is_empty() {
-                    form_data.append_str("description", &video_params.description);
+                    form_data.append_with_str("description", &video_params.description);
                 }
 
                 if !video_params.thum.is_empty() {
-                    form_data.append_str("thum", &video_params.thum);
+                    form_data.append_with_str("thum", &video_params.thum);
                 };
             }
             // this method has not been implimented yet.
             UploadPhase::cancel => {
-                form_data.append_str("upload_session_id", &upload_session_id);
-                form_data.append_str("start_offset", &start_offset);
+                form_data.append_with_str("upload_session_id", &upload_session_id);
+                form_data.append_with_str("start_offset", &start_offset);
             }
         }
 
-        form_data.append_str("upload_session_id", &upload_session_id);
-        form_data.append_str("upload_phase", current_upload_phase);
-        form_data.append_str("access_token", &self.page_access_token);
+        form_data.append_with_str("upload_session_id", &upload_session_id);
+        form_data.append_with_str("upload_phase", current_upload_phase);
+        form_data.append_with_str("access_token", &self.page_access_token);
 
         form_data
     }
@@ -373,7 +408,7 @@ impl VideoApi {
         &self,
         file: File,
         video_param: VideoParams,
-    ) -> seed::fetch::Result<FinalResponeResumableUpload> {
+    ) -> Result<FinalResponeResumableUpload, ClientErr> {
         let uploaded_file = file.clone();
         let mut start_offset = Some("0".to_string()); // this  data will be updated  frpm the respones
         let mut end_offset = Some("0".to_string()); // this  data will be updated  frpm the respones
@@ -391,14 +426,10 @@ impl VideoApi {
         );
         let url = base_url + "?access_token=" + &self.page_access_token;
 
-        let request = Request::new(url).method(Method::Post).form_data(form_data);
+        let response =
+            HttpConnection::post::<InitializeUploadResponse, String>(url, "".to_string()).await?;
 
-        let response = fetch(request)
-            .await?
-            .json::<InitializeUploadResponse>()
-            .await;
-
-        let start_phase_data = response.unwrap();
+        let start_phase_data = response;
         end_offset = Some(start_phase_data.end_offset); // update from the facebook response
         let chunked_file_data = FileResult::file_analyze(file.clone()).clone();
 
@@ -449,12 +480,12 @@ impl VideoApi {
                             video_params.clone(),
                         );
 
-                        let request = Request::new(base_url)
-                            .method(Method::Post)
-                            .form_data(form_datas);
-                        let response = fetch(request).await?.json::<ChunksUploadResponse>().await;
-
-                        let chunk_upload_response = response.unwrap();
+                        let response = HttpConnection::video_post::<ChunksUploadResponse>(
+                            base_url,
+                            form_datas.clone(),
+                        )
+                        .await?;
+                        let chunk_upload_response = response;
                         let result = ChunksUploadResponse::new(
                             chunk_upload_response.start_offset,
                             chunk_upload_response.end_offset,
@@ -487,16 +518,10 @@ impl VideoApi {
                             video_param.clone(),
                         );
 
-                        let request = Request::new(base_url)
-                            .method(Method::Post)
-                            .form_data(form_data);
-                        final_response_status = fetch(request)
-                            .await?
-                            .json::<ResumableUploadFinal>()
-                            .await
-                            .unwrap()
-                            .success;
-
+                        let resp =
+                            HttpConnection::video_post::<ResumableUploadFinal>(base_url, form_data)
+                                .await?;
+                        final_response_status = resp.success.clone();
                         end_offset = None // end the while loop
                     }
                 }
@@ -506,9 +531,9 @@ impl VideoApi {
             // the data.
             Ok(final_response.update_success(final_response_status))
         } else {
-            let err = JsValue::from_str("The video upload initialization was not sucessfull, try upload again  or try with another video  ");
-            Err(FetchError::RequestError(err)) // try to generate a customer
-                                               // error
+            Err(ClientErr::FacebookError("The video upload initialization was not sucessfull, try upload again  or try with another video  ".to_string()))
+            // try to generate a customer
+            // error
         }
     }
 }
@@ -524,36 +549,17 @@ impl VideoApi {
     pub async fn post_by_link(
         &self,
         file_url: &str,
-    ) -> seed::fetch::Result<FinalResponeResumableUpload> {
+    ) -> Result<FinalResponeResumableUpload, ClientErr> {
         let base_url = self.base_url.replace("EDGE", "videos");
 
         let url = base_url + "?file_url=" + file_url + "&access_token=" + &self.page_access_token;
-        let request = Request::new(url).method(Method::Post);
-        let video_id = fetch(request).await?.json::<FeedPostSuccess>().await;
-        if video_id.is_ok() {
-            Ok(FinalResponeResumableUpload::default()
-                .update_params(video_id.unwrap().id, "".to_string()))
+        let video_id = HttpConnection::post::<FeedPostSuccess, String>(url, "".to_string()).await?;
+        if video_id.id.is_empty() {
+            Err(ClientErr::FacebookError(
+                "The video posting by url was not suceessfull ".to_string(),
+            )) // try to generate a customer
         } else {
-            let err = JsValue::from_str("The video posting by fule url was not suceessfull ");
-            Err(FetchError::RequestError(err)) // try to generate a customer
-        }
-    }
-}
-
-// should we implement a general method that  take file and determine which
-// method to use or, user can easily che check the file size and decide which
-// method to use
-
-// still under consideration
-impl VideoApi {
-    pub fn general_video(self, video_params: VideoParams, file: File) {
-        let uploading_method = FileResult::file_analyze(file.clone()).uploading_method(); // this will return the uploading method based on the size       ;
-
-        if uploading_method == "non_resumable" {
-            // this means file can be upload with non  resumable method.
-            self.non_resumable_post(video_params, file);
-        } else {
-            self.resumable_post(file, video_params);
+            Ok(FinalResponeResumableUpload::default().update_params(video_id.id, "".to_string()))
         }
     }
 }

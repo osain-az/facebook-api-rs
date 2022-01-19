@@ -2,6 +2,7 @@ use seed::{prelude::*, *};
 use wasm_bindgen::JsCast;
 use web_sys::File;
 
+use facebook_api_rs::prelude::errors::ClientErr;
 use facebook_api_rs::prelude::feed::FeedPostSuccess;
 use facebook_api_rs::prelude::search::PagesAPI;
 use facebook_api_rs::prelude::utils::GetPostResponse;
@@ -94,7 +95,7 @@ pub enum Msg {
     ResumableUploadSucess(FinalResponeResumableUpload),
 
     // every error should user this
-    ResponseFailed(FetchError),
+    ResponseFailed(ClientErr),
 }
 
 // `update` describes how to handle each `Msg`.

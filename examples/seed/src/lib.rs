@@ -2,9 +2,10 @@ use seed::{prelude::*, *};
 use wasm_bindgen::prelude::*;
 use web_sys::{File, HtmlInputElement};
 
+use facebook_api_rs::prelude::errors::ClientErr;
 use facebook_api_rs::prelude::*;
-
 use seed_routing::{ParsePath, View, *};
+
 mod facebook;
 mod instagram;
 add_router!();
@@ -86,7 +87,7 @@ enum Msg {
     UrlChanged(subs::UrlChanged),
 
     // every error should user this
-    ResponseFailed(FetchError),
+    ResponseFailed(ClientErr),
 }
 
 // `update` describes how to handle each `Msg`.
@@ -97,7 +98,7 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
 
         Msg::GetAccount => {
             orders.send_msg(Msg::GetMeDetails);
-            if let Some(user_access_tokens) = model.user_tokens.clone() {
+          if let Some(user_access_tokens) = model.user_tokens.clone() {
                 let user_tokens = user_access_tokens;
                 let client = Client::new(user_tokens, "".to_string());
                 orders.perform_cmd(async {
@@ -230,7 +231,7 @@ fn view(model: &Model) -> Node<Msg> {
                            At:: Width => 40,
                             At:: Height => 40,
 
-                          // At::Src => "src/login_button.png", // attribute <a href="https://www.freeiconspng.com/img/18026">Facebook login button png</a>
+                        //   At::Src => "src/login_button.png", // attribute <a href="https://www.freeiconspng.com/img/18026">Facebook login button png</a>
                         },
                         style! {
                          St::PaddingTop => px(3),
@@ -254,6 +255,7 @@ fn view(model: &Model) -> Node<Msg> {
                      St::Width => "270px", // 240 - 400 px
                      St::Height => "50px",
                       St:: FontSize => "1.2em"
+
                     ],
                 ]
             ],

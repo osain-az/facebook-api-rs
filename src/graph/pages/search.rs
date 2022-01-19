@@ -3,9 +3,8 @@
 //! a Page. For more information check <https://developers.facebook.com/docs/pages/searching>.
 
 use crate::graph::accounts::Accounts;
-use seed::fetch::fetch;
-use seed::prelude::{Method, Request};
-use seed::{prelude::*, *};
+use crate::prelude::HttpConnection;
+use crate::universal::errors::ClientErr;
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize, Default)]
@@ -48,7 +47,7 @@ impl PagesAPI {
     }
 }
 
-#[derive(Deserialize,Debug, Serialize, Default)]
+#[derive(Deserialize, Debug, Serialize, Default)]
 
 pub struct PageSearch {
     pub name: String,
@@ -85,7 +84,7 @@ impl PagesSearchAPI {
 
     /// This method is used to search for different facebook pages, which will
     /// return the struct as shown in the PageSearch
-    pub async fn init_search(self) -> seed::fetch::Result<PageSearch> {
+    pub async fn init_search(self) -> Result<PageSearch, ClientErr> {
         // this method has not be officially tested to be working properly since any
         // attempt to test return error off permission error due to the app
         // still in development mode
@@ -99,7 +98,7 @@ impl PagesSearchAPI {
             + "&access_token="
             + &self.page_acess_token;
 
-        let request = Request::new(url).method(Method::Get);
-        fetch(request).await?.json::<PageSearch>().await
+        let resp = HttpConnection::get::<PageSearch>(url, "".to_string()).await?;
+        Ok(resp)
     }
 }

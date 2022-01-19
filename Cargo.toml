@@ -11,34 +11,60 @@ edition = "2018"
 
 [lib]
 crate-type = ["cdylib","rlib"]
+all-features = false
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3.18"
 
-
+[features]
+default = [ "seed_async" ]
+reqwest_async = [ "reqwest"]
+seed_async = ["seed"]
 [dependencies]
-seed = {git  ="https://github.com/seed-rs/seed", branch="master"}
-serde = { version = "1", features = ["derive"] }
+seed = {git  ="https://github.com/seed-rs/seed", branch="master",optional = true}
+serde = { version = "1", features = ["derive","rc"] }
 serde_json = "1.0"
 async-trait = "0.1.50"
 rand = "0.8.4"
 urlencoding = "2.1.0"
+log = "0.4"
+indexmap = "1.8.0"
+formdata = "0.13.0"
+console_log = { version = "0.2", features = ["color"] }
+
 chrono = { version = "0.4.6", features = ["serde", "wasmbind"] }
+#for universal
+http = "0.2.5"
+url = { version = "2"}
+maybe-async = "0.2"
+serde_qs = "0.8"
+
+thiserror = "1.0.30"
+    [dependencies.reqwest]
+    version = "0.11.8"
+    features = [ "gzip", "json","multipart", ]
+    optional = true
+    [dependencies.http-types]
+    version = "2.10"
+    optional = true
+
 [dependencies.web-sys]
 version = "0.3.40"
 features = [
     "File",
     "Blob",
-    "FormData"
+    "FormData",
+    'Headers',
+    'Request',
+    'RequestInit',
+    'RequestMode',
+    'Response',
 ]
 
 [profile.release]
 lto = true
 opt-level = 'z'
 codegen-units = 1
-
-
-
 
 [package.metadata.wasm-pack.profile.release]
 wasm-opt = ['-Os']

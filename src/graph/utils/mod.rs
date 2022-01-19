@@ -1,19 +1,18 @@
-use seed::prelude::js_sys::Math::{ceil, min};
 /// This mod will contain different utils methods that could be use in different
 /// mod
-use seed::{prelude::*, *};
 use serde::{Deserialize, Serialize};
 use serde_json::ser::CharEscape::FormFeed;
 use web_sys::Blob;
 use web_sys::File;
 
+pub mod file_analyze;
+
 //#[derive(Deserialize, Debug, Serialize)]
 #[derive(Clone, Debug)]
-
 pub struct FileResult {
     file_size_gb: f64,
     file_size_byte: f64,
-    upload_raw_file: File,
+    pub(crate) upload_raw_file: File,
     upload_method: String,
     chunked_file: Blob,
     chunk_upload_size: u64,
@@ -62,7 +61,7 @@ impl FileResult {
         let file_size = self.upload_raw_file.size();
 
         if file_size < half_gb_to_byte {
-            // if the while is less the 0.5,  the chunk size should be the size/2
+            // if the file is less the 0.5,  the chunk size should be the size/2
             chunk_size = file_size as u64 / 2;
         } else if file_size < gb_to_byte {
             // if the while is less the greater than 0.5 but less than 1gb, splite the

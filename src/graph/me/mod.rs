@@ -10,24 +10,22 @@
 //! will depend on the "Fields" parameters  you pass along the get request
 //! exmaple fields=id,name,email,picture......
 
-use seed::fetch::fetch;
-use seed::prelude::{Method, Request};
-use seed::*;
-use serde::{Deserialize, Serialize};
-
 use crate::graph::accounts::AccountsAPI;
 use crate::graph::data::Data;
 use crate::graph::prelude::Accounts;
+use crate::prelude::errors::ClientErr;
+use crate::prelude::HttpConnection;
+use serde::{Deserialize, Serialize};
 
 /// This struct contain different data gotten as a response  when a user sign in
 #[derive(Deserialize, Serialize)]
 pub struct Me {
     name: String,
     id: String,
-    last_name:String,
-    first_name:String,
+    last_name: String,
+    first_name: String,
     picture: PictureData,
-    email:String,
+    email: String,
 }
 
 impl Me {
@@ -52,12 +50,12 @@ impl Me {
 }
 
 #[derive(Deserialize, Serialize)]
- pub struct PictureData{
-   pub data: FacebookPictureUserPicture
+pub struct PictureData {
+    pub data: FacebookPictureUserPicture,
 }
 
 #[derive(Deserialize, Serialize)]
-pub struct  FacebookPictureUserPicture {
+pub struct FacebookPictureUserPicture {
     url: String,
 }
 
@@ -92,11 +90,14 @@ impl MeApi {
     /// retrieve a User's name and ID by using: The data in the response
     /// will depend on the "Fields" parameters  you pass along the get request
     /// exmaple fields=id,name,email,picture.......
-    pub async fn details(&self) -> seed::fetch::Result<Me> {
-        let fields = "&fields=id,name,picture, email,first_name,last_name,about,birthday,gender,link";
-          let base_ur = self.url.replace("EDGE", "");
-           let url = base_ur + fields;
-        let request = Request::new(url).method(Method::Get);
-        fetch(request).await?.json::<Me>().await
+    ///
+    pub async fn details(&self) -> Result<Me, ClientErr> {
+        let fields =
+            "&fields=id,name,picture, email,first_name,last_name,about,birthday,gender,link";
+        let base_ur = self.url.replace("EDGE", "");
+        let url = base_ur + fields;
+
+        let resp = HttpConnection::get::<Me>(url, "".to_string()).await?;
+        Ok(resp)
     }
 }

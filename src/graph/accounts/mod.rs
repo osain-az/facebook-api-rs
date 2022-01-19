@@ -9,7 +9,8 @@
 //! more details check facebook official documentation   https://developers.facebook.com/docs/graph-api/reference/user/accounts/
 
 use crate::graph::data::Data;
-use seed::{prelude::*, *};
+use crate::prelude::errors::ClientErr;
+use crate::prelude::HttpConnection;
 use serde::{Deserialize, Serialize};
 
 /// This struct represent some of the data that will be returned when the
@@ -105,10 +106,10 @@ impl AccountsAPI {
     /// varies with pages check facebook documentation    
     /// <https://developers.facebook.com/docs/graph-api/reference/user/accounts/>
 
-    pub async fn get(&self) -> seed::fetch::Result<Data<Accounts>> {
-        log!(self.url);
-        let request = Request::new(&self.url).method(Method::Get);
-        fetch(request).await?.json::<Data<Accounts>>().await
+    pub async fn get(&self) -> Result<Data<Accounts>, ClientErr> {
+        let resp =
+            HttpConnection::get::<Data<Accounts>>(self.url.to_string(), "".to_string()).await?;
+        Ok(resp)
     }
 }
 
