@@ -5,8 +5,8 @@ use web_sys::File;
 use facebook_api_rs::prelude::errors::ClientErr;
 use facebook_api_rs::prelude::feed::FeedPostSuccess;
 use facebook_api_rs::prelude::search::PagesAPI;
-use facebook_api_rs::prelude::utils::GetPostResponse;
-use facebook_api_rs::prelude::video::{FinalResponeResumableUpload, PostResponse, VideoParams};
+use facebook_api_rs::prelude::utils::{GetPostResponse, PostResponse};
+use facebook_api_rs::prelude::video::{FinalResponeResumableUpload, VideoParams};
 use facebook_api_rs::prelude::*;
 
 // ------ ------

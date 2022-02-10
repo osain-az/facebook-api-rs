@@ -46,6 +46,18 @@ pub struct Token {
 }
 
 impl Token {
+    pub fn new(access_token: String, long_lived_token: String) -> Self {
+        Token {
+            access_token,
+            data_access_expiration_time: "".to_string(),
+            expires_in: "".to_string(),
+            long_lived_token,
+            state: "".to_string(),
+        }
+    }
+}
+
+impl Token {
     pub fn user_access_tokens(self) -> Self {
         self
     }

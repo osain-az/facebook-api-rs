@@ -30,10 +30,10 @@ impl FileResultServer {
 
         let file_size_byte = file.metadata().unwrap().len();
         //f.sync_all()?;
-
+        println!("avalize {:?}", file_size_byte.clone());
         // let file_size_byte = file.size() as f64; // file size in byte
         let file_size_gb = file_size_byte as f64 / 10_f64.powf(9.0); // convert the file to Gb
-
+        println!("avalize size {:?}", file_size_gb.clone());
         let upload_method: String;
         if file_size_gb < non_resumable_max_size_gb {
             upload_method = "non_resumable".to_string();
@@ -41,6 +41,7 @@ impl FileResultServer {
             // this will be for larger videos
             upload_method = "resumable".to_string();
         }
+        println!("avalize  upload type {:?}", upload_method.clone());
 
         FileResultServer {
             file_size_byte: file_size_byte as f64,

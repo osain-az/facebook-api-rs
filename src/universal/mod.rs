@@ -1,8 +1,7 @@
+use crate::prelude::utils::UploadingData;
 use crate::prelude::video::VideoParams;
 use crate::universal::errors::ClientErr;
 
-#[cfg(any(feature = "reqwest_async"))]
-use ::reqwest::multipart::Form;
 use async_trait::async_trait;
 use http::{HeaderMap, Request, Response};
 use url::Url;
@@ -18,10 +17,10 @@ If what you want is "seed_async", please turn off default features by adding "de
 #[cfg(all(feature = "reqwest_async", feature = "seed_async"))]
 compile_error!(r#"only one of features "reqwest_async", "seed_async" and "..." can be"#);
 
+pub mod errors;
+//pub mod form_data;
 #[cfg(any(feature = "reqwest_async"))]
 pub mod reqwest;
-
-pub mod errors;
 pub mod response;
 
 pub mod client;
@@ -86,6 +85,17 @@ pub trait HttpClient: Sync + Clone {
         request_body: VideoParams,
     ) -> Result<Response<String>, ClientErr> {
         self.video_request(Request::post(url.to_string()).body(request_body).unwrap())
+            .await
+    }
+    #[cfg(any(feature = "reqwest_async"))]
+    #[inline]
+    async fn resumable_video_post(
+        &self,
+        url: Url,
+        //request_body: FormData,
+        request_body: UploadingData,
+    ) -> Result<Response<String>, ClientErr> {
+        self.resumable_video_request(Request::post(url.to_string()).body(request_body).unwrap())
             .await
     }
     #[inline]
@@ -174,6 +184,15 @@ pub trait HttpClient: Sync + Clone {
         &self,
         //  request: Request<FormData>,
         request: Request<FormData>,
+    ) -> Result<Response<String>, ClientErr>
+    where
+        Self: Sized;
+
+    #[cfg(any(feature = "reqwest_async"))]
+    async fn resumable_video_request(
+        &self,
+        //  request: Request<FormData>,
+        request: Request<UploadingData>,
     ) -> Result<Response<String>, ClientErr>
     where
         Self: Sized;

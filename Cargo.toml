@@ -30,8 +30,16 @@ urlencoding = "2.1.0"
 log = "0.4"
 indexmap = "1.8.0"
 formdata = "0.13.0"
+#actix-rt = "2.6.0"
+#actix-web = "3"
+#awc = "2.0.3"
+#actix-multipart-rfc7578 = "0.4.0"
 console_log = { version = "0.2", features = ["color"] }
-
+bytes = "1.1.0"
+#tokio-util = "0.6.9"
+#tokio = "1.16.1"
+#surf = "2.3.2"
+futures-util = "0.3.21"
 chrono = { version = "0.4.6", features = ["serde", "wasmbind"] }
 #for universal
 http = "0.2.5"
@@ -42,7 +50,7 @@ serde_qs = "0.8"
 thiserror = "1.0.30"
     [dependencies.reqwest]
     version = "0.11.8"
-    features = [ "gzip", "json","multipart", ]
+    features = [ "gzip", "json","multipart","stream","blocking" ]
     optional = true
     [dependencies.http-types]
     version = "2.10"
@@ -60,14 +68,13 @@ features = [
     'RequestMode',
     'Response',
 ]
-
 [profile.release]
 lto = true
 opt-level = 'z'
 codegen-units = 1
 
-[package.metadata.wasm-pack.profile.release]
-wasm-opt = ['-Os']
+#[package.metadata.wasm-pack.profile.release]
+#wasm-opt = ['-Os']
 
 
 

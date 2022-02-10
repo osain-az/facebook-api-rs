@@ -22,7 +22,7 @@ fn init(url: Url, orders: &mut impl Orders<Msg>) -> Model {
         .clone()
         .hash()
         .map(|hash| Token::extract_user_tokens(hash.to_string()));
-
+    log!(token_response);
     sync_router!();
     orders.perform_cmd(async {
         // Load config from some json.

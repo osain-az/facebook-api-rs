@@ -17,6 +17,9 @@ use crate::universal::seed_client::SeedClient;
 use crate::universal::HttpClient;
 use async_trait::async_trait;
 use log::{debug, trace};
+
+#[cfg(any(feature = "reqwest_async"))]
+use reqwest::multipart::Form;
 //use reqwest::multipart::Form;
 //#[async_trait(?Send)]
 use crate::graph::me::Me;
@@ -26,6 +29,7 @@ use crate::prelude::{Accounts, Data};
 use serde_json::Value;
 use url::Url;
 
+use crate::prelude::utils::UploadingData;
 #[cfg(any(feature = "seed_async"))]
 use web_sys::FormData;
 
@@ -93,6 +97,24 @@ impl<HttpC: HttpClient> GenericClientConnection<HttpC> {
     {
         let client = HttpC::new(None)?;
         let resp = client.video_post(build_url.parse().unwrap(), body).await?;
+        let result = deserialize_response::<R>(resp.body())?;
+        Ok(result)
+    }
+    // this will be used for rqwest_async feature
+    #[cfg(any(feature = "reqwest_async"))]
+    pub async fn resumable_video_post<R>(
+        build_url: String,
+        body: UploadingData,
+    ) -> Result<R, ClientErr>
+    where
+        Self: Sized,
+        R: DeserializeOwned, // response Type
+                             //T: Send + DeserializeOwned,
+    {
+        let client = HttpC::new(None)?;
+        let resp = client
+            .resumable_video_post(build_url.parse().unwrap(), body)
+            .await?;
         let result = deserialize_response::<R>(resp.body())?;
         Ok(result)
     }

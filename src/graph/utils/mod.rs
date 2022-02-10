@@ -2,13 +2,17 @@
 /// mod
 use serde::{Deserialize, Serialize};
 use serde_json::ser::CharEscape::FormFeed;
+#[cfg(any(feature = "seed_async"))]
 use web_sys::Blob;
+#[cfg(any(feature = "seed_async"))]
 use web_sys::File;
 
+#[cfg(any(feature = "reqwest_async"))]
 pub mod file_analyze;
 
 //#[derive(Deserialize, Debug, Serialize)]
 #[derive(Clone, Debug)]
+#[cfg(any(feature = "seed_async"))]
 pub struct FileResult {
     file_size_gb: f64,
     file_size_byte: f64,
@@ -17,7 +21,7 @@ pub struct FileResult {
     chunked_file: Blob,
     chunk_upload_size: u64,
 }
-
+#[cfg(any(feature = "seed_async"))]
 impl FileResult {
     /// This method will take the file  and return  a struct of   struc
     /// FileResult {  size_gb: f64,   file_byte: f64,   upload_method: String }
@@ -59,7 +63,6 @@ impl FileResult {
         let half_gb_to_byte = 5.4_f64.powf(8.0); // equavalent to 1gb
         let mut chunk_size: u64;
         let file_size = self.upload_raw_file.size();
-
         if file_size < half_gb_to_byte {
             // if the file is less the 0.5,  the chunk size should be the size/2
             chunk_size = file_size as u64 / 2;
