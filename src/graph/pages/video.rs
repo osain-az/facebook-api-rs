@@ -335,15 +335,48 @@ impl VideoApi {
     }
 }
 impl VideoApi {
-    /// this Method is used for posting video hosted online (video url ) to the
-    ///  page feed.
+    /// This Method is used for posting media  by there url.  Is expecting the media_type (video or photo).
+    ///
+    /// useage
+    ///
+    /// .post_by_link(video_url, description, title, "video") or
+    ///
+    /// .post_by_link(video_url, description, title, "photo")}
+    /// # Panics
+    /// If the media_type param passed in is not either "video" or "photo.
     pub async fn post_by_link(
         &self,
         file_url: &str,
+        description: &str,
+        title: &str,
+        media_type: &str,
     ) -> Result<FinalResponeResumableUpload, ClientErr> {
-        let base_url = self.base_url.replace("EDGE", "videos");
+        let mut url = "".to_string();
 
-        let url = base_url + "?file_url=" + file_url + "&access_token=" + &self.page_access_token;
+        if media_type == "video" {
+            url = self.base_url.replace("EDGE", "videos")
+                + "?file_url="
+                + file_url
+                + "&access_token="
+                + &self.page_access_token
+                + "&title="
+                + title
+                + &"description="
+                + description;
+        } else if media_type == "photo" {
+            url = self.base_url.replace("EDGE", "photos")
+                + "?url="
+                + file_url
+                + "&access_token="
+                + &self.page_access_token
+                + "&title="
+                + title
+                + &"message="
+                + description;
+        } else {
+            panic!("Expecting a media type of eitehr  ´video´ or ´ photo´ but found {} , check the media type ", media_type )
+        }
+
         let video_id = HttpConnection::post::<FeedPostSuccess, String>(url, "".to_string()).await?;
         if video_id.id.is_empty() {
             Err(ClientErr::FacebookError(
