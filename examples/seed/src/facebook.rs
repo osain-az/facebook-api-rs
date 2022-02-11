@@ -137,7 +137,7 @@ pub fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
                         orders.perform_cmd(async move {
                             Client::new(Token::default(), page_access_token)
                                 .video_upload(page_id)
-                                .post_by_link(&video_url)
+                                .post_by_link(&video_url, "", "", "video")
                                 .await
                                 .map_or_else(Msg::ResponseFailed, Msg::PostVideoSucces)
                         });
