@@ -13,19 +13,18 @@
 //! For other information check on facebook documentation  for
 //! video API  <https://developers.facebook.com/docs/video-api/guides/publishing>
 //! For information on different opertaions on facebook page  check  <https://developers.facebook.com/docs/graph-api/reference/page/videos/#Creating>
-use crate::graph::utils::FileResult;
 use crate::prelude::errors::ClientErr;
 use crate::prelude::HttpConnection;
 use std::sync::Arc;
 //use seed::fetch::{fetch, FormData};
 //use seed::{prelude::*, *};
-use crate::prelude::utils::{form_data_seed, resumable_form_data_seed, PostResponse};
-use crate::prelude::utils::{resumable_form_data_reqwest, UploadingData};
+use crate::prelude::utils::{
+    resumable_form_data_reqwest, ChunksUploadResponse, PostResponse, UploadingData,
+};
 
 use crate::prelude::file_analyze::FileResultServer;
-use crate::prelude::video::{FinalResponeResumableUpload, VideoParams};
+use crate::prelude::video::{FinalResponeResumableUpload, UploadPhase, VideoParams};
 use serde::{Deserialize, Serialize};
-use web_sys::{Blob, File, FormData};
 //use seed::fetch::FormData;
 
 /// Facebook video api accepts different parameters that could be passed to the
@@ -56,6 +55,7 @@ struct InitializeUploadResponse {
 
 /// This struct is the response gotten when initializing the resumable uploading
 /// method process.
+///
 
 #[derive(Deserialize, Clone, Serialize)]
 pub struct VideoApi_reqwest {
@@ -64,11 +64,29 @@ pub struct VideoApi_reqwest {
 }
 
 impl VideoApi_reqwest {
-    pub fn new(base_url: String, page_access_token: String) -> VideoApi {
+    pub fn new(base_url: String, page_access_token: String) -> VideoApi_reqwest {
         VideoApi_reqwest {
             base_url,
             page_access_token,
         }
+    }
+
+    pub async fn tesing_upload(self, video_params: VideoParams) {
+        use std::fs::File;
+        use std::io::Read;
+
+        let mut file = File::open(video_params.file_path.clone()).unwrap();
+
+        let mut contents = String::new();
+        file.read_to_string(&mut contents).unwrap();
+
+        let base_url = self.base_url.replace("EDGE", "videos");
+        let url = base_url + "?access_token=" + &self.page_access_token + "source=" + &contents;
+
+        let client = reqwest::Client::new();
+        let res = client.post(url).body(contents).send().await;
+        let response_text = res.unwrap().text().await;
+        println!("Your paste is located at: {}", response_text.unwrap());
     }
 
     /// facebook recommend that you upload files using the Resumable Upload

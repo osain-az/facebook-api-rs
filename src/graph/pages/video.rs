@@ -22,17 +22,20 @@ use std::sync::Arc;
 //use seed::fetch::{fetch, FormData};
 //use seed::{prelude::*, *};
 
-#[cfg(any(feature = "seed_async"))]
+//#[cfg(any(feature = "seed_async"))]
+#[cfg(any(feature = "web_sys_async", feature = "seed_async"))]
 use crate::prelude::utils::{form_data_seed, resumable_form_data_seed};
 use crate::prelude::utils::{ChunksUploadResponse, PostResponse, UploadingData};
 
 use serde::{Deserialize, Serialize};
+
+#[cfg(any(feature = "web_sys_async", feature = "seed_async"))]
 use web_sys::{Blob, File, FormData};
 
 #[cfg(any(feature = "reqwest_async"))]
 use crate::prelude::media_upload::video_by_reqwest::VideoApi_reqwest;
 
-#[cfg(any(feature = "seed_async"))]
+#[cfg(any(feature = "web_sys_async", feature = "seed_async"))]
 use crate::prelude::media_upload::video_by_seed::VideoApi_seed;
 //use seed::fetch::FormData;
 
@@ -272,7 +275,7 @@ impl VideoApi {
     /// for more infromation  check  https://developers.facebook.com/docs/video-api/guides/publishing
     ///
     ///
-    #[cfg(any(feature = "seed_async"))]
+    #[cfg(any(feature = "web_sys_async", feature = "seed_async"))]
     pub async fn resumable_post(
         &self,
         file: File,
@@ -308,7 +311,8 @@ impl VideoApi {
     /// parameter struct,  if the video file is within this range it post
     /// the video but if the video is not within the range , the post will
     /// not be made but a Fetcherror will be gerated.
-    #[cfg(any(feature = "seed_async"))]
+    //#[cfg(any(feature = "seed_async"))]
+    #[cfg(any(feature = "web_sys_async", feature = "seed_async"))]
     pub async fn non_resumable_post(
         &self,
         video_params: VideoParams,
@@ -325,10 +329,14 @@ impl VideoApi {
     pub async fn non_resumable_post(
         &self,
         video_params: VideoParams,
-        file: File,
     ) -> Result<PostResponse, ClientErr> {
         let base_url = self.base_url.clone();
         let page_token = self.page_access_token.clone();
+
+        VideoApi_reqwest::new(base_url.clone(), page_token.clone())
+            .tesing_upload(video_params.clone())
+            .await;
+
         VideoApi_reqwest::new(base_url, page_token)
             .non_resumable_post(video_params)
             .await

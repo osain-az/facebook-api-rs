@@ -202,19 +202,12 @@ impl VideoApi_seed {
                             video_params.clone(),
                         );
 
-                        #[cfg(any(feature = "seed_async"))]
                         let response =
                             HttpConnection::video_post::<ChunksUploadResponse>(url, form_data)
                                 .await?;
 
-                        #[cfg(any(feature = "reqwest_async"))]
-                        let response =
-                            HttpConnection::resumable_video_post::<ChunksUploadResponse>(
-                                url,
-                                uploadind_data.clone(),
-                            )
-                            .await?;
                         let chunk_upload_response = response;
+
                         let result = ChunksUploadResponse::new(
                             chunk_upload_response.start_offset,
                             chunk_upload_response.end_offset,

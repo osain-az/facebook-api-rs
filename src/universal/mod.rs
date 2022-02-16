@@ -8,6 +8,9 @@ use url::Url;
 #[cfg(any(feature = "seed_async"))]
 use web_sys::FormData;
 
+#[cfg(any(feature = "web_sys_async"))]
+use web_sys::FormData;
+
 #[cfg(all(feature = "reqwest_async", feature = "seed_async"))]
 compile_error!(
     r#"feature "reqwest_async" and "surf_async" cannot be set at the same time.
@@ -17,19 +20,18 @@ If what you want is "seed_async", please turn off default features by adding "de
 #[cfg(all(feature = "reqwest_async", feature = "seed_async"))]
 compile_error!(r#"only one of features "reqwest_async", "seed_async" and "..." can be"#);
 
+pub mod client;
 pub mod errors;
-//pub mod form_data;
+#[cfg(any(feature = "reqwest_async"))]
+pub mod form_data;
 #[cfg(any(feature = "reqwest_async"))]
 pub mod reqwest;
 pub mod response;
-
-pub mod client;
 #[cfg(any(feature = "seed_async"))]
 pub mod seed_client;
-//mod testing;
 
-//#[derive(Deserialize, Debug)]
-//#[maybe_async::maybe_async]
+#[cfg(any(feature = "web_sys_async"))]
+pub mod web_sys_client;
 
 //#[async_trait::async_trait]
 #[async_trait(?Send)]
@@ -64,7 +66,7 @@ pub trait HttpClient: Sync + Clone {
         )
         .await
     }
-    #[cfg(any(feature = "seed_async"))]
+    #[cfg(any(feature = "web_sys_async", feature = "seed_async"))]
     #[inline]
     async fn video_post(
         &self,
@@ -179,7 +181,7 @@ pub trait HttpClient: Sync + Clone {
     where
         Self: Sized;
 
-    #[cfg(any(feature = "seed_async"))]
+    #[cfg(any(feature = "web_sys_async", feature = "seed_async"))]
     async fn video_request(
         &self,
         //  request: Request<FormData>,

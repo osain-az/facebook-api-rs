@@ -18,7 +18,6 @@ use crate::universal::form_data::create_form_data;
 use reqwest::multipart::Form;
 use reqwest::{Request, RequestBuilder};
 
-use crate::prelude::form_data::extract_bytes;
 use crate::prelude::utils::UploadingData;
 
 #[derive(Debug, Clone)]
@@ -30,7 +29,7 @@ pub struct ReqwestClient {
 #[async_trait(?Send)]
 impl HttpClient for ReqwestClient {
     fn new<U: Into<Option<HeaderMap>>>(headers: U) -> Result<Self, ClientErr> {
-        let client = Client::builder().gzip(true);
+        let client = Client::builder();
         let headers = match headers.into() {
             Some(h) => h,
             None => HeaderMap::new(),
@@ -47,6 +46,8 @@ impl HttpClient for ReqwestClient {
         &self,
         request: http::Request<String>,
     ) -> Result<http::Response<String>, ClientErr> {
+        // No version on the response when using from client but works when using from server (backend)
+        let version = request.version().clone();
         let req = request.try_into().unwrap();
 
         let resp = self
@@ -57,7 +58,8 @@ impl HttpClient for ReqwestClient {
 
         let status_code = resp.status();
         let headers = resp.headers().clone();
-        let version = resp.version();
+        // No version on the response when using from client but works when using from server (backend)
+        // let version = resp.version();
         let content = resp
             .text()
             .await
@@ -89,11 +91,6 @@ impl HttpClient for ReqwestClient {
             Method::GET => Client::new().get(url),
             Method::POST => Client::new().post(url),
             Method::PUT => Client::new().put(url),
-            Method::DELETE => Client::new().delete(url),
-            Method::PATCH => Client::new().patch(url),
-            // Method::CONNECT => Client::new().connect(url),
-            Method::HEAD => Client::new().head(url),
-            //   Method::OPTIONS => Client::new().option(url),
             m @ _ => return Err(ClientErr::HttpClient(format!("invalid method {}", m))),
         };
         let resp = req
@@ -101,15 +98,16 @@ impl HttpClient for ReqwestClient {
             .send()
             .await
             .map_err(|e| ClientErr::HttpClient(format!("{:?}", e)))?;
+        // No version on the response when using from client but works when using from server (backend)
+        let version = request.version();
         let status_code = resp.status();
         let headers = resp.headers().clone();
-        let version = resp.version();
+        //let version = resp.version();
 
         let content = resp
             .text()
             .await
             .map_err(|e| ClientErr::HttpClient(format!("{:?}", e)))?;
-        println!("thi sis the eeror from  facebook api {}", content.clone());
 
         let mut build = http::Response::builder();
 
@@ -135,7 +133,6 @@ impl HttpClient for ReqwestClient {
         let body = request.body().to_owned();
         //  let test = Form::from(request.body().as_ref());
         // let ne_test: Form = request.into_body();
-        println!("data {:?}", body);
 
         let req = match method {
             Method::GET => Client::new().get(url),
@@ -164,7 +161,6 @@ impl HttpClient for ReqwestClient {
             //use tokio::fs::File;
             use bytes::{Buf, BufMut, Bytes, BytesMut};
             use std::fs::File;
-            use tokio_util::codec::{BytesCodec, FramedRead};
 
             let mut file = File::open(body.file_path.clone()).unwrap();
             let mut buffer = [0; 1048576];
@@ -178,7 +174,6 @@ impl HttpClient for ReqwestClient {
               ))));*/
             //   let stream = reqwest::Body::wrap_stream(stream_body);
             let bytes = Bytes::from(buffer.to_vec());
-            println!("workign upto here after ");
 
             //let mut reader = BufReader::new(&*test.chun).buffer();
             // let stream_part = Part::bytes(buffer.to_vec());
@@ -212,21 +207,10 @@ impl HttpClient for ReqwestClient {
                 .map_err(|e| ClientErr::HttpClient(format!("{:?}", e)))?;
             response
         };
-        /*
-        let form_data = Form::new()
-            .text("file_size", "7962162")
-            .text("upload_phase", "start");
-        let testing = request.body();
-        let resp = req
-           //.form( &params)
-            .multipart(form_data)
-            .send()
-            .await
-            .map_err(|e| ClientErr::HttpClient(format!("{:?}", e)))?;*/
 
         let status_code = resp.status();
         let headers = resp.headers().clone();
-        let version = resp.version();
+        let version = request.version();
         //println!("raw resp.{:?}", resp);
         let content = resp
             .text()

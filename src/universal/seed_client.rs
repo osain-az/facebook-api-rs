@@ -76,6 +76,7 @@ impl HttpClient for SeedClient {
                 .await
                 .map_err(|e| ClientErr::HttpClient(format!("{:#?}", e)))?;
         }
+        println!("this is the status {}", "66666666666");
 
         let status_code = resp.status().code;
         let headers = resp.headers().clone();

@@ -9,17 +9,14 @@ use std::io::prelude::*;
 use std::io::Read;
 use std::io::{BufRead, BufReader, Seek, SeekFrom};
 use std::path::Path;
-use tokio_util::codec::{BytesCodec, FramedRead};
 //use tokio::fs::File;
 
 #[cfg(any(feature = "reqwest_async"))]
 pub fn create_form_data(video_params: VideoParams) -> Form {
     //let mut form_data = FormData::new().unwrap()
     let form_data = Form::new();
-
     //  let path = Path::new(&video_params.file_path);
     let mut file = File::open(video_params.file_path).unwrap();
-
     let mut buffer = Vec::new();
     file.read_to_end(&mut buffer).unwrap();
     //let mut reader = BufReader::new(file).buffer();
@@ -36,7 +33,6 @@ pub fn create_form_data(video_params: VideoParams) -> Form {
 pub fn extract_bytes(file_path: String, start: u64, end: u64) -> Form {
     //let mut form_data = FormData::new().unwrap()
 
-    //  let path = Path::new(&video_params.file_path);
     let mut file1 = File::open(file_path.clone()).unwrap();
     let mut file = File::open(file_path).unwrap();
 

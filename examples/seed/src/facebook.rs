@@ -197,12 +197,13 @@ pub fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
                 };
 
                 orders.perform_cmd(async move {
-                    // This test is for nonresumable
-                    Client::new(Token::default(), page_access_token)
-                        .video_upload(page_id)
-                        .non_resumable_post(video_params, file_uploaded)
-                        .await
-                        .map_or_else(Msg::ResponseFailed, Msg::VideoUploadByFileSucess)
+                    //Todo:File uplaod does not work with reqwest_async feature  yet
+
+                    // Client::new(Token::default(), page_access_token)
+                    //     .video_upload(page_id)
+                    //     .non_resumable_post(video_params, file_uploaded)
+                    //     .await
+                    //     .map_or_else(Msg::ResponseFailed, Msg::VideoUploadByFileSucess)
                 });
             }
         }
@@ -227,11 +228,12 @@ pub fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
                 };
 
                 orders.perform_cmd(async move {
+                    //Todo:File uplaod does not work with reqwest_async feature  yet
                     Client::new(Token::default(), page_access_token)
-                        .video_upload(page_id)
-                        .resumable_post(file_uploaded, video_params)
-                        .await
-                        .map_or_else(Msg::ResponseFailed, Msg::ResumableUploadSucess)
+                    /* .video_upload(page_id)
+                    .resumable_post(file_uploaded, video_params)
+                    .await
+                    .map_or_else(Msg::ResponseFailed, Msg::ResumableUploadSucess)*/
                 });
             }
         }

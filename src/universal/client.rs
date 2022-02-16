@@ -13,6 +13,8 @@ use crate::universal::reqwest::ReqwestClient;
 use crate::universal::response::{deserialize_response, ClientResult};
 #[cfg(any(feature = "seed_async"))]
 use crate::universal::seed_client::SeedClient;
+#[cfg(any(feature = "web_sys_async"))]
+use crate::universal::web_sys_client::Web_sysClient;
 
 use crate::universal::HttpClient;
 use async_trait::async_trait;
@@ -30,13 +32,16 @@ use serde_json::Value;
 use url::Url;
 
 use crate::prelude::utils::UploadingData;
-#[cfg(any(feature = "seed_async"))]
+#[cfg(any(feature = "web_sys_async", feature = "seed_async"))]
 use web_sys::FormData;
 
 #[cfg(any(feature = "reqwest_async"))]
 pub type HttpConnection = GenericClientConnection<ReqwestClient>;
 #[cfg(any(feature = "seed_async"))]
 pub type HttpConnection = GenericClientConnection<SeedClient>;
+
+#[cfg(any(feature = "web_sys_async"))]
+pub type HttpConnection = GenericClientConnection<Web_sysClient>;
 
 #[derive(Debug, Clone)]
 pub struct GenericClientConnection<HttpC: HttpClient> {
@@ -88,7 +93,7 @@ impl<HttpC: HttpClient> GenericClientConnection<HttpC> {
         Ok(result)
     }
 
-    #[cfg(any(feature = "seed_async"))]
+    #[cfg(any(feature = "web_sys_async", feature = "seed_async"))]
     pub async fn video_post<R>(build_url: String, body: FormData) -> Result<R, ClientErr>
     where
         Self: Sized,
