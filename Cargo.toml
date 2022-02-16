@@ -17,11 +17,12 @@ all-features = false
 wasm-bindgen-test = "0.3.18"
 
 [features]
-default = [ "seed_async" ]
+default = [ "reqwest_async" ]
 reqwest_async = [ "reqwest"]
-seed_async = ["seed"]
+web_sys_async = [ "web-sys"]
+seed_async = ["seed","web-sys"]
 [dependencies]
-seed = {git  ="https://github.com/seed-rs/seed", branch="master",optional = true}
+seed = {git  ="https://github.com/seed-rs/seed", branch="master", optional= true}
 serde = { version = "1", features = ["derive","rc"] }
 serde_json = "1.0"
 async-trait = "0.1.50"
@@ -42,6 +43,21 @@ bytes = "1.1.0"
 futures-util = "0.3.21"
 chrono = { version = "0.4.6", features = ["serde", "wasmbind"] }
 #for universal
+#for web_sys
+web-sys = {version = "0.3.40",  optional = true,features = [
+    "File",
+    "Blob",
+    "FormData",
+    'Headers',
+    'Request',
+    'RequestInit',
+    'RequestMode',
+    'Response',
+    "XmlHttpRequest",
+    "XmlHttpRequestUpload",
+    "XmlHttpRequestEventTarget",
+]}
+
 http = "0.2.5"
 url = { version = "2"}
 maybe-async = "0.2"
@@ -56,18 +72,6 @@ thiserror = "1.0.30"
     version = "2.10"
     optional = true
 
-[dependencies.web-sys]
-version = "0.3.40"
-features = [
-    "File",
-    "Blob",
-    "FormData",
-    'Headers',
-    'Request',
-    'RequestInit',
-    'RequestMode',
-    'Response',
-]
 [profile.release]
 lto = true
 opt-level = 'z'
