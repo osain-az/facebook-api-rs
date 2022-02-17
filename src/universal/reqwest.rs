@@ -91,6 +91,8 @@ impl HttpClient for ReqwestClient {
             Method::GET => Client::new().get(url),
             Method::POST => Client::new().post(url),
             Method::PUT => Client::new().put(url),
+            Method::DELETE => Client::new().delete(url),
+
             m @ _ => return Err(ClientErr::HttpClient(format!("invalid method {}", m))),
         };
         let resp = req

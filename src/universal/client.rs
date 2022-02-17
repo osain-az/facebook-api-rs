@@ -79,6 +79,16 @@ impl<HttpC: HttpClient> GenericClientConnection<HttpC> {
         let result = deserialize_response::<R>(resp.body())?;
         Ok(result)
     }
+    pub async fn delete<R>(build_url: String, body: String) -> Result<R, ClientErr>
+    where
+        Self: Sized,
+        R: DeserializeOwned, // response Type
+    {
+        let client = HttpC::new(None)?;
+        let resp = client.delete(build_url.parse().unwrap(), body).await?;
+        let result = deserialize_response::<R>(resp.body())?;
+        Ok(result)
+    }
 
     #[cfg(any(feature = "reqwest_async"))]
     pub async fn video_post<R>(build_url: String, body: VideoParams) -> Result<R, ClientErr>
