@@ -78,6 +78,8 @@ impl HttpClient for Web_sysClient {
         let req = match method {
             Method::GET => req_init.open_with_async("GET", url.as_str(), false),
             Method::POST => req_init.open_with_async("POST", url.as_str(), false),
+            Method::DELETE => req_init.open_with_async("DELETE", url.as_str(), false),
+
             m @ _ => return Err(ClientErr::HttpClient(format!("invalid method {}", m))),
         };
 
