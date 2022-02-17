@@ -120,7 +120,7 @@ pub fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
 
                         orders.perform_cmd(async move {
                             Client::new(Token::default(), page_access_token)
-                                .feeds(page_id)
+                                .feed(page_id)
                                 .post(&post_description)
                                 .await
                                 .map_or_else(Msg::ResponseFailed, Msg::PostSuccess)

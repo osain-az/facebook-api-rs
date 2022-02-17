@@ -97,7 +97,7 @@ impl Client {
     ///  This method is used to pass user data/crediteniatls to the Post CONTENT
     /// method which will be used to post  to content to the  feed : Note this
     /// API can not be use for posting of vide and image
-    pub fn feeds(self, page_id: String) -> FeedApi {
+    pub fn feed(self, page_id: String) -> FeedApi {
         let base_url = self.graph.replace("NODE", &page_id);
         FeedApi::new(base_url, self.page_access_token)
     }

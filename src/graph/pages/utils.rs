@@ -37,15 +37,20 @@ impl Default for Fields {
 }
 
 /// expected fields gotten from the get post request
-#[derive(Deserialize, Debug, Default, Serialize)]
+#[derive(Deserialize, Debug, Serialize)]
 pub struct GetPostResponse {
     pub id: String,
     pub message: String,
     pub from: From,
     pub permalink_url: String,
 }
-
+/// expected fields gotten from the get post request
 #[derive(Deserialize, Debug, Default, Serialize)]
+pub struct ResponseStatus {
+    pub id: String,
+}
+
+#[derive(Deserialize, Debug, Serialize)]
 pub struct From {
     pub id: String,
     pub name: String,
