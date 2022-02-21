@@ -11,6 +11,7 @@ use crate::login::token::{AccessTokenInformation, Token};
 use crate::prelude::search::PagesSearchAPI;
 use crate::prelude::video::VideoApi;
 use std::option::Option::Some;
+use crate::prelude::hashtag::HashtagAPi;
 
 /// Client Struct for making calls to Facebook Graph
 #[derive(Debug)]
@@ -144,6 +145,12 @@ impl Client {
     pub fn search_pages(self) -> PagesSearchAPI {
         let base_url = self.graph.replace("NODE/EDGE", "pages/search");
         PagesSearchAPI::new(base_url, self.page_access_token)
+    }
+
+    pub fn instagram_hashtag(self,instagram_id: String)->HashtagAPi {
+        let mut base_url = self.graph.replace("NODE/EDGE", "ig_hashtag_search?user_id=");
+         base_url = base_url+ &instagram_id;
+        HashtagAPi::new(self.page_access_token,base_url)
     }
 
     pub fn token_info(self) -> Token {
