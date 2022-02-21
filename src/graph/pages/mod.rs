@@ -6,5 +6,6 @@ pub mod post;
 pub mod search;
 //pub mod test;
 pub mod media_upload;
+pub mod photo;
 pub mod utils;
 pub mod video;
