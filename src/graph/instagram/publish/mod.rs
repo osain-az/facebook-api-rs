@@ -29,7 +29,7 @@ pub struct InstaPostParams {
     pub url: String,
     pub caption: String,
     pub location_id: String,
-    pub tag_users: Vec<User>,
+    pub tag_users: Option<Vec<User>>,
 }
 
 #[derive(Deserialize, Clone, Debug, Default, Serialize)]
@@ -42,23 +42,8 @@ pub struct User {
 impl InstaPostParams {
     /// This method let developer update the feed parameters by keeping tract of
     /// each  inputted values
-    pub fn new(
-        mut self,
-        media_url: String,
-        caption: String,
-        location_tag: String,
-        user: User,
-    ) -> Self {
-        if !media_url.is_empty() {
-            self.url = media_url;
-        } else if !caption.is_empty() {
-            self.caption = caption;
-        } else if !location_tag.is_empty() {
-            self.location_id = location_tag
-        } else if !user.username.is_empty() {
-            self.tag_users.push(user);
-        }
-        self
+    pub fn new(url: String, caption: String, location_id: String, tag_users: Option<Vec<User>>) -> Self {
+        InstaPostParams { url, caption, location_id, tag_users }
     }
 }
 

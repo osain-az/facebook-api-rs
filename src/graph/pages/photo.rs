@@ -13,6 +13,8 @@ use crate::prelude::HttpConnection;
 use web_sys::{Blob, File, FormData};
 use crate::graph::data::Data;
 use crate::prelude::utils::GetPostResponse;
+use serde::{Deserialize, Serialize};
+
 
 #[derive(Deserialize, Clone, Serialize)]
 pub struct PhotoApi {
@@ -40,21 +42,14 @@ impl PhotoApi {
         let page_token = self.page_access_token.clone();
         let _file = file.clone();
         use crate::prelude::FileResult;
-        let file_result = FileResult::file_analyze(file);
+        //let file_result = FileResult::file_analyze(file);
 
-        // check if the uploading method
-        if file_result.uploading_method() == "non_resumable" {
-            let form_data = self.form_data(photo_params, _file);
-            let base_url = self.base_url.replace("EDGE", "photos");
-            let url = base_url + "?access_token=" + &self.page_access_token;
-            let resp = HttpConnection::video_post::<PhotoResponse>(url, form_data).await?;
-            Ok(resp)
-        } else {
-            Err(ClientErr::FacebookError(
-                "The uplaoded file is above 1 gb, use Resumable method ".to_string(),
-            )) // try to generate a customer
-               // error
-        }
+        let form_data = self.form_data(photo_params, _file);
+        let base_url = self.base_url.replace("EDGE", "photos");
+        let url = base_url + "?access_token=" + &self.page_access_token;
+        let resp = HttpConnection::video_post::<PhotoResponse>(url, form_data).await?;
+        Ok(resp)
+
     }
     ///Posting a photo by url
     pub async fn all_photos(
@@ -65,18 +60,12 @@ impl PhotoApi {
             + "&access_token="
             + &self.page_access_token;
 
-        let resp = HttpConnection::get::<Data<GetPostResponse>, String>(url, "".to_string()).await?;
+        let resp = HttpConnection::get::<Data<GetPostResponse>>(url, "".to_string()).await?;
 
-        if resp.is_empty() {
-            Err(ClientErr::FacebookError(
-                "Posting photo could not be completed ".to_string(),
-            )) // try to generate a customer
-        } else {
-            Ok(resp)
-        }
-
+        Ok(resp)
     }
 
+    #[cfg(any(feature = "web_sys_async", feature = "seed_async"))]
     fn form_data(self, photo_params: PhotoParams, file: File) -> FormData {
         #[cfg(any(feature = "web_sys_async", feature = "seed_async"))]
         let mut form_data = FormData::new().unwrap();

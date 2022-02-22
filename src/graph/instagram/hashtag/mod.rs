@@ -2,6 +2,8 @@ use crate::graph::data::Data;
 use crate::prelude::utils::ResponseStatus;
 use crate::prelude::HttpConnection;
 use crate::prelude::errors::ClientErr;
+use serde::{Deserialize, Serialize};
+
 
 pub struct HashtagAPi{
     access_token: String,
@@ -27,7 +29,6 @@ impl HashtagAPi {
 
    }
 }
-
 
 #[derive(Deserialize, Debug, Serialize)]
 pub struct HashtagIds{
