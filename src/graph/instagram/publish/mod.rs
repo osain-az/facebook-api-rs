@@ -1,6 +1,6 @@
 //! This represent facebook (instagram) content API which hase endpoint for posting and publishing of media (video and photo).
 //! POST /{ig-user-id}/media — upload media and create media containers.
-//! POST /{ig-user-id}/media_publish — publish uploaded media using their media containers.
+//! POST /{ig-user-id}/media_publish — publish the uploaded media using their media containers.
 //! For details of the API endpoints and it requirements refer to facebook documentation.
 //!  <https://developers.facebook.com/docs/instagram-api/guides/content-publishing>
 //!
@@ -77,6 +77,7 @@ impl InstagramPostApi {
     /// Alternatively, to ensure that media is ready, you can called the "status" method in the media endpoint to get the status.
     ///
     /// Limitation
+    ///
     /// Video:
     ///      Container: MOV or MP4 (MPEG-4 Part 14), no edit lists, moov atom at the front of the file.
     ///      publAudio codec: AAC, 48khz sample rate maximum, 1 or 2 channels (mono or stereo).ish_video " method. This method is expecting a  InstaPostParams
@@ -84,6 +85,7 @@ impl InstagramPostApi {
     ///      Duration: 60 seconds maximum, 3 seconds minimum.
     ///      File size: 100MB maximum.
     ///      Publishing to Instagram TV is not supported.
+    ///
     /// Photo:
     ///      Formats: JPEG .
     ///       Maximum file size: 8MiB

@@ -18,12 +18,13 @@ use crate::prelude::errors::ClientErr;
 use crate::prelude::HttpConnection;
 //use seed::fetch::{fetch, FormData};
 //use seed::{prelude::*, *};
-use crate::prelude::utils::{form_data_seed, resumable_form_data_seed, PostResponse};
+use crate::prelude::utils::{ PostResponse};
 use crate::prelude::utils::{ChunksUploadResponse, UploadingData};
 
 use crate::prelude::video::{FinalResponeResumableUpload, UploadPhase, VideoParams};
 use serde::{Deserialize, Serialize};
 use web_sys::{Blob, File, FormData};
+use crate::graph::prelude::form_data::web_sys_form::{form_data_seed, resumable_form_data_seed};
 //use seed::fetch::FormData;
 
 /// Facebook video api accepts different parameters that could be passed to the
@@ -126,7 +127,7 @@ impl VideoApi_seed {
         let mut end_offset = Some("0".to_string()); // this  data will be updated  fopm the respones
         let video_params = video_param.clone();
         let self_data = self.clone();
-
+         resumable_form_data_seed()
         let base_url = self.base_url.replace("EDGE", "videos").clone();
         let mut form_data = resumable_form_data_seed(
             UploadPhase::start,

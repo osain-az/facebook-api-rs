@@ -19,8 +19,9 @@ use std::sync::Arc;
 //use seed::fetch::{fetch, FormData};
 //use seed::{prelude::*, *};
 use crate::prelude::utils::{
-    resumable_form_data_reqwest, ChunksUploadResponse, PostResponse, UploadingData,
+    ChunksUploadResponse, PostResponse, UploadingData,
 };
+use crate::graph::prelude::form_data::reqwest_form::{ resumable_form_data_reqwest};
 
 use crate::prelude::file_analyze::FileResultServer;
 use crate::prelude::video::{FinalResponeResumableUpload, UploadPhase, VideoParams};
@@ -34,11 +35,11 @@ use serde::{Deserialize, Serialize};
 /// "description" to describe your video  which will appear at the top of the
 /// post.
 
-pub struct UploadFile {
+/*pub struct UploadFile {
     #[cfg(any(feature = "seed_async"))]
     pub file: File,
     pub file_path: String,
-}
+}*/
 
 #[derive(Deserialize, Serialize)]
 struct ResumableUploadFinal {
