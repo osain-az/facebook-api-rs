@@ -9,13 +9,12 @@
 //! number of methods.
 //! Form more information about token  check  [facebook api Token doc](https://developers.facebook.com/docs/facebook-login/access-tokens/?translation)
 use crate::graph::client::Client;
-use chrono::prelude::*;
-use chrono::{DateTime, TimeZone, Utc};
-use indexmap::IndexMap;
-
 use crate::prelude::errors::ClientErr;
 use crate::prelude::HttpConnection;
+use chrono::prelude::*;
+use chrono::{DateTime, TimeZone, Utc};
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 /// The following struct is used to describe a token which may be retrieved from
 /// the login flow of Facebook.
@@ -180,8 +179,8 @@ impl Token {
 /// The function will panic a key that has no value.
 /// # Warns
 /// with no query. Theses choices are opinionated for now.
-pub fn extract_query_fragments(hash: String) -> IndexMap<String, String> {
-    let mut query: IndexMap<String, String> = IndexMap::new();
+pub fn extract_query_fragments(hash: String) -> HashMap<String, String> {
+    let mut query: HashMap<String, String> = HashMap::new();
 
     let key_value: Vec<&str> = hash.split('&').collect();
 
