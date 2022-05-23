@@ -1,5 +1,7 @@
 use crate::prelude::video::{UploadPhase, VideoParams};
 use reqwest::multipart::{Form, Part};
+use std::borrow::BorrowMut;
+use std::fs::File;
 
 /// Creating form_data for reqwest Client
 #[cfg(any(feature = "reqwest_async"))]
@@ -7,7 +9,8 @@ pub fn resumable_form_data_reqwest(
     upload_phase: UploadPhase,
     upload_session_id: String,
     start_offset: String,
-    video_params: VideoParams,
+    mut video_params: VideoParams,
+    mut file: File,
 ) -> Form {
     // phase is expected to be of an enum of either , start, transfer, and end
     // depending on the  uplaoding stage
@@ -17,16 +20,13 @@ pub fn resumable_form_data_reqwest(
     use std::io::prelude::*;
     let mut current_upload_phase = "";
 
-    //  let path = Path::new(&video_params.file_path);
-    let mut file = File::open(video_params.file_path.clone()).unwrap();
     let mut buffer = Vec::new();
     file.read_to_end(&mut buffer).unwrap();
-    //let mut reader = BufReader::new(file).buffer();
+    let params = video_params.borrow_mut();
     let part = Part::bytes(buffer).file_name("vdeoe ");
-    //println!("the file size {:?} ", &file.bytes());
+
     let formdata = match upload_phase {
         UploadPhase::start => {
-            println!("this is the start");
             current_upload_phase = "start";
             println!("file zise {}", file.metadata().unwrap().clone().len());
             let form_data = Form::new()
@@ -38,15 +38,15 @@ pub fn resumable_form_data_reqwest(
 
         UploadPhase::transfer => {
             current_upload_phase = "transfer";
-            /*  let form_data = Form::new()
-            .text("start_offset", start_offset.clone())
-            .part(
-                "video_file_chunk",
-                file_part(video_params.file_path.clone(), 0, 0),
-            )
-            .text("upload_session_id", upload_session_id.clone())
-            .text("upload_phase", current_upload_phase)
-            .text("access_token", self.page_access_token.clone());*/
+            //  let form_data = Form::new()
+            // .text("start_offset", start_offset.clone())
+            // .part(
+            // "video_file_chunk",
+            // file_part(video_params.file_path.clone(), 0, 0),
+            // )
+            // .text("upload_session_id", upload_session_id.clone())
+            // .text("upload_phase", current_upload_phase)
+            // .text("access_token", self.page_access_token.clone());
 
             let form_data = Form::new();
             form_data
@@ -75,7 +75,7 @@ pub fn resumable_form_data_reqwest(
             main_form_data
         }
         // this method has not been implimented yet.
-        //Todo:: added method for cancelling upload
+        // Todo:: added method for cancelling upload
         UploadPhase::cancel => {
             current_upload_phase = "cancel";
 
@@ -87,7 +87,7 @@ pub fn resumable_form_data_reqwest(
             form_data
         }
         _ => {
-            //this will never occure
+            // this will never occure
             current_upload_phase = "";
             let form_data = Form::new();
             form_data

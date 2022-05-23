@@ -2,22 +2,23 @@ use crate::prelude::utils::UploadingData;
 use crate::prelude::video::VideoParams;
 use crate::universal::errors::ClientErr;
 
+#[cfg(any(feature = "reqwest_async"))]
+use ::reqwest::multipart::Form;
+
 use async_trait::async_trait;
 use http::{HeaderMap, Request, Response};
-use url::Url;
-#[cfg(any(feature = "seed_async"))]
-use web_sys::FormData;
 
+use url::Url;
 #[cfg(any(feature = "web_sys_async"))]
 use web_sys::FormData;
 
-#[cfg(all(feature = "reqwest_async", feature = "seed_async"))]
+#[cfg(all(feature = "reqwest_async", feature = "web_sys_async"))]
 compile_error!(
     r#"feature "reqwest_async" and "surf_async" cannot be set at the same time.
 If what you want is "seed_async", please turn off default features by adding "default-features=false" in your Cargo.toml"#
 );
 
-#[cfg(all(feature = "reqwest_async", feature = "seed_async"))]
+#[cfg(all(feature = "reqwest_async", feature = "web_sys_async"))]
 compile_error!(r#"only one of features "reqwest_async", "seed_async" and "..." can be"#);
 
 pub mod client;
@@ -27,13 +28,10 @@ pub mod form_data;
 #[cfg(any(feature = "reqwest_async"))]
 pub mod reqwest;
 pub mod response;
-#[cfg(any(feature = "seed_async"))]
-pub mod seed_client;
 
 #[cfg(any(feature = "web_sys_async"))]
 pub mod web_sys_client;
 
-//#[async_trait::async_trait]
 #[async_trait(?Send)]
 pub trait HttpClient: Sync + Clone {
     fn new<U: Into<Option<HeaderMap>>>(headers: U) -> Result<Self, ClientErr>
@@ -53,6 +51,7 @@ pub trait HttpClient: Sync + Clone {
         )
         .await
     }
+
     #[inline]
     async fn post<T>(&self, url: Url, request_body: T) -> Result<Response<String>, ClientErr>
     where
@@ -66,12 +65,12 @@ pub trait HttpClient: Sync + Clone {
         )
         .await
     }
-    #[cfg(any(feature = "web_sys_async", feature = "seed_async"))]
+
+    #[cfg(any(feature = "web_sys_async"))]
     #[inline]
     async fn video_post(
         &self,
         url: Url,
-        //request_body: FormData,
         request_body: FormData,
     ) -> Result<Response<String>, ClientErr> {
         self.video_request(Request::post(url.to_string()).body(request_body).unwrap())
@@ -83,23 +82,34 @@ pub trait HttpClient: Sync + Clone {
     async fn video_post(
         &self,
         url: Url,
-        //request_body: FormData,
         request_body: VideoParams,
     ) -> Result<Response<String>, ClientErr> {
         self.video_request(Request::post(url.to_string()).body(request_body).unwrap())
             .await
     }
+
     #[cfg(any(feature = "reqwest_async"))]
     #[inline]
     async fn resumable_video_post(
         &self,
         url: Url,
-        //request_body: FormData,
         request_body: UploadingData,
     ) -> Result<Response<String>, ClientErr> {
         self.resumable_video_request(Request::post(url.to_string()).body(request_body).unwrap())
             .await
     }
+
+    #[cfg(any(feature = "reqwest_async"))]
+    #[inline]
+    async fn upload_by_form_data(
+        &self,
+        url: Url,
+        request_body: (Vec<u8>, VideoParams),
+    ) -> Result<Response<String>, ClientErr> {
+        self.upload_by_form_data_request(Request::post(url.to_string()).body(request_body).unwrap())
+            .await
+    }
+
     #[inline]
     async fn put<T>(&self, url: Url, request_body: T) -> Result<Response<String>, ClientErr>
     where
@@ -113,6 +123,7 @@ pub trait HttpClient: Sync + Clone {
         )
         .await
     }
+
     #[inline]
     async fn delete<T>(&self, url: Url, request_body: T) -> Result<Response<String>, ClientErr>
     where
@@ -126,6 +137,7 @@ pub trait HttpClient: Sync + Clone {
         )
         .await
     }
+
     #[inline]
     async fn patch<T>(&self, url: Url, request_body: T) -> Result<Response<String>, ClientErr>
     where
@@ -181,10 +193,9 @@ pub trait HttpClient: Sync + Clone {
     where
         Self: Sized;
 
-    #[cfg(any(feature = "web_sys_async", feature = "seed_async"))]
+    #[cfg(any(feature = "web_sys_async"))]
     async fn video_request(
         &self,
-        //  request: Request<FormData>,
         request: Request<FormData>,
     ) -> Result<Response<String>, ClientErr>
     where
@@ -195,6 +206,15 @@ pub trait HttpClient: Sync + Clone {
         &self,
         //  request: Request<FormData>,
         request: Request<UploadingData>,
+    ) -> Result<Response<String>, ClientErr>
+    where
+        Self: Sized;
+
+    #[cfg(any(feature = "reqwest_async"))]
+    async fn upload_by_form_data_request(
+        &self,
+        //  request: Request<FormData>,
+        request: Request<(Vec<u8>, VideoParams)>,
     ) -> Result<Response<String>, ClientErr>
     where
         Self: Sized;

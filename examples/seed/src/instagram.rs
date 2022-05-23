@@ -58,7 +58,7 @@ fn insta_post_params(url: String, location_id: String, caption: String) -> Insta
         url,
         caption,
         location_id,
-        tag_users: vec![],
+        tag_users: None,
     }
 }
 

@@ -1,14 +1,13 @@
-//! This mode Represents Instagram api for  Photo, Video, Story, Album, or Instagram TV media. Reels are not supported.
-//! It allow´ you to get media details ( comments, like, etc).
-//! for details check <https://developers.facebook.com/docs/instagram-api/reference/ig-media>.
+//! This mode Represents Instagram api for  Photo, Video, Story, Album, or
+//! Instagram TV media. Reels are not supported. It allow´ you to get media
+//! details ( comments, like, etc). for details check <https://developers.facebook.com/docs/instagram-api/reference/ig-media>.
 
-use crate::graph::client::Client;
 use crate::prelude::errors::ClientErr;
 use crate::prelude::HttpConnection;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use urlencoding::encode;
 
-#[derive(Deserialize, Clone, Serialize)]
+#[derive(Deserialize, Clone)]
 pub struct InstagramMediaApi {
     access_token: String,
     base_url: String,
@@ -21,6 +20,7 @@ impl InstagramMediaApi {
             base_url,
         }
     }
+
     /// this method allow´s you to post on a give media container.
     // for details check <https://developers.facebook.com/docs/instagram-api/reference/ig-media/comments>
     pub async fn post_comments(
@@ -59,8 +59,8 @@ impl InstagramMediaApi {
         Ok(resp)
     }
 
-    /// This method allows you to check the status for a given media, this is important to check before
-    /// calling the publish_media method.
+    /// This method allows you to check the status for a given media, this is
+    /// important to check before calling the publish_media method.
     /// for details check <https://developers.facebook.com/docs/instagram-api/reference/ig-container#reading>
     pub async fn status(self) -> Result<MediaContainerStatus, ClientErr> {
         let base_url = self.base_url.replace("EDGE", "?fields=status_code");
@@ -71,12 +71,12 @@ impl InstagramMediaApi {
     }
 }
 
-#[derive(Deserialize, Debug, Clone, Serialize)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct MediaContainerStatus {
     pub status_code: String,
 }
 
-#[derive(Deserialize, Debug, Clone, Default, Serialize)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct MediaContainerData {
     media_type: String,
     media_url: String,
@@ -89,12 +89,12 @@ pub struct MediaContainerData {
     caption: String,
 }
 
-#[derive(Deserialize, Debug, Clone, Default, Serialize)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct InstaMediaContainerId {
     pub id: String,
 }
 
-#[derive(Deserialize, Debug, Clone, Default, Serialize)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct Owner {
     id: String,
 }

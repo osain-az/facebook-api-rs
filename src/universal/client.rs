@@ -2,12 +2,11 @@ use serde::{
     de::{self, DeserializeOwned, Deserializer},
     Deserialize, Serialize,
 };
-use std::borrow::BorrowMut;
-use std::convert::TryInto;
-use std::{collections::HashMap, fmt::Debug, sync::Arc};
+
+use std::sync::Arc;
 
 use crate::universal::errors::ClientErr;
-//use crate::universal::reqwest::ReqwestClient;
+// use crate::universal::reqwest::ReqwestClient;
 #[cfg(any(feature = "reqwest_async"))]
 use crate::universal::reqwest::ReqwestClient;
 use crate::universal::response::{deserialize_response, ClientResult};
@@ -17,17 +16,13 @@ use crate::universal::seed_client::SeedClient;
 use crate::universal::web_sys_client::Web_sysClient;
 
 use crate::universal::HttpClient;
-use async_trait::async_trait;
-use log::{debug, trace};
 
-#[cfg(any(feature = "reqwest_async"))]
-use reqwest::multipart::Form;
-//use reqwest::multipart::Form;
-//#[async_trait(?Send)]
 use crate::graph::me::Me;
 use crate::prelude::account::{InstaAccountIds, InstagramAccount};
 use crate::prelude::video::VideoParams;
 use crate::prelude::{Accounts, Data};
+#[cfg(any(feature = "reqwest_async"))]
+use reqwest::multipart::Form;
 use serde_json::Value;
 use url::Url;
 
@@ -79,6 +74,7 @@ impl<HttpC: HttpClient> GenericClientConnection<HttpC> {
         let result = deserialize_response::<R>(resp.body())?;
         Ok(result)
     }
+
     pub async fn delete<R>(build_url: String, body: String) -> Result<R, ClientErr>
     where
         Self: Sized,
@@ -94,8 +90,8 @@ impl<HttpC: HttpClient> GenericClientConnection<HttpC> {
     pub async fn video_post<R>(build_url: String, body: VideoParams) -> Result<R, ClientErr>
     where
         Self: Sized,
-        R: DeserializeOwned, // response Type
-                             //T: Send + DeserializeOwned,
+        R: DeserializeOwned, /* response Type
+                              * T: Send + DeserializeOwned, */
     {
         let client = HttpC::new(None)?;
         let resp = client.video_post(build_url.parse().unwrap(), body).await?;
@@ -107,14 +103,15 @@ impl<HttpC: HttpClient> GenericClientConnection<HttpC> {
     pub async fn video_post<R>(build_url: String, body: FormData) -> Result<R, ClientErr>
     where
         Self: Sized,
-        R: DeserializeOwned, // response Type
-                             //T: Send + DeserializeOwned,
+        R: DeserializeOwned, /* response Type
+                              * T: Send + DeserializeOwned, */
     {
         let client = HttpC::new(None)?;
         let resp = client.video_post(build_url.parse().unwrap(), body).await?;
         let result = deserialize_response::<R>(resp.body())?;
         Ok(result)
     }
+
     // this will be used for rqwest_async feature
     #[cfg(any(feature = "reqwest_async"))]
     pub async fn resumable_video_post<R>(
@@ -123,12 +120,31 @@ impl<HttpC: HttpClient> GenericClientConnection<HttpC> {
     ) -> Result<R, ClientErr>
     where
         Self: Sized,
-        R: DeserializeOwned, // response Type
-                             //T: Send + DeserializeOwned,
+        R: DeserializeOwned, /* response Type
+                              * T: Send + DeserializeOwned, */
     {
         let client = HttpC::new(None)?;
         let resp = client
             .resumable_video_post(build_url.parse().unwrap(), body)
+            .await?;
+        let result = deserialize_response::<R>(resp.body())?;
+        Ok(result)
+    }
+
+    // this will be used for rqwest_async feature
+    #[cfg(any(feature = "reqwest_async"))]
+    pub async fn request_by_bytes_and_params<R>(
+        build_url: String,
+        body: (Vec<u8>, VideoParams),
+    ) -> Result<R, ClientErr>
+    where
+        Self: Sized,
+        R: DeserializeOwned, /* response Type
+                              * T: Send + DeserializeOwned, */
+    {
+        let client = HttpC::new(None)?;
+        let resp = client
+            .upload_by_form_data(build_url.parse().unwrap(), body)
             .await?;
         let result = deserialize_response::<R>(resp.body())?;
         Ok(result)

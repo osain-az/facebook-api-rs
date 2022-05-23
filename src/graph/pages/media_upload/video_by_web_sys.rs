@@ -16,16 +16,16 @@
 use crate::graph::utils::FileResult;
 use crate::prelude::errors::ClientErr;
 use crate::prelude::HttpConnection;
-//use seed::fetch::{fetch, FormData};
-//use seed::{prelude::*, *};
-use crate::prelude::utils::{ PostResponse};
+// use seed::fetch::{fetch, FormData};
+// use seed::{prelude::*, *};
+use crate::prelude::utils::PostResponse;
 use crate::prelude::utils::{ChunksUploadResponse, UploadingData};
 
+use crate::graph::prelude::form_data::web_sys_form::{form_data_seed, resumable_form_data_seed};
 use crate::prelude::video::{FinalResponeResumableUpload, UploadPhase, VideoParams};
 use serde::{Deserialize, Serialize};
 use web_sys::{Blob, File, FormData};
-use crate::graph::prelude::form_data::web_sys_form::{form_data_seed, resumable_form_data_seed};
-//use seed::fetch::FormData;
+// use seed::fetch::FormData;
 
 /// Facebook video api accepts different parameters that could be passed to the
 /// post request while uploading the video. this struck will have the possible
@@ -116,7 +116,6 @@ impl VideoApi_seed {
     /// so extra time than usuall is expect until the issue is fixed.
     ///  
     /// for more infromation  check  https://developers.facebook.com/docs/video-api/guides/publishing
-    ///
     pub async fn resumable_post(
         &self,
         file: File,
@@ -127,7 +126,7 @@ impl VideoApi_seed {
         let mut end_offset = Some("0".to_string()); // this  data will be updated  fopm the respones
         let video_params = video_param.clone();
         let self_data = self.clone();
-         resumable_form_data_seed()
+
         let base_url = self.base_url.replace("EDGE", "videos").clone();
         let mut form_data = resumable_form_data_seed(
             UploadPhase::start,
@@ -170,7 +169,7 @@ impl VideoApi_seed {
             let mut final_response_status = false;
             let mut current_chunk_size = chunk_size;
             let mut start_chunk = 0.0;
-            //let uploaded_file = file.clone();
+            // let uploaded_file = file.clone();
             let upload_session_id = &start_phase_data.upload_session_id;
 
             // loop and upload the chunked files until is completed then end the loop

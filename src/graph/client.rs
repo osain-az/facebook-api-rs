@@ -7,11 +7,10 @@ use crate::graph::pages::feed::FeedApi;
 use crate::graph::pages::post::PostApi;
 use crate::graph::prelude::account::InstagramApi;
 use crate::graph::prelude::publish::InstagramPostApi;
-use crate::login::token::{AccessTokenInformation, Token};
+use crate::login::token::{Token, TokenLiveType};
+use crate::prelude::hashtag::HashtagAPi;
 use crate::prelude::search::PagesSearchAPI;
 use crate::prelude::video::VideoApi;
-use std::option::Option::Some;
-use crate::prelude::hashtag::HashtagAPi;
 
 /// Client Struct for making calls to Facebook Graph
 #[derive(Debug)]
@@ -31,8 +30,6 @@ pub struct Client {
 impl Default for Client {
     fn default() -> Self {
         let graph = "https://graph.facebook.com/v11.0/NODE/EDGE".to_string();
-        //  let insta_graph = "https://graph.instagram.com/v11.0/NODE/EDGE".to_string();
-
         Self {
             graph,
             short_live_user_access_token: "".to_string(),
@@ -83,15 +80,14 @@ impl Client {
     /// if you intented to used a short live token then pass in "short_live"
     /// . For more information on facebook documenation check
     /// <https://developers.facebook.com/docs/facebook-login/access-tokens/>
-    pub fn me_by_short_or_long_live_token(self, token_live_type: String) -> MeApi {
-        if token_live_type == "short_live" {
-            MeApi::new(
-                self.graph + &"?access_token=".to_string() + &self.short_live_user_access_token,
-            )
-        } else {
-            MeApi::new(
+    pub fn accounts(self, token_live_type: TokenLiveType) -> MeApi {
+        match token_live_type {
+            TokenLiveType::LONGLIVE => MeApi::new(
                 self.graph + &"?access_token=".to_string() + &self.long_live_user_access_token,
-            )
+            ),
+            TokenLiveType::SHORTLIVE => MeApi::new(
+                self.graph + &"?access_token=".to_string() + &self.short_live_user_access_token,
+            ),
         }
     }
 
@@ -147,10 +143,12 @@ impl Client {
         PagesSearchAPI::new(base_url, self.page_access_token)
     }
 
-    pub fn instagram_hashtag(self,instagram_id: String)->HashtagAPi {
-        let mut base_url = self.graph.replace("NODE/EDGE", "ig_hashtag_search?user_id=");
-         base_url = base_url+ &instagram_id;
-        HashtagAPi::new(self.page_access_token,base_url)
+    pub fn instagram_hashtag(self, instagram_id: String) -> HashtagAPi {
+        let mut base_url = self
+            .graph
+            .replace("NODE/EDGE", "ig_hashtag_search?user_id=");
+        base_url = base_url + &instagram_id;
+        HashtagAPi::new(self.page_access_token, base_url)
     }
 
     pub fn token_info(self) -> Token {
@@ -171,7 +169,7 @@ mod test {
 
         let accounts = Client::default()
             .add_access_tokens(token, "".to_string())
-            .me_by_short_or_long_live_token("short_live".to_string())
+            .accounts("short_live".to_string())
             .accounts();
         assert_eq!(
             "https://graph.facebook.com/v11.0/me/accounts?access_token=123",

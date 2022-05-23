@@ -5,9 +5,9 @@ use crate::universal::client::HttpConnection;
 use crate::universal::errors::ClientErr;
 
 use async_trait::async_trait;
-//use crate::universal::reqwest::ReqwestClient;
+// use crate::universal::reqwest::ReqwestClient;
 use crate::universal::response::{deserialize_response, ClientResult};
-//use crate::universal::seed_client::SeedClient;
+// use crate::universal::seed_client::SeedClient;
 use crate::universal::HttpClient;
 use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
@@ -15,7 +15,7 @@ use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
 #[derive(Deserialize, Debug, Default, Clone, Serialize)]
-pub struct RedirectURL {
+pub struct LoginParameters {
     /// The Facebook url preamble for the oath dialog.
     facebook_oath_url: String,
 
@@ -41,8 +41,9 @@ pub struct RedirectURL {
     full_url: String,
 }
 
-impl RedirectURL {
-    /// Constructor of the RedirectURL
+impl LoginParameters {
+    /// Constructor of the Facebook login url parameters
+    ///
     /// facebook_oath_url, client_id, and redirect_uri are retrieved from the
     /// config.json file. which the user has to configure.
     /// A random state is provided or the user may chose to create their own
@@ -50,16 +51,15 @@ impl RedirectURL {
     /// of the application, or else the response will default to code upon
     /// the login flow redirect. scope is optional, but inclusion must
     /// fulfill a valid scope.
-    pub fn new(config: Config) -> RedirectURL {
-        RedirectURL::default()
+    pub fn new(config: Config) -> LoginParameters {
+        LoginParameters::default()
             .add_facebook_oath_url(&config.facebook_oath_url())
             .add_client_id(&config.client_id())
             .add_redirect_uri(&config.redirect_uri())
             .add_random_state()
             .add_response_type("")
             //MUST ADD A VALID SCOPE!
-            .add_scope(&[])
-            .add_full_url()
+            .add_scope(config.scope)
     }
 
     pub fn add_client_id(mut self, client_id: &str) -> Self {
@@ -87,8 +87,8 @@ impl RedirectURL {
         self
     }
 
-    pub fn add_scope(mut self, scope: &[String]) -> Self {
-        self.scope = scope.to_vec();
+    pub fn add_scope(mut self, scope: Vec<String>) -> Self {
+        self.scope = scope;
         self
     }
 
@@ -104,7 +104,7 @@ impl RedirectURL {
 
     /// Builds the redirect url for the login flow as a string so it may be
     /// passed through a GET request
-    pub fn build_redirect_url_as_string(&mut self) -> String {
+    fn build_login_url_as_string(&mut self) -> String {
         let full_url = "".to_string()
             + &self.facebook_oath_url
             + "client_id="
@@ -121,9 +121,9 @@ impl RedirectURL {
         full_url
     }
 
-    pub fn add_full_url(mut self) -> Self {
-        self.full_url = self.build_redirect_url_as_string();
-        self
+    pub fn full_login_url(mut self) -> String {
+        self.full_url = self.build_login_url_as_string();
+        self.full_url
     }
 
     pub fn facebook_oath_url(&self) -> &String {
@@ -149,86 +149,25 @@ impl RedirectURL {
     pub fn scope(&self) -> &Vec<String> {
         &self.scope
     }
-
-    pub fn get_full_url(&self) -> &String {
-        &self.full_url
-    }
-
-    pub async fn login(&self) -> Result<(), ClientErr> {
-        //  let client  = HttpClient::new(None)?;
-
-        // login is no working yet.
-        let url = self.full_url.clone();
-        let resp = HttpConnection::get(url, "".to_string()).await?;
-        // let resp = HttpConnection::login(url, "".to_string()).await?;
-        Ok(resp)
-    }
-
-    fn set_facebook_oath_url(&mut self, facebook_oath_url: String) {
-        self.facebook_oath_url = facebook_oath_url;
-    }
-    fn set_client_id(&mut self, client_id: String) {
-        self.client_id = client_id;
-    }
-
-    fn set_redirect_uri(&mut self, redirect_uri: String) {
-        self.redirect_uri = redirect_uri;
-    }
-
-    fn set_state(&mut self, state: String) {
-        self.state = state;
-    }
-
-    fn set_response_type(&mut self, response_type: String) {
-        self.response_type = response_type;
-    }
-
-    fn set_scope(&mut self, scope: Vec<String>) {
-        self.scope = scope;
-    }
 }
 
-#[derive(Deserialize, Debug, Default, Serialize)]
-pub struct FaceebookLogin<HttpC: HttpClient> {
-    pub http_client: Arc<HttpC>,
-}
-
-//Todo::this method is under experimental
-
-impl<HttpC: HttpClient> FaceebookLogin<HttpC> {
-    pub fn new(request_client: Arc<HttpC>) -> Self {
-        FaceebookLogin {
-            http_client: request_client,
-        }
-    }
-    pub async fn login(&self, build_url: String) -> Result<TestResponse, ClientErr> {
-        //  let client  = HttpClient::new(None)?;
-        let resp = self.http_client.get(build_url.parse().unwrap(), "").await?;
-        let result: ClientResult<TestResponse> = deserialize_response(resp.body())?;
-        Ok(result.unwrap())
-    }
-}
-
-#[derive(Debug, Deserialize)]
-pub struct TestResponse {
-    pub ok: String,
-}
 #[cfg(test)]
 mod tests {
     use crate::login::config::Config;
-    use crate::login::redirect_url::RedirectURL;
+    use crate::login::login_parameters::LoginParameters;
 
     #[test]
     fn test_build_url() {
-        let redirect_url = RedirectURL::new(Config {
+        let redirect_url = LoginParameters::new(Config {
             facebook_oath_url: "https://www.facebook.com/v11.0/dialog/oauth?".to_string(),
             client_id: "1234567890".to_string(),
             redirect_uri: "http://localhost:8001".to_string(),
+            scope: vec![],
         })
         .add_response_type("token")
         .add_state("0987654321")
         .add_scope(&["test".to_string()])
-        .add_full_url();
+        .full_login_url();
 
         assert_eq!(
             redirect_url.facebook_oath_url,

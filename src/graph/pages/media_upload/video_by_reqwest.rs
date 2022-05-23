@@ -15,19 +15,15 @@
 //! For information on different opertaions on facebook page  check  <https://developers.facebook.com/docs/graph-api/reference/page/videos/#Creating>
 use crate::prelude::errors::ClientErr;
 use crate::prelude::HttpConnection;
-use std::sync::Arc;
-//use seed::fetch::{fetch, FormData};
-//use seed::{prelude::*, *};
-use crate::prelude::utils::{
-    ChunksUploadResponse, PostResponse, UploadingData,
-};
-use crate::graph::prelude::form_data::reqwest_form::{ resumable_form_data_reqwest};
+
+use crate::graph::prelude::form_data::reqwest_form::resumable_form_data_reqwest;
+use crate::prelude::utils::{ChunksUploadResponse, PostResponse, UploadingData};
 
 use crate::prelude::file_analyze::FileResultServer;
 use crate::prelude::video::{FinalResponeResumableUpload, UploadPhase, VideoParams};
 use serde::{Deserialize, Serialize};
-//use seed::fetch::FormData;
-
+use std::fs::File;
+use std::io::prelude::*;
 /// Facebook video api accepts different parameters that could be passed to the
 /// post request while uploading the video. this struck will have the possible
 /// parameters that a user might need to pass along the video while publishing.
@@ -35,19 +31,13 @@ use serde::{Deserialize, Serialize};
 /// "description" to describe your video  which will appear at the top of the
 /// post.
 
-/*pub struct UploadFile {
-    #[cfg(any(feature = "seed_async"))]
-    pub file: File,
-    pub file_path: String,
-}*/
-
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize)]
 struct ResumableUploadFinal {
     // response from facebook, true or false
     success: bool,
 }
 
-#[derive(Deserialize, Debug, Clone, Serialize)]
+#[derive(Deserialize, Debug)]
 struct InitializeUploadResponse {
     pub video_id: String,
     pub end_offset: String,
@@ -56,9 +46,8 @@ struct InitializeUploadResponse {
 
 /// This struct is the response gotten when initializing the resumable uploading
 /// method process.
-///
 
-#[derive(Deserialize, Clone, Serialize)]
+#[derive(Deserialize, Clone)]
 pub struct VideoApi_reqwest {
     base_url: String,
     page_access_token: String,
@@ -70,24 +59,6 @@ impl VideoApi_reqwest {
             base_url,
             page_access_token,
         }
-    }
-
-    pub async fn tesing_upload(self, video_params: VideoParams) {
-        use std::fs::File;
-        use std::io::Read;
-
-        let mut file = File::open(video_params.file_path.clone()).unwrap();
-
-        let mut contents = String::new();
-        file.read_to_string(&mut contents).unwrap();
-
-        let base_url = self.base_url.replace("EDGE", "videos");
-        let url = base_url + "?access_token=" + &self.page_access_token + "source=" + &contents;
-
-        let client = reqwest::Client::new();
-        let res = client.post(url).body(contents).send().await;
-        let response_text = res.unwrap().text().await;
-        println!("Your paste is located at: {}", response_text.unwrap());
     }
 
     /// facebook recommend that you upload files using the Resumable Upload
@@ -105,21 +76,22 @@ impl VideoApi_reqwest {
     pub async fn non_resumable_post(
         &self,
         video_params: VideoParams,
+        mut file: File,
     ) -> Result<PostResponse, ClientErr> {
-        let file_result = FileResultServer::file_analyze(video_params.file_path.clone());
-        // check if the uploading method
-        if file_result.uploading_method() == "non_resumable" {
-            let base_url = self.base_url.replace("EDGE", "videos");
-            let url = base_url + "?access_token=" + &self.page_access_token;
-            let resp =
-                HttpConnection::video_post::<PostResponse>(url, video_params.clone()).await?;
-            Ok(resp)
-        } else {
-            Err(ClientErr::FacebookError(
-                "The uplaoded file is above 1 gb, use Resumable method ".to_string(),
-            )) // try to generate a customer
-               // error
-        }
+        // let file_result =
+        // FileResultServer::file_analyze(video_params.file_path.clone()); check
+        // if the uploading method
+        let mut buffer = vec![];
+        file.read_to_end(&mut buffer).unwrap();
+        let base_url = self.base_url.replace("EDGE", "videos");
+        let url = base_url + "?access_token=" + &self.page_access_token;
+
+        let resp = HttpConnection::request_by_bytes_and_params::<PostResponse>(
+            url,
+            (buffer, video_params.clone()),
+        )
+        .await?;
+        Ok(resp)
     }
 }
 
@@ -133,10 +105,10 @@ impl VideoApi_reqwest {
     /// so extra time than usuall is expect until the issue is fixed.
     ///  
     /// for more infromation  check  https://developers.facebook.com/docs/video-api/guides/publishing
-    ///
     pub async fn resumable_post(
         &self,
         video_param: VideoParams,
+        file: File,
     ) -> Result<FinalResponeResumableUpload, ClientErr> {
         let mut start_offset = Some("0".to_string()); // this  data will be updated  fopm the respones
         let mut end_offset = Some("0".to_string()); // this  data will be updated  fopm the respones
@@ -150,10 +122,11 @@ impl VideoApi_reqwest {
             "".to_string(),
             "0".to_string(),
             video_param.clone(),
+            file.try_clone().unwrap(),
         );
 
         let uploadind_data = UploadingData::new(
-            video_params.file_path.clone(),
+            "empty:".to_owned(),
             0,
             0,
             "start".to_string(),
@@ -161,23 +134,6 @@ impl VideoApi_reqwest {
         );
 
         let url = base_url.clone() + "?access_token=" + &self.page_access_token;
-
-        //  let mut url = new_base_ure.clone() + &attached_ur.as_str();
-        /* use ::reqwest::multipart::Part;
-        use ::reqwest::Client;
-        let params = [("upload_phase", "start"), ("file_size", file_size.clone())];*/
-
-        /*  let resp = Client::new()
-            .post(new_base_ure.clone())
-            .form(&params)
-            .send()
-            .await;
-        if resp.is_ok() {
-            println!("new test{:?}", resp.unwrap().text().await);
-        } else {
-            println!("error test{:?}", resp.unwrap().text().await);
-        }*/
-        // println!("new test{:?}", resp);
 
         let response =
             HttpConnection::resumable_video_post::<InitializeUploadResponse>(url, uploadind_data)
@@ -187,7 +143,7 @@ impl VideoApi_reqwest {
         end_offset = Some(start_phase_data.end_offset); // update from the facebook response
 
         #[cfg(any(feature = "reqwest_async"))]
-        let chunked_file_data = FileResultServer::file_analyze(video_params.file_path.clone());
+        let chunked_file_data = FileResultServer::file_analyze("your file path".to_owned());
 
         let final_response = FinalResponeResumableUpload::default().update_params(
             start_phase_data.video_id.clone(),
@@ -205,7 +161,7 @@ impl VideoApi_reqwest {
             let mut final_response_status = false;
             let mut current_chunk_size = chunk_size;
             let mut start_chunk = 0.0;
-            //let uploaded_file = file.clone();
+            // let uploaded_file = file.clone();
             let upload_session_id = &start_phase_data.upload_session_id;
 
             // loop and upload the chunked files until is completed then end the loop
@@ -232,10 +188,11 @@ impl VideoApi_reqwest {
                             upload_session_id.to_string(),
                             start_offset_status.clone(),
                             video_params.clone(),
+                            file.try_clone().unwrap(),
                         );
 
                         let uploadind_data = UploadingData::new(
-                            video_param.file_path.clone(),
+                            "your file path".to_owned(),
                             1048576,
                             0,
                             "transfer".to_string(),
@@ -272,7 +229,7 @@ impl VideoApi_reqwest {
                         // it is not certain   where the issue is coming
                         //
                         let uploadind_data = UploadingData::new(
-                            video_params.file_path.clone(),
+                            "your file path".to_owned(),
                             0,
                             0,
                             "finish".to_string(),
@@ -284,6 +241,7 @@ impl VideoApi_reqwest {
                             upload_session_id.to_string(),
                             "".to_string(),
                             video_params.clone(),
+                            file.try_clone().unwrap(),
                         );
 
                         let uploadind_data = UploadingData::default();

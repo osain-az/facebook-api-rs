@@ -1,22 +1,18 @@
-
-
 //! This methods lets you perform operation to facebook pages photos API.
 //! It support  publishing and  get all photos in by page_id.
-//! Note:: it does not allow  getting a single post, updating nor deleting. Use other method for that.
-//! For information on different opertaions on facebook page  check  <https://developers.facebook.com/docs/graph-api/reference/v13.0/page/photos>
+//! Note:: it does not allow  getting a single post, updating nor deleting. Use
+//! other method for that. For information on different opertaions on facebook page  check  <https://developers.facebook.com/docs/graph-api/reference/v13.0/page/photos>
 
+use crate::graph::data::Data;
 use crate::prelude::errors::ClientErr;
+use crate::prelude::utils::GetPostResponse;
 #[cfg(any(feature = "web_sys_async", feature = "seed_async"))]
-use crate::prelude::utils::{form_data_seed, resumable_form_data_seed};
 use crate::prelude::HttpConnection;
+use serde::{Deserialize, Serialize};
 #[cfg(any(feature = "web_sys_async", feature = "seed_async"))]
 use web_sys::{Blob, File, FormData};
-use crate::graph::data::Data;
-use crate::prelude::utils::GetPostResponse;
-use serde::{Deserialize, Serialize};
 
-
-#[derive(Deserialize, Clone, Serialize)]
+#[derive(Clone)]
 pub struct PhotoApi {
     base_url: String,
     page_access_token: String,
@@ -30,8 +26,6 @@ impl PhotoApi {
         }
     }
 
-
-
     #[cfg(any(feature = "web_sys_async", feature = "seed_async"))]
     pub async fn post_by_file(
         &self,
@@ -40,25 +34,18 @@ impl PhotoApi {
     ) -> Result<PhotoResponse, ClientErr> {
         let base_url = self.base_url.clone();
         let page_token = self.page_access_token.clone();
-        let _file = file.clone();
-        use crate::prelude::FileResult;
-        //let file_result = FileResult::file_analyze(file);
 
-        let form_data = self.form_data(photo_params, _file);
+        let form_data = self.clone().form_data(photo_params, file);
         let base_url = self.base_url.replace("EDGE", "photos");
         let url = base_url + "?access_token=" + &self.page_access_token;
         let resp = HttpConnection::video_post::<PhotoResponse>(url, form_data).await?;
         Ok(resp)
-
     }
-    ///Posting a photo by url
-    pub async fn all_photos(
-        &self
-    ) -> Result<Data<GetPostResponse>, ClientErr> {
 
-       let url = self.base_url.replace("EDGE", "photos")
-            + "&access_token="
-            + &self.page_access_token;
+    /// Posting a photo by url
+    pub async fn all_photos(&self) -> Result<Data<GetPostResponse>, ClientErr> {
+        let url =
+            self.base_url.replace("EDGE", "photos") + "&access_token=" + &self.page_access_token;
 
         let resp = HttpConnection::get::<Data<GetPostResponse>>(url, "".to_string()).await?;
 
@@ -77,11 +64,11 @@ impl PhotoApi {
 }
 
 /// Possible parameters used when uploading a photo
-///
-#[derive(Clone, Deserialize, Serialize)]
+#[derive(Clone, Serialize)]
 pub struct PhotoParams {
-    /// The description of the photo, used as the accompanying status message in any feed story.
-    /// The message can contain mentions of Facebook Pages using the following syntax:
+    /// The description of the photo, used as the accompanying status message in
+    /// any feed story. The message can contain mentions of Facebook Pages
+    /// using the following syntax:
     ///
     /// example
     ///
@@ -89,10 +76,12 @@ pub struct PhotoParams {
     /// ```
     pub message: String,
 
-    ///Page ID of a place associated with the Photo
+    /// Page ID of a place associated with the Photo
     pub place: String,
     pub file_path: String,
 }
+
+#[derive(Clone, Deserialize)]
 pub struct PhotoResponse {
     pub id: String,
     post_id: String,

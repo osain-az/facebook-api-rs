@@ -26,6 +26,7 @@ impl FeedApi {
             page_access_token: access_token,
         }
     }
+
     /// This Method is used for posting content to page feed,  you can
     /// publish to Pages by using this method to post either link or message
     /// this method can not post media like  video and photo.
@@ -34,7 +35,6 @@ impl FeedApi {
     ///  # Arguments
     /// * ` message` - This is body of the message you want to post.
     /// * ` url_link ` -  The link you intend to attach to the  post.
-    ///
     pub async fn post(&self, post_params: FeedPostFields) -> Result<FeedPostSuccess, ClientErr> {
         let base_url = self.base_url.replace("EDGE", "feed");
         let mut url = base_url
@@ -65,7 +65,7 @@ impl FeedApi {
         Ok(resp)
     }
 
-    ///This method  return data  of the page feed
+    /// This method  return data  of the page feed
     pub async fn get(self) -> Result<FeedData, ClientErr> {
         let mut base_url = self.base_url.replace("EDGE", "feed");
         base_url = "?fields=".to_string();
@@ -74,7 +74,8 @@ impl FeedApi {
             if count < field_count - 1 {
                 base_url = base_url + &field + ",";
             } else {
-                base_url = base_url + &field; // remove the comma in the last filed
+                base_url = base_url + &field; // remove the comma in the last
+                                              // filed
             }
         }
         let url = base_url + "&access_token=" + &self.page_access_token;
@@ -99,34 +100,57 @@ pub struct MediaPostSuccess {
 }
 
 /// The struct gotten  from page feed.
-///The data depends of the feeds.
+/// The data depends of the feeds.
 #[derive(Deserialize, Debug, Serialize)]
 pub struct FeedData {
     data: Data<GetPostResponse>,
 }
 
 pub struct FeedPostFields {
-    /// The URL of a link to attach to the post. At lest either link or message must be supplied.
+    /// The URL of a link to attach to the post. At lest either link or message
+    /// must be supplied.
+    pub link: String,
+
+    /// The main body of the post. The message can contain mentions of Facebook
+    /// Pages, @[page-id].
+    pub message: String,
+
+    /// Comma-separated list of user IDs of people tagged in this post.
+    /// You cannot specify this field without also specifying a place.
+    pub tags: Vec<String>,
+
+    /// Page ID of a location associated with this post. Note the page must have
+    /// lacation enable
+    pub place: String,
+
+    /// Object that specifies a Call to Action button. This should be the action
+    /// you want people to take when they see your post. Clicking on this
+    /// button will take people to the link you specify.
+    pub call_to_action: Option<CallToAction>,
+
+    /// Add a Feeling or Activity to a Page Post
+    pub feeling: Option<Feeling>,
+}
+
+/// You can enhance your link Page posts with call to action buttons.
+/// The following call_to_action field can be added to new link Page Posts.
+///
+/// Object that specifies a Call to Action button. This should be the action you
+/// want people to take when they see your post. Clicking on this button will
+/// take people to the link you specify.
+#[derive(Debug)]
+pub struct CallToAction {
+    /// This link should be the same as the link parameter of the Page Post
     link: String,
 
-    ///The main body of the post. The message can contain mentions of Facebook Pages, @[page-id].
-    message: String,
-
-    ///Comma-separated list of user IDs of people tagged in this post.
-    /// You cannot specify this field without also specifying a place.
-    tags: Vec<String>,
-
-    ///Page ID of a location associated with this post. Note the page must have lacation enable
-    place: String,
-
-    ///Object that specifies a Call to Action button. This should be the action you want people to take when they see your post.
-    /// Clicking on this button will take people to the link you specify.
-    call_to_action: Option<CallToAction>,
-
-    ///Add a Feeling or Activity to a Page Post
-    feeling: Feeling,
+    /// Determines the call to action button text. One of allowed values.
+    ///
+    /// example "BOOK_NOW, BUY_NOOW
+    type_: CallToActionType,
 }
+
 #[derive(Deserialize, Debug, Serialize)]
+#[allow(warnings)]
 pub enum CallToActionType {
     // Determines the call to action button text. One of allowed values:
     BOOK_TRAVEL,
@@ -179,36 +203,21 @@ pub enum CallToActionType {
     WATCH_VID, // O. Call to action shows up as Watch Video.
 }
 
-///You can enhance your link Page posts with call to action buttons.
-/// The following call_to_action field can be added to new link Page Posts.
+/// Add a feeling or activity and an icon to a page post.
 ///
-/// Object that specifies a Call to Action button. This should be the action you want people to take when they see your post.
-/// Clicking on this button will take people to the link you specify.
-#[derive(Debug)]
-pub struct CallToAction {
-    /// This link should be the same as the link parameter of the Page Post
-    link: String,
-
-    /// Determines the call to action button text. One of allowed values.
-    ///
-    /// example "BOOK_NOW, BUY_NOOW
-    type_: CallToActionType,
-}
-
-///Add a feeling or activity and an icon to a page post.
-///
-/// og_action_type_id and og_object_id are required when posting a feeling or activity.
-/// ```og_icon_id``` is optional however if not used an icon will be automatically supplied based on the og_object_id.
+/// og_action_type_id and og_object_id are required when posting a feeling or
+/// activity. ```og_icon_id``` is optional however if not used an icon will be
+/// automatically supplied based on the og_object_id.
 pub struct Feeling {
     /// An action, i.e., feeling, watching, etc.
     /// Each feeling is represented by an id. The id can be found  <https://developers.facebook.com/docs/graph-api/reference/v13.0/page/feed/feelings#actions>
     og_action_type_id: String,
 
-    /// An icon perhaps representing the action type, i.e., a smiley face, a movie icon, etc.
-    /// Each feeling is represented by an id. The id can be found  <https://developers.facebook.com/docs/graph-api/reference/v13.0/page/feed/feelings#actions>
+    /// An icon perhaps representing the action type, i.e., a smiley face, a
+    /// movie icon, etc. Each feeling is represented by an id. The id can be found  <https://developers.facebook.com/docs/graph-api/reference/v13.0/page/feed/feelings#actions>
     og_icon_id: String,
 
-    ///An object_id can be any page_id or a predefined object. Feelings
+    /// An object_id can be any page_id or a predefined object. Feelings
     ///    Each feeling is represented by an id. The id can be found  <https://developers.facebook.com/docs/graph-api/reference/v13.0/page/feed/feelings#actions>
     og_object_id: String,
 }

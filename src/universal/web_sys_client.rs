@@ -6,8 +6,7 @@ use http::{
 };
 
 use web_sys::{
-    FormData, Request as Web_sys_Request, RequestInit, RequestMode, Response, Window,
-    XmlHttpRequest,
+    FormData, Request as Web_sys_Request, RequestInit, RequestMode, Response, XmlHttpRequest,
 };
 
 use super::*;

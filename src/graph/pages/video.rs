@@ -13,31 +13,25 @@
 //! For other information check on facebook documentation  for
 //! video API  <https://developers.facebook.com/docs/video-api/guides/publishing>
 //! For information on different opertaions on facebook page  check  <https://developers.facebook.com/docs/graph-api/reference/page/videos/#Creating>
-#[cfg(any(feature = "seed_async"))]
-use crate::graph::utils::FileResult;
+
 use crate::prelude::errors::ClientErr;
+use crate::prelude::utils::{ChunksUploadResponse, PostResponse, UploadingData};
 use crate::prelude::HttpConnection;
+#[cfg(any(feature = "reqwest_async"))]
+use std::fs::File;
 use std::io::Read;
 use std::sync::Arc;
-//use seed::fetch::{fetch, FormData};
-//use seed::{prelude::*, *};
-
-//#[cfg(any(feature = "seed_async"))]
-#[cfg(any(feature = "web_sys_async", feature = "seed_async"))]
-use crate::prelude::utils::{form_data_seed, resumable_form_data_seed};
-use crate::prelude::utils::{ChunksUploadResponse, PostResponse, UploadingData};
 
 use serde::{Deserialize, Serialize};
 
-#[cfg(any(feature = "web_sys_async", feature = "seed_async"))]
+#[cfg(any(feature = "web_sys_async"))]
 use web_sys::{Blob, File, FormData};
 
 #[cfg(any(feature = "reqwest_async"))]
 use crate::prelude::media_upload::video_by_reqwest::VideoApi_reqwest;
 
-#[cfg(any(feature = "web_sys_async", feature = "seed_async"))]
-use crate::prelude::media_upload::video_by_seed::VideoApi_seed;
-//use seed::fetch::FormData;
+#[cfg(any(feature = "web_sys_async"))]
+use crate::prelude::media_upload::video_by_web_sys::VideoApi_seed;
 
 /// Facebook video api accepts different parameters that could be passed to the
 /// post request while uploading the video. this struck will have the possible
@@ -65,22 +59,15 @@ pub struct VideoParams {
     pub content_category: ContentCategory,
 
     pub title: String,
-
-    pub file_path: String,
 }
 
-pub struct UploadFile {
-    #[cfg(any(feature = "seed_async"))]
-    pub file: File,
-    pub file_path: String,
-}
-
-/// UsageType is an enum that is use to indication where  you are using the method,  Client or Server
+/// UsageType is an enum that is use to indication where  you are using the
+/// method,  Client or Server
 #[derive(Deserialize, Debug, Serialize)]
 pub enum UsageType {
-    ///Client is when you are using it for at frontend or wasm
+    /// Client is when you are using it for at frontend or wasm
     Client,
-    ///Server is when you are using this method at the backend
+    /// Server is when you are using this method at the backend
     Server,
 }
 /// Response for successful uploading of video using non_resumable method
@@ -88,7 +75,8 @@ pub enum UsageType {
 /// Enum for different categories that the uploaded video will belong to as
 /// defined on facebook graph api documentation. Choose any from the list, if no
 /// data is supplied a default value of "OTHER" is chosen.
-#[derive(Deserialize, Copy, Clone, Serialize)]
+#[derive(Deserialize, Serialize, Copy, Clone)]
+#[allow(warnings)]
 pub enum ContentCategory {
     EAUTY_FASHION,
     BUSINESS,
@@ -112,7 +100,7 @@ pub enum ContentCategory {
 
 /// This struct is the response gotten when initializing the resumable uploading
 /// method process.
-#[derive(Deserialize, Debug, Clone, Serialize)]
+#[derive(Deserialize, Debug, Clone)]
 struct InitializeUploadResponse {
     pub video_id: String,
     pub end_offset: String,
@@ -206,7 +194,6 @@ impl Default for VideoParams {
             thum: "".to_string(),
             content_category: ContentCategory::OTHER,
             title: " ".to_string(),
-            file_path: "".to_string(),
         }
     }
 }
@@ -221,16 +208,13 @@ impl VideoParams {
     pub fn video_params(self) -> VideoParams {
         self
     }
-    pub fn set_file_path(&mut self, file_path: String) {
-        self.file_path = file_path;
-    }
+
     pub fn new(
         video_title: String,
         description: String,
         thum: String,
         content_category: ContentCategory,
         title: String,
-        file_path: String,
     ) -> Self {
         VideoParams {
             video_title,
@@ -238,7 +222,6 @@ impl VideoParams {
             thum,
             content_category,
             title,
-            file_path,
         }
     }
 }
@@ -273,9 +256,7 @@ impl VideoApi {
     /// so extra time than usuall is expect until the issue is fixed.
     ///
     /// for more infromation  check  https://developers.facebook.com/docs/video-api/guides/publishing
-    ///
-    ///
-    #[cfg(any(feature = "web_sys_async", feature = "seed_async"))]
+    #[cfg(any(feature = "web_sys_async"))]
     pub async fn resumable_post(
         &self,
         file: File,
@@ -292,13 +273,14 @@ impl VideoApi {
     #[cfg(any(feature = "reqwest_async"))]
     pub async fn resumable_post(
         &self,
+        file: File,
         video_param: VideoParams,
     ) -> Result<FinalResponeResumableUpload, ClientErr> {
         let base_url = self.base_url.clone();
         let page_token = self.page_access_token.clone();
 
         VideoApi_reqwest::new(base_url, page_token)
-            .resumable_post(video_param)
+            .resumable_post(video_param, file)
             .await
     }
 
@@ -311,8 +293,7 @@ impl VideoApi {
     /// parameter struct,  if the video file is within this range it post
     /// the video but if the video is not within the range , the post will
     /// not be made but a Fetcherror will be gerated.
-    //#[cfg(any(feature = "seed_async"))]
-    #[cfg(any(feature = "web_sys_async", feature = "seed_async"))]
+    #[cfg(any(feature = "web_sys_async"))]
     pub async fn non_resumable_post(
         &self,
         video_params: VideoParams,
@@ -329,16 +310,13 @@ impl VideoApi {
     pub async fn non_resumable_post(
         &self,
         video_params: VideoParams,
+        mut file: File,
     ) -> Result<PostResponse, ClientErr> {
         let base_url = self.base_url.clone();
         let page_token = self.page_access_token.clone();
 
-        VideoApi_reqwest::new(base_url.clone(), page_token.clone())
-            .tesing_upload(video_params.clone())
-            .await;
-
         VideoApi_reqwest::new(base_url, page_token)
-            .non_resumable_post(video_params)
+            .non_resumable_post(video_params, file)
             .await
     }
 }
@@ -348,7 +326,6 @@ impl VideoApi {
     /// useage
     ///
     /// .post_by_link(video_url, description, title)
-    ///
 
     pub async fn post_by_link(
         &self,
@@ -356,15 +333,15 @@ impl VideoApi {
         description: &str,
         title: &str,
     ) -> Result<FinalResponeResumableUpload, ClientErr> {
-        let url= self.base_url.replace("EDGE", "videos")
-                + "?file_url="
-                + file_url
-                + "&access_token="
-                + &self.page_access_token
-                + "&title="
-                + title
-                + &"description="
-                + description;
+        let url = self.base_url.replace("EDGE", "videos")
+            + "?file_url="
+            + file_url
+            + "&access_token="
+            + &self.page_access_token
+            + "&title="
+            + title
+            + &"description="
+            + description;
 
         let video_id = HttpConnection::post::<FeedPostSuccess, String>(url, "".to_string()).await?;
         if video_id.id.is_empty() {

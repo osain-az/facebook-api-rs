@@ -107,7 +107,6 @@ impl AccountsAPI {
     /// <https://developers.facebook.com/docs/graph-api/reference/user/accounts/>
 
     pub async fn get(&self) -> Result<Data<Accounts>, ClientErr> {
-        println!("this is the url {}", self.url.to_string().clone());
         let resp =
             HttpConnection::get::<Data<Accounts>>(self.url.to_string(), "".to_string()).await?;
         Ok(resp)
@@ -144,7 +143,6 @@ mod test {
 
         let v: Data<Accounts> = serde_json::from_str(data).unwrap();
 
-        println!("{:?}", v);
         assert_eq!(v.data.first().unwrap().name, "business_name".to_string());
     }
 }
