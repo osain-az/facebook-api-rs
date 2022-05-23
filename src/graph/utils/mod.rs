@@ -1,24 +1,28 @@
-use seed::prelude::js_sys::Math::{ceil, min};
 /// This mod will contain different utils methods that could be use in different
 /// mod
-use seed::{prelude::*, *};
 use serde::{Deserialize, Serialize};
 use serde_json::ser::CharEscape::FormFeed;
+#[cfg(any(feature = "web_sys_async", feature = "seed_async"))]
 use web_sys::Blob;
+#[cfg(any(feature = "web_sys_async", feature = "seed_async"))]
 use web_sys::File;
+
+#[cfg(any(feature = "reqwest_async"))]
+pub mod file_analyze;
 
 //#[derive(Deserialize, Debug, Serialize)]
 #[derive(Clone, Debug)]
-
+#[cfg(any(feature = "web_sys_async", feature = "seed_async"))]
 pub struct FileResult {
     file_size_gb: f64,
     file_size_byte: f64,
-    upload_raw_file: File,
+    pub(crate) upload_raw_file: File,
     upload_method: String,
     chunked_file: Blob,
     chunk_upload_size: u64,
 }
-
+//#[cfg(any(feature = "seed_async"))]
+#[cfg(any(feature = "web_sys_async", feature = "seed_async"))]
 impl FileResult {
     /// This method will take the file  and return  a struct of   struc
     /// FileResult {  size_gb: f64,   file_byte: f64,   upload_method: String }
@@ -60,9 +64,8 @@ impl FileResult {
         let half_gb_to_byte = 5.4_f64.powf(8.0); // equavalent to 1gb
         let mut chunk_size: u64;
         let file_size = self.upload_raw_file.size();
-
         if file_size < half_gb_to_byte {
-            // if the while is less the 0.5,  the chunk size should be the size/2
+            // if the file is less the 0.5,  the chunk size should be the size/2
             chunk_size = file_size as u64 / 2;
         } else if file_size < gb_to_byte {
             // if the while is less the greater than 0.5 but less than 1gb, splite the

@@ -1,23 +1,34 @@
 use serde::{Deserialize, Serialize};
-///A struct which describes the config.json file structure.
+/// A struct which describes the config.json file structure.
 /// the json file fields are stored in this struct, and are then
 /// added to the RedirectURL struct.
 #[derive(Deserialize, Debug, Serialize)]
 pub struct Config {
     /// The Facebook url preamble for the oath dialog.
-    pub(crate) facebook_oath_url: String,
+    pub facebook_oath_url: String,
 
     /// The ID of your app, found in your app's dashboard.
-    pub(crate) client_id: String,
+    pub client_id: String,
 
     /// The URL that you want to redirect the person logging in back to.
-    pub(crate) redirect_uri: String,
+    pub redirect_uri: String,
+
+    pub scope: Vec<String>,
 }
 
 impl Config {
-
-    pub fn new(facebook_oath_url: String, client_id: String, redirect_uri: String) -> Self {
-        Config { facebook_oath_url, client_id, redirect_uri }
+    pub fn new(
+        facebook_oath_url: String,
+        client_id: String,
+        redirect_uri: String,
+        scope: Vec<String>,
+    ) -> Self {
+        Config {
+            facebook_oath_url,
+            client_id,
+            redirect_uri,
+            scope,
+        }
     }
 
     pub fn facebook_oath_url(&self) -> &str {

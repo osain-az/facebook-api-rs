@@ -1,17 +1,16 @@
 //!  This mod will server as method binder that allow  to access different end
 //! poinst availiable on the facebook-api.rs
 
+use crate::graph::instagram::media::InstagramMediaApi;
 use crate::graph::me::MeApi;
 use crate::graph::pages::feed::FeedApi;
 use crate::graph::pages::post::PostApi;
 use crate::graph::prelude::account::InstagramApi;
 use crate::graph::prelude::publish::InstagramPostApi;
-use crate::login::token::{AccessTokenInformation, Token};
+use crate::login::token::{Token, TokenLiveType};
+use crate::prelude::hashtag::HashtagAPi;
 use crate::prelude::search::PagesSearchAPI;
 use crate::prelude::video::VideoApi;
-use seed::{prelude::*, *};
-use std::option::Option::Some;
-use crate::graph::instagram::media::InstagramMediaApi;
 
 /// Client Struct for making calls to Facebook Graph
 #[derive(Debug)]
@@ -31,8 +30,6 @@ pub struct Client {
 impl Default for Client {
     fn default() -> Self {
         let graph = "https://graph.facebook.com/v11.0/NODE/EDGE".to_string();
-      //  let insta_graph = "https://graph.instagram.com/v11.0/NODE/EDGE".to_string();
-
         Self {
             graph,
             short_live_user_access_token: "".to_string(),
@@ -72,9 +69,9 @@ impl Client {
         self
     }
 
-    pub fn base_url (self) -> String{
-     self.graph
-}
+    pub fn base_url(self) -> String {
+        self.graph
+    }
 
     /// This method  is used to pass user data/crediteniatls to the ME method
     /// which will be used to reach the ME API.
@@ -83,24 +80,21 @@ impl Client {
     /// if you intented to used a short live token then pass in "short_live"
     /// . For more information on facebook documenation check
     /// <https://developers.facebook.com/docs/facebook-login/access-tokens/>
-    pub fn me_by_short_or_long_live_token(self, token_live_type: String) -> MeApi {
-        if token_live_type == "short_live" {
-            log!("token_live_type short", token_live_type);
-            MeApi::new(
-                self.graph + &"?access_token=".to_string() + &self.short_live_user_access_token,
-            )
-        } else {
-            log!("token_live_type long", token_live_type);
-            MeApi::new(
+    pub fn accounts(self, token_live_type: TokenLiveType) -> MeApi {
+        match token_live_type {
+            TokenLiveType::LONGLIVE => MeApi::new(
                 self.graph + &"?access_token=".to_string() + &self.long_live_user_access_token,
-            )
+            ),
+            TokenLiveType::SHORTLIVE => MeApi::new(
+                self.graph + &"?access_token=".to_string() + &self.short_live_user_access_token,
+            ),
         }
     }
 
     ///  This method is used to pass user data/crediteniatls to the Post CONTENT
     /// method which will be used to post  to content to the  feed : Note this
     /// API can not be use for posting of vide and image
-    pub fn feeds(self, page_id: String) -> FeedApi {
+    pub fn feed(self, page_id: String) -> FeedApi {
         let base_url = self.graph.replace("NODE", &page_id);
         FeedApi::new(base_url, self.page_access_token)
     }
@@ -138,7 +132,7 @@ impl Client {
         InstagramPostApi::new(self.page_access_token, base_url)
     }
 
-    pub fn instagram_media_container(self, media_container_id: String) -> InstagramMediaApi{
+    pub fn instagram_media_container(self, media_container_id: String) -> InstagramMediaApi {
         let base_url = self.graph.replace("NODE", &media_container_id);
 
         InstagramMediaApi::new(self.page_access_token, base_url)
@@ -147,6 +141,14 @@ impl Client {
     pub fn search_pages(self) -> PagesSearchAPI {
         let base_url = self.graph.replace("NODE/EDGE", "pages/search");
         PagesSearchAPI::new(base_url, self.page_access_token)
+    }
+
+    pub fn instagram_hashtag(self, instagram_id: String) -> HashtagAPi {
+        let mut base_url = self
+            .graph
+            .replace("NODE/EDGE", "ig_hashtag_search?user_id=");
+        base_url = base_url + &instagram_id;
+        HashtagAPi::new(self.page_access_token, base_url)
     }
 
     pub fn token_info(self) -> Token {
@@ -167,7 +169,7 @@ mod test {
 
         let accounts = Client::default()
             .add_access_tokens(token, "".to_string())
-            .me_by_short_or_long_live_token("short_live".to_string())
+            .accounts("short_live".to_string())
             .accounts();
         assert_eq!(
             "https://graph.facebook.com/v11.0/me/accounts?access_token=123",

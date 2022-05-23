@@ -2,9 +2,10 @@ use seed::{prelude::*, *};
 use wasm_bindgen::prelude::*;
 use web_sys::{File, HtmlInputElement};
 
+use facebook_api_rs::prelude::errors::ClientErr;
 use facebook_api_rs::prelude::*;
-
 use seed_routing::{ParsePath, View, *};
+
 mod facebook;
 mod instagram;
 add_router!();
@@ -21,7 +22,7 @@ fn init(url: Url, orders: &mut impl Orders<Msg>) -> Model {
         .clone()
         .hash()
         .map(|hash| Token::extract_user_tokens(hash.to_string()));
-
+    log!(token_response);
     sync_router!();
     orders.perform_cmd(async {
         // Load config from some json.
@@ -32,7 +33,7 @@ fn init(url: Url, orders: &mut impl Orders<Msg>) -> Model {
     });
 
     Model {
-        redirect_url: RedirectURL::default(),
+        login_url: "".to_owned(),
         user_tokens: token_response,
         accounts: None,
         switch_account_to: "".to_string(),
@@ -49,7 +50,7 @@ fn init(url: Url, orders: &mut impl Orders<Msg>) -> Model {
 
 #[derive(Default)]
 pub struct Model {
-    redirect_url: RedirectURL,
+    login_url: String,
     user_tokens: Option<Token>,
     accounts: Option<Data<Accounts>>,
     switch_account_to: String,
@@ -86,26 +87,25 @@ enum Msg {
     UrlChanged(subs::UrlChanged),
 
     // every error should user this
-    ResponseFailed(FetchError),
+    ResponseFailed(ClientErr),
 }
 
 // `update` describes how to handle each `Msg`.
 fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
     match msg {
-        Msg::ConfigFetched(Ok(config)) => model.redirect_url = RedirectURL::new(config).add_response_type("token").add_scope(&["email".to_string()]).add_full_url(),
-        Msg::ConfigFetched(Err(fetch_error)) => error!("Config fetch failed! Be sure to have config.json at the root of your project with client_id and redirect_uri", fetch_error),
+        Msg::ConfigFetched(Ok(config)) => model.login_url = LoginParameters::new(config).add_response_type("token").add_scope(vec!["email".to_string()]).full_login_url(),
+        Msg::ConfigFetched(Err(fetch_error)) => error!("Config fetch failed! Be sure to have config.json at  the root of your project with client_id and redirect_uri", fetch_error),
 
         Msg::GetAccount => {
             orders.send_msg(Msg::GetMeDetails);
-            if let Some(user_access_tokens) = model.user_tokens.clone() {
+          if let Some(user_access_tokens) = model.user_tokens.clone() {
                 let user_tokens = user_access_tokens;
                 let client = Client::new(user_tokens, "".to_string());
                 orders.perform_cmd(async {
                     // we are interested in the page long live token, therefore we called the long
                     // live methed by passing "long_live_token" to the method
                     client
-                        .me_by_short_or_long_live_token("short_live".to_string())
-                        .accounts()
+                        .accounts(TokenLiveType::LONGLIVE)
                         .get()
                         .await
                         .map_or_else(Msg::ResponseFailed, Msg::GetAccountSuccess)
@@ -122,8 +122,8 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
                     // we are interested in the page long live token, therefore we called the long
                     // live methed by passing "long_live_token" to the method
                     client
-                        .me_by_short_or_long_live_token("short_live".to_string())
-                        .details()
+                        .accounts(TokenLiveType::LONGLIVE)
+                        .user()
                         .await
                         .map_or_else(Msg::ResponseFailed, Msg::GetMeDetailsSuccess)
                 });
@@ -221,7 +221,7 @@ fn view(model: &Model) -> Node<Msg> {
             ],
             a![
                 attrs! {
-                    At::Href => model.redirect_url.get_full_url()
+                    At::Href => model.login_url
                 },
                 button![
                     img![
@@ -230,7 +230,7 @@ fn view(model: &Model) -> Node<Msg> {
                            At:: Width => 40,
                             At:: Height => 40,
 
-                          // At::Src => "src/login_button.png", // attribute <a href="https://www.freeiconspng.com/img/18026">Facebook login button png</a>
+                        //   At::Src => "src/login_button.png", // attribute <a href="https://www.freeiconspng.com/img/18026">Facebook login button png</a>
                         },
                         style! {
                          St::PaddingTop => px(3),
@@ -254,6 +254,7 @@ fn view(model: &Model) -> Node<Msg> {
                      St::Width => "270px", // 240 - 400 px
                      St::Height => "50px",
                       St:: FontSize => "1.2em"
+
                     ],
                 ]
             ],

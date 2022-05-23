@@ -2,10 +2,11 @@ use seed::{prelude::*, *};
 use wasm_bindgen::JsCast;
 use web_sys::File;
 
-use facebook_api_rs::prelude::feed::FeedPostSuccess;
+use facebook_api_rs::prelude::errors::ClientErr;
+use facebook_api_rs::prelude::feed::{FeedPostFields, FeedPostSuccess};
 use facebook_api_rs::prelude::search::PagesAPI;
-use facebook_api_rs::prelude::utils::GetPostResponse;
-use facebook_api_rs::prelude::video::{FinalResponeResumableUpload, PostResponse, VideoParams};
+use facebook_api_rs::prelude::utils::{GetPostResponse, PostResponse};
+use facebook_api_rs::prelude::video::{FinalResponeResumableUpload, VideoParams};
 use facebook_api_rs::prelude::*;
 
 // ------ ------
@@ -94,7 +95,7 @@ pub enum Msg {
     ResumableUploadSucess(FinalResponeResumableUpload),
 
     // every error should user this
-    ResponseFailed(FetchError),
+    ResponseFailed(ClientErr),
 }
 
 // `update` describes how to handle each `Msg`.
@@ -116,11 +117,18 @@ pub fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
 
                     if let Some(post_message) = &model.post_data {
                         let post_description = post_message.message.clone();
-
+                        let post_data = FeedPostFields {
+                            link: "".to_string(),
+                            message: "".to_string(),
+                            tags: vec![],
+                            place: "".to_string(),
+                            call_to_action: None,
+                            feeling: None,
+                        };
                         orders.perform_cmd(async move {
                             Client::new(Token::default(), page_access_token)
-                                .feeds(page_id)
-                                .post(&post_description)
+                                .feed(page_id)
+                                .post(post_data)
                                 .await
                                 .map_or_else(Msg::ResponseFailed, Msg::PostSuccess)
                         });
@@ -136,7 +144,7 @@ pub fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
                         orders.perform_cmd(async move {
                             Client::new(Token::default(), page_access_token)
                                 .video_upload(page_id)
-                                .post_by_link(&video_url)
+                                .post_by_link(&video_url, "The video description", "video")
                                 .await
                                 .map_or_else(Msg::ResponseFailed, Msg::PostVideoSucces)
                         });
@@ -196,12 +204,15 @@ pub fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
                 };
 
                 orders.perform_cmd(async move {
-                    // This test is for nonresumable
-                    Client::new(Token::default(), page_access_token)
-                        .video_upload(page_id)
-                        .non_resumable_post(video_params, file_uploaded)
-                        .await
-                        .map_or_else(Msg::ResponseFailed, Msg::VideoUploadByFileSucess)
+                    // Todo:File uplaod does not work with reqwest_async feature
+                    // yet
+
+                    // Client::new(Token::default(), page_access_token)
+                    //     .video_upload(page_id)
+                    //     .non_resumable_post(video_params, file_uploaded)
+                    //     .await
+                    //     .map_or_else(Msg::ResponseFailed,
+                    // Msg::VideoUploadByFileSucess)
                 });
             }
         }
@@ -226,11 +237,13 @@ pub fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
                 };
 
                 orders.perform_cmd(async move {
+                    // Todo:File uplaod does not work with reqwest_async feature  yet
                     Client::new(Token::default(), page_access_token)
-                        .video_upload(page_id)
-                        .resumable_post(file_uploaded, video_params)
-                        .await
-                        .map_or_else(Msg::ResponseFailed, Msg::ResumableUploadSucess)
+                    // .video_upload(page_id)
+                    // .resumable_post(file_uploaded, video_params)
+                    // .await
+                    // .map_or_else(Msg::ResponseFailed,
+                    // Msg::ResumableUploadSucess)
                 });
             }
         }

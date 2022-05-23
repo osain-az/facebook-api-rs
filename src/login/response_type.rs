@@ -1,5 +1,5 @@
-use serde::{Deserialize, Serialize};
-#[derive(Deserialize, Debug, Serialize)]
+use serde::{Deserialize};
+#[derive(Deserialize, Debug)]
 pub struct ResponseType {
     // Response data is included as URL parameters and contains code parameter (an encrypted string unique to each login request). This is the default behavior.
     code: String,
