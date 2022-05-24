@@ -93,7 +93,7 @@ enum Msg {
 // `update` describes how to handle each `Msg`.
 fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
     match msg {
-        Msg::ConfigFetched(Ok(config)) => model.login_url = LoginParameters::new(config).add_response_type("token").add_scope(vec!["email".to_string()]).full_login_url(),
+        Msg::ConfigFetched(Ok(config)) => model.login_url = LoginUrlParameters::new(config).add_response_type("token").add_scope(vec!["email".to_string()]).full_login_url(),
         Msg::ConfigFetched(Err(fetch_error)) => error!("Config fetch failed! Be sure to have config.json at  the root of your project with client_id and redirect_uri", fetch_error),
 
         Msg::GetAccount => {

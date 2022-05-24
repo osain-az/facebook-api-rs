@@ -15,7 +15,7 @@ use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
 #[derive(Deserialize, Debug, Default, Clone, Serialize)]
-pub struct LoginParameters {
+pub struct LoginUrlParameters {
     /// The Facebook url preamble for the oath dialog.
     facebook_oath_url: String,
 
@@ -41,7 +41,7 @@ pub struct LoginParameters {
     full_url: String,
 }
 
-impl LoginParameters {
+impl LoginUrlParameters {
     /// Constructor of the Facebook login url parameters
     ///
     /// facebook_oath_url, client_id, and redirect_uri are retrieved from the
@@ -51,8 +51,8 @@ impl LoginParameters {
     /// of the application, or else the response will default to code upon
     /// the login flow redirect. scope is optional, but inclusion must
     /// fulfill a valid scope.
-    pub fn new(config: Config) -> LoginParameters {
-        LoginParameters::default()
+    pub fn new(config: Config) -> LoginUrlParameters {
+        LoginUrlParameters::default()
             .add_facebook_oath_url(&config.facebook_oath_url())
             .add_client_id(&config.client_id())
             .add_redirect_uri(&config.redirect_uri())
@@ -154,11 +154,11 @@ impl LoginParameters {
 #[cfg(test)]
 mod tests {
     use crate::login::config::Config;
-    use crate::login::login_parameters::LoginParameters;
+    use crate::login::login_parameters::LoginUrlParameters;
 
     #[test]
     fn test_build_url() {
-        let redirect_url = LoginParameters::new(Config {
+        let redirect_url = LoginUrlParameters::new(Config {
             facebook_oath_url: "https://www.facebook.com/v11.0/dialog/oauth?".to_string(),
             client_id: "1234567890".to_string(),
             redirect_uri: "http://localhost:8001".to_string(),
