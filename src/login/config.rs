@@ -17,14 +17,9 @@ pub struct Config {
 }
 
 impl Config {
-    pub fn new(
-        facebook_oath_url: String,
-        client_id: String,
-        redirect_uri: String,
-        scope: Vec<String>,
-    ) -> Self {
+    pub fn new(client_id: String, redirect_uri: String, scope: Vec<String>) -> Self {
         Config {
-            facebook_oath_url,
+            facebook_oath_url: "https://www.facebook.com/v11.0/dialog/oauth?".to_owned(),
             client_id,
             redirect_uri,
             scope,
