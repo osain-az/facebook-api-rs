@@ -9,6 +9,7 @@
 //! number of methods.
 //! Form more information about token  check  [facebook api Token doc](https://developers.facebook.com/docs/facebook-login/access-tokens/?translation)
 use crate::graph::client::Client;
+use crate::login::config::Config;
 use crate::prelude::errors::ClientErr;
 use crate::prelude::HttpConnection;
 use chrono::prelude::*;
@@ -19,7 +20,7 @@ use std::collections::HashMap;
 /// The following struct is used to describe a token which may be retrieved from
 /// the login flow of Facebook.
 #[derive(Deserialize, Default, Clone, Debug)]
-pub struct Token {
+pub struct UserToken {
     /// access_token is used for API calls and it contains response data such as
     /// scopes
     pub access_token: String,
@@ -46,9 +47,9 @@ pub struct Token {
     pub state: String,
 }
 
-impl Token {
+impl UserToken {
     pub fn new(access_token: String, long_lived_token: String) -> Self {
-        Token {
+        UserToken {
             access_token,
             data_access_expiration_time: "".to_string(),
             expires_in: "".to_string(),
@@ -58,7 +59,7 @@ impl Token {
     }
 }
 
-impl Token {
+impl UserToken {
     pub fn user_access_tokens(self) -> Self {
         self
     }
@@ -68,11 +69,11 @@ impl Token {
     ///
     /// Token from the current URL by extracting the query query of
     /// the URL
-    pub fn extract_user_tokens(hash: String) -> Token {
+    pub fn extract_user_tokens(hash: String) -> UserToken {
         let query = extract_query_fragments(hash);
         let iterations = query.iter();
 
-        let mut response = Token::default();
+        let mut response = UserToken::default();
 
         for e in iterations {
             match e.0.as_str() {
@@ -91,10 +92,53 @@ impl Token {
                 "state" => {
                     response.state = e.1.to_string();
                 }
-                _ => panic!("unknown field: {}", e.0.as_str()),
+                _ => {}
+                //_ => panic!("unknown field: {}", e.0.as_str()),
             }
         }
         response
+    }
+
+    pub async fn exchange_short_live_to_long_live_token_at_server(
+        self,
+        short_live_token: String,
+        app_secret: String,
+        config: Config,
+    ) -> Result<ExchangeToken, ClientErr> {
+        let url = config
+            .facebook_oath_url()
+            .replace("dialog/oauth", "oauth/access_token")
+            + "&client_id="
+            + &config.client_id
+            + "&client_secret="
+            + &app_secret
+            + "&fb_exchange_token="
+            + &short_live_token
+            + "&grant_type="
+            + "fb_exchange_token";
+
+        let access_token = HttpConnection::get::<ExchangeToken>(url, "".to_string()).await?;
+        Ok(access_token)
+    }
+
+    pub async fn exchange_code_for_access_token_at_server(
+        self,
+        code: String,
+        app_secret: String,
+        config: Config,
+    ) -> Result<ExchangeToken, ClientErr> {
+        let url = config
+            .facebook_oath_url()
+            .replace("dialog/oauth", "oauth/access_token")
+            + "&client_id="
+            + &config.client_id
+            + "&client_secret="
+            + &app_secret
+            + "&code="
+            + &code;
+
+        let access_token = HttpConnection::get::<ExchangeToken>(url, "".to_string()).await?;
+        Ok(access_token)
     }
 
     /// This method will make a get request to facebook api to return
@@ -166,6 +210,9 @@ impl Token {
             access_token_response.data.data_access_expires_at;
         access_token_information.is_valid = access_token_response.data.is_valid;
         access_token_information.token_type = access_token_response.data.r#type.clone();
+        access_token_information.user_id = access_token_response.data.user_id;
+        access_token_information.app_id = access_token_response.data.app_id;
+        access_token_information.scopes = access_token_response.data.scopes;
 
         Ok(access_token_information)
     }
@@ -202,21 +249,25 @@ pub fn extract_query_fragments(hash: String) -> HashMap<String, String> {
 
 #[derive(Deserialize, Default, Clone, Debug, Serialize)]
 pub struct AccessTokenInformation {
-    // Expire date in your unix time /
+    /// Expire date in your unix time /
     expires_at: u64,
-    // The type of token ( USER/PAGE
+    /// The type of token ( USER/PAGE
     token_type: String,
-    // Expire date in your lcal time
+    /// Expire date in your lcal time
     expires_at_local_date: String,
     is_valid: bool,
-    // when the token can not access data anymore in unix time
+    /// When the token can not access data anymore in unix time
     data_access_expires_at: u64,
-    // when the token can not access data anymore, in your local time/    pub
-    // data_access_expires_at_local_date: String,    /// in your local time
+    /// When the token can not access data anymore, in your local time,
     pub data_access_expires_at_local_date: String,
+    app_id: String,
+    application: String,
+    scopes: Vec<String>,
+    granular_scopes: Vec<GranularScopes>,
+    user_id: u32,
 }
 
-#[derive(Deserialize, Default, Clone, Debug, Serialize)]
+#[derive(Deserialize, Clone, Debug)]
 struct TokenResponseInformation {
     data: TokenResponseData,
 }
@@ -227,6 +278,17 @@ struct TokenResponseData {
     r#type: String,
     is_valid: bool,
     data_access_expires_at: u64,
+    app_id: String,
+    application: String,
+    scopes: Vec<String>,
+    granular_scopes: Vec<GranularScopes>,
+    user_id: u32,
+}
+
+#[derive(Deserialize, Default, Clone, Debug, Serialize)]
+pub struct GranularScopes {
+    target_ids: Vec<String>,
+    scope: String,
 }
 
 /// Enums of different types of lives of Facebook page token that a user can
@@ -245,4 +307,14 @@ struct TokenResponseData {
 pub enum TokenLiveType {
     LONGLIVE,
     SHORTLIVE,
+}
+
+#[derive(Deserialize, Clone, Debug)]
+pub struct ExchangeToken {
+    /// {access-token},
+    access_token: String,
+    /// {type}
+    token_type: String,
+    /// {seconds-til-expiration}
+    expires_in: u32,
 }
