@@ -57,9 +57,8 @@ impl LoginUrlParameters {
             .add_client_id(&config.client_id())
             .add_redirect_uri(&config.redirect_uri())
             .add_random_state()
-            .add_response_type("")
-            //MUST ADD A VALID SCOPE!
-            .add_scope(config.scope)
+            .add_response_type("token")
+            .add_scope(["email".to_owned()].to_vec())
     }
 
     pub fn add_client_id(mut self, client_id: &str) -> Self {

@@ -72,7 +72,7 @@ pub struct InstaPostingOption {
 
 #[derive(Default)]
 pub struct Model {
-    pub user_tokens: Option<Token>,
+    pub user_tokens: Option<UserToken>,
     pub accounts: Option<Data<Accounts>>,
     pub pages_api: PagesAPI,
     pub selected_account: Option<SelectedAccount>,
@@ -131,7 +131,7 @@ pub fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
                     let facebook_page_id = selected_page.id.clone();
 
                     orders.perform_cmd(async move {
-                        Client::new(Token::default(), page_access_token.clone())
+                        Client::new(UserToken::default(), page_access_token.clone())
                             .instagram_account(facebook_page_id)
                             .account_id()
                             .await
@@ -151,7 +151,7 @@ pub fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
                     let facebook_page_id = selected_page.id.clone();
 
                     orders.perform_cmd(async move {
-                        Client::new(Token::default(), page_access_token.clone())
+                        Client::new(UserToken::default(), page_access_token.clone())
                             .instagram_account(facebook_page_id)
                             .account_id()
                             .await
@@ -170,7 +170,7 @@ pub fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
                     let page_access_token = selected_page.access_token.to_owned();
 
                     orders.perform_cmd(async move {
-                        Client::new(Token::default(), page_access_token.clone())
+                        Client::new(UserToken::default(), page_access_token.clone())
                             .instagram_account(instagram_id)
                             .account_details()
                             .await
@@ -210,7 +210,7 @@ pub fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
                             let insta_media_container = insta_media_container_id.id.clone();
                             if model.insta_post_param.clone().is_some() {
                                 orders.perform_cmd(async move {
-                                    Client::new(Token::default(), page_access_token)
+                                    Client::new(UserToken::default(), page_access_token)
                                         .instagram_publish(insta_page_id)
                                         .publish_media(insta_media_container)
                                         .await
@@ -237,7 +237,7 @@ pub fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
 
                     if let Some(post_param) = model.insta_post_param.clone() {
                         orders.perform_cmd(async move {
-                            Client::new(Token::default(), page_access_token)
+                            Client::new(UserToken::default(), page_access_token)
                                 .instagram_publish(insta_page_id)
                                 .post_media(post_param, "video".to_string()) //note: for photo passing in "photo" instead of "video" that was passed in
                                 .await
@@ -295,7 +295,7 @@ pub fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
 
                         let insta_media_container = insta_media_container_id.id.clone();
                         orders.perform_cmd(async move {
-                            Client::new(Token::default(), page_access_token)
+                            Client::new(UserToken::default(), page_access_token)
                                 .instagram_media_container(insta_media_container)
                                 .status()
                                 .await
@@ -315,7 +315,7 @@ pub fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
                 if let Some(_insta_account) = &model.insta_account {
                     let page_access_token = selected_page.access_token.to_owned();
                     orders.perform_cmd(async move {
-                        Client::new(Token::default(), page_access_token)
+                        Client::new(UserToken::default(), page_access_token)
                             .search_pages()
                             .init_search()
                             .await
