@@ -12,17 +12,14 @@ pub struct Config {
 
     /// The URL that you want to redirect the person logging in back to.
     pub redirect_uri: String,
-
-    pub scope: Vec<String>,
 }
 
 impl Config {
     pub fn new(client_id: String, redirect_uri: String, scope: Vec<String>) -> Self {
         Config {
-            facebook_oath_url: "https://www.facebook.com/v11.0/dialog/oauth?".to_owned(),
+            facebook_oath_url: "https://www.facebook.com/v13.0/dialog/oauth?".to_owned(),
             client_id,
             redirect_uri,
-            scope,
         }
     }
 

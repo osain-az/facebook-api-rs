@@ -21,15 +21,16 @@ fn init(url: Url, orders: &mut impl Orders<Msg>) -> Model {
     let token_response = url
         .clone()
         .hash()
-        .map(|hash| Token::extract_user_tokens(hash.to_string()));
+        .map(|hash| UserToken::extract_user_tokens(hash.to_string()));
     log!(token_response);
     sync_router!();
     orders.perform_cmd(async {
-        // Load config from some json.
-        // You can have a specific Api key here for facebook.
-        Msg::ConfigFetched(
-            async { fetch("/config.json").await?.check_status()?.json().await }.await,
-        )
+        let client_id = "".to_owned(); // this should not be hard code, it can be stored in the env variable  depends
+                                       // on your system.
+        let redirect_uri = "http://localhost:8001".to_owned();
+
+        let config = Config::new(client_id, redirect_uri, vec![]);
+        Msg::ConfigFetched(config)
     });
 
     Model {
@@ -51,7 +52,7 @@ fn init(url: Url, orders: &mut impl Orders<Msg>) -> Model {
 #[derive(Default)]
 pub struct Model {
     login_url: String,
-    user_tokens: Option<Token>,
+    user_tokens: Option<UserToken>,
     accounts: Option<Data<Accounts>>,
     switch_account_to: String,
     facebook: facebook::Model,
@@ -73,7 +74,7 @@ pub enum Routes {
 // ------ ------
 
 enum Msg {
-    ConfigFetched(fetch::Result<Config>),
+    ConfigFetched(Config),
     GetAccount,
     GetAccountSuccess(Data<Accounts>),
     GetMeDetails,
@@ -93,12 +94,17 @@ enum Msg {
 // `update` describes how to handle each `Msg`.
 fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
     match msg {
-        Msg::ConfigFetched(Ok(config)) => model.login_url = LoginUrlParameters::new(config).add_response_type("token").add_scope(vec!["email".to_string()]).full_login_url(),
-        Msg::ConfigFetched(Err(fetch_error)) => error!("Config fetch failed! Be sure to have config.json at  the root of your project with client_id and redirect_uri", fetch_error),
+        Msg::ConfigFetched(config) => {
+            log!(config);
+            model.login_url = LoginUrlParameters::new(config)
+                .add_response_type("token")
+                .add_scope(vec!["email".to_string()])
+                .full_login_url()
+        }
 
         Msg::GetAccount => {
             orders.send_msg(Msg::GetMeDetails);
-          if let Some(user_access_tokens) = model.user_tokens.clone() {
+            if let Some(user_access_tokens) = model.user_tokens.clone() {
                 let user_tokens = user_access_tokens;
                 let client = Client::new(user_tokens, "".to_string());
                 orders.perform_cmd(async {
@@ -129,55 +135,40 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
                 });
             }
         }
-        Msg:: GetMeDetailsSuccess(resp) => {
+        Msg::GetMeDetailsSuccess(resp) => {}
 
-        }
-
-        Msg:: GetAccountSuccess(accounts) => {
+        Msg::GetAccountSuccess(accounts) => {
             model.accounts = Some(accounts.clone());
-            model.facebook.accounts= Some(accounts.clone());
+            model.facebook.accounts = Some(accounts.clone());
             model.instagram.accounts = Some(accounts);
             log!(model.instagram.accounts)
         }
 
-        Msg::Facebook(msg)=>{
+        Msg::Facebook(msg) => {
             facebook::update(msg, &mut model.facebook, &mut orders.proxy(Msg::Facebook));
-
         }
 
-        Msg::Instagram(msg)=>{
+        Msg::Instagram(msg) => {
             instagram::update(msg, &mut model.instagram, &mut orders.proxy(Msg::Instagram));
-
         }
 
-        Msg:: AccessTokenInformation =>{
+        Msg::AccessTokenInformation => {}
 
-        }
-
-        Msg::AccessTokenInfoData(resp) => {
-
-        }
+        Msg::AccessTokenInfoData(resp) => {}
 
         // handle switch betwen facebook and innstagram
-        Msg:: SwitchTo(account_type) => {
-            if account_type =="facebook" {
-                let url = Routes::Facebook
-                    .to_url();
+        Msg::SwitchTo(account_type) => {
+            if account_type == "facebook" {
+                let url = Routes::Facebook.to_url();
                 orders.request_url(url);
-            }else if  account_type =="home" {
-                let url = Routes::Home
-                    .to_url();
+            } else if account_type == "home" {
+                let url = Routes::Home.to_url();
                 orders.request_url(url);
-            }
-            else if  account_type =="instagram" {
-                let url = Routes::Instagram
-                    .to_url();
+            } else if account_type == "instagram" {
+                let url = Routes::Instagram.to_url();
                 orders.request_url(url);
+            } else {
             }
-            else {
-
-            }
-
         }
 
         Msg::UrlChanged(subs::UrlChanged(url)) => {
@@ -187,7 +178,8 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
             }
         }
 
-        // all errro should user this, except the eeror neededs to be analyzed and do something about it
+        // all errro should user this, except the eeror neededs to be analyzed and do something
+        // about it
         Msg::ResponseFailed(resp) => {
             log!(resp)
         }

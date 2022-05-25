@@ -7,7 +7,7 @@ use crate::graph::pages::feed::FeedApi;
 use crate::graph::pages::post::PostApi;
 use crate::graph::prelude::account::InstagramApi;
 use crate::graph::prelude::publish::InstagramPostApi;
-use crate::login::token::{Token, TokenLiveType};
+use crate::login::token::{TokenLiveType, UserToken};
 use crate::prelude::hashtag::HashtagAPi;
 use crate::prelude::search::PagesSearchAPI;
 use crate::prelude::video::VideoApi;
@@ -48,7 +48,7 @@ impl Client {
     /// "user_token" while for page token set the "access_toke_type" to be
     /// "page_token" example   Client::new(Token,"access_toke_type".
     /// to_string())
-    pub fn new(user_access_token: Token, pag_access_token: String) -> Client {
+    pub fn new(user_access_token: UserToken, pag_access_token: String) -> Client {
         Client::default().add_access_tokens(user_access_token, pag_access_token)
     }
 
@@ -56,7 +56,7 @@ impl Client {
     /// authenticate from the frontend
     pub fn add_access_tokens(
         mut self,
-        user_access_token: Token,
+        user_access_token: UserToken,
         page_access_token: String,
     ) -> Self {
         self.long_live_user_access_token = user_access_token.long_lived_token;
@@ -151,25 +151,26 @@ impl Client {
         HashtagAPi::new(self.page_access_token, base_url)
     }
 
-    pub fn token_info(self) -> Token {
+    pub fn token_info(self) -> UserToken {
         // AccessTokenInformation::default()
-        Token::default()
+        UserToken::default()
     }
 }
 
 #[cfg(test)]
 mod test {
     use crate::graph::client::Client;
-    use crate::login::token::Token;
+    use crate::login::prelude::TokenLiveType;
+    use crate::login::token::UserToken;
 
     #[test]
     fn test_builder() {
-        let mut token = Token::default();
+        let mut token = UserToken::default();
         token.access_token = "123".to_string();
 
         let accounts = Client::default()
             .add_access_tokens(token, "".to_string())
-            .accounts("short_live".to_string())
+            .accounts(TokenLiveType::LONGLIVE)
             .accounts();
         assert_eq!(
             "https://graph.facebook.com/v11.0/me/accounts?access_token=123",

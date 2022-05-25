@@ -65,7 +65,7 @@ fn build_post(message: String, photo_url: String, link_url: String, video_url: S
 
 #[derive(Default)]
 pub struct Model {
-    pub user_tokens: Option<Token>,
+    pub user_tokens: Option<UserToken>,
     pub accounts: Option<Data<Accounts>>,
     pub pages_api: PagesAPI,
     pub selected_account: Option<SelectedAccount>,
@@ -126,7 +126,7 @@ pub fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
                             feeling: None,
                         };
                         orders.perform_cmd(async move {
-                            Client::new(Token::default(), page_access_token)
+                            Client::new(UserToken::default(), page_access_token)
                                 .feed(page_id)
                                 .post(post_data)
                                 .await
@@ -142,7 +142,7 @@ pub fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
                         let page_access_token = selected_page.access_token.to_owned();
                         let page_id = selected_page.id.to_owned();
                         orders.perform_cmd(async move {
-                            Client::new(Token::default(), page_access_token)
+                            Client::new(UserToken::default(), page_access_token)
                                 .video_upload(page_id)
                                 .post_by_link(&video_url, "The video description", "video")
                                 .await
@@ -170,7 +170,7 @@ pub fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
                 if let Some(selected_page) = &model.selected_account {
                     let page_access_token = selected_page.access_token.to_string();
                     orders.perform_cmd(async move {
-                        Client::new(Token::default(), page_access_token)
+                        Client::new(UserToken::default(), page_access_token)
                             .post(page_post_id)
                             .get()
                             .await
@@ -238,7 +238,7 @@ pub fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
 
                 orders.perform_cmd(async move {
                     // Todo:File uplaod does not work with reqwest_async feature  yet
-                    Client::new(Token::default(), page_access_token)
+                    Client::new(UserToken::default(), page_access_token)
                     // .video_upload(page_id)
                     // .resumable_post(file_uploaded, video_params)
                     // .await
