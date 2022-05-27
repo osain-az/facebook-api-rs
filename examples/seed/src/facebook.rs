@@ -66,7 +66,7 @@ fn build_post(message: String, photo_url: String, link_url: String, video_url: S
 #[derive(Default)]
 pub struct Model {
     pub user_tokens: Option<UserToken>,
-    pub accounts: Option<Data<Accounts>>,
+    pub accounts: Option<Accounts>,
     pub pages_api: PagesAPI,
     pub selected_account: Option<SelectedAccount>,
     pub post_type: String, // indicates the type of feed the user wants to make
@@ -388,12 +388,12 @@ pub fn view(model: &Model) -> Node<Msg> {
     ]
 }
 
-pub fn display_account(accounts: &Data<Accounts>, model: &Model) -> Node<Msg> {
+pub fn display_account(accounts: &Accounts, model: &Model) -> Node<Msg> {
     div![accounts.data.iter().map(|account| {
         let selected_account = SelectedAccount {
-            name: String::from(&account.name),
-            id: String::from(&account.id),
-            access_token: String::from(&account.access_token),
+            name: account.name().to_string(),
+            id: account.id().to_string(),
+            access_token: account.access_token().to_string(),
         };
 
         div![
@@ -421,7 +421,7 @@ pub fn display_account(accounts: &Data<Accounts>, model: &Model) -> Node<Msg> {
                 ]
             },
             // span!["Businnes : ".to_owned() + testing.name,],
-            span!["Businnes : ".to_owned() + &account.name,],
+            span!["Businnes : ".to_owned() + &account.name(),],
         ]
     })]
 }

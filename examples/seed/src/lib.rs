@@ -25,11 +25,11 @@ fn init(url: Url, orders: &mut impl Orders<Msg>) -> Model {
     log!(token_response);
     sync_router!();
     orders.perform_cmd(async {
-        let client_id = "".to_owned(); // this should not be hard code, it can be stored in the env variable  depends
-                                       // on your system.
+        let client_id = "151169367145468".to_owned(); // this should not be hard code, it can be stored in the env variable  depends
+                                                      // on your system.
         let redirect_uri = "http://localhost:8001".to_owned();
 
-        let config = Config::new(client_id, redirect_uri, vec![]);
+        let config = Config::new(client_id, redirect_uri);
         Msg::ConfigFetched(config)
     });
 
@@ -53,7 +53,7 @@ fn init(url: Url, orders: &mut impl Orders<Msg>) -> Model {
 pub struct Model {
     login_url: String,
     user_tokens: Option<UserToken>,
-    accounts: Option<Data<Accounts>>,
+    accounts: Option<Accounts>,
     switch_account_to: String,
     facebook: facebook::Model,
     instagram: instagram::Model,
@@ -65,7 +65,7 @@ pub enum Routes {
     Instagram,
     #[default_route]
     #[as_path = ""]
-    #[view = " => home"] // -> http://localhost:8000/
+    #[view = " => home"] // -> http://localhost:8000
     Home,
 }
 
@@ -76,7 +76,7 @@ pub enum Routes {
 enum Msg {
     ConfigFetched(Config),
     GetAccount,
-    GetAccountSuccess(Data<Accounts>),
+    GetAccountSuccess(Accounts),
     GetMeDetails,
     GetMeDetailsSuccess(Me),
     AccessTokenInformation,
@@ -95,7 +95,6 @@ enum Msg {
 fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
     match msg {
         Msg::ConfigFetched(config) => {
-            log!(config);
             model.login_url = LoginUrlParameters::new(config)
                 .add_response_type("token")
                 .add_scope(vec!["email".to_string()])
