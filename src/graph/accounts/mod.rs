@@ -20,35 +20,40 @@ use serde::{Deserialize, Serialize};
 /// will be present in every page For more details check facebook official
 /// documentation   <https://developers.facebook.com/docs/graph-api/reference/user/accounts/>
 #[derive(Deserialize, Debug, Default, Clone, Serialize)]
-pub struct Accounts {
+pub struct Account {
     /// The access token of this given page, which used to make operation that
     /// requires permission on this page example post and get request.
-    pub access_token: String,
+    access_token: String,
 
     /// The category shows the name of the major category the pages belog to
-    pub category: String,
+    category: String,
 
     /// this is this list of categories  with their names and id  { name:"
     /// category_name", id: ""1223333
-    pub category_list: Vec<ListDetails>,
+    category_list: Vec<ListDetails>,
 
     /// The facebook page name
-    pub name: String,
-    pub id: String,
+    name: String,
+    id: String,
 
     /// this is the list of operation/task the user can perform on this page
-    pub tasks: Vec<String>,
+    tasks: Vec<String>,
 }
 
 /// This is the struct of name and id of category that page belong to
 
 #[derive(Deserialize, Debug, Clone, Default, Serialize)]
 pub struct ListDetails {
-    id: String,
-    name: String,
+    pub id: String,
+    pub name: String,
 }
 
-impl Accounts {
+#[derive(Deserialize, Debug, Clone, Default, Serialize)]
+pub struct Accounts {
+    pub data: Vec<Account>,
+}
+
+impl Account {
     /// This will return the page access token
     pub fn access_token(&self) -> &String {
         &self.access_token
@@ -91,10 +96,6 @@ impl AccountsAPI {
         }
     }
 
-    pub fn url(&self) -> &str {
-        &self.url
-    }
-
     /// This request  will get the list of  Facebook Pages that a person owns or
     /// is able to perform tasks on.
     ///
@@ -106,9 +107,8 @@ impl AccountsAPI {
     /// varies with pages check facebook documentation    
     /// <https://developers.facebook.com/docs/graph-api/reference/user/accounts/>
 
-    pub async fn get(&self) -> Result<Data<Accounts>, ClientErr> {
-        let resp =
-            HttpConnection::get::<Data<Accounts>>(self.url.to_string(), "".to_string()).await?;
+    pub async fn get(&self) -> Result<Accounts, ClientErr> {
+        let resp = HttpConnection::get::<Accounts>(self.url.to_string(), "".to_string()).await?;
         Ok(resp)
     }
 }
@@ -141,7 +141,7 @@ mod test {
 
 }"#;
 
-        let v: Data<Accounts> = serde_json::from_str(data).unwrap();
+        let v: Accounts = serde_json::from_str(data).unwrap();
 
         assert_eq!(v.data.first().unwrap().name, "business_name".to_string());
     }

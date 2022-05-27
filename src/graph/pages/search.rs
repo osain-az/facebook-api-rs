@@ -2,7 +2,7 @@
 //! names, locations, and more. Find Pages to @Mention, Page locations, and tag
 //! a Page. For more information check <https://developers.facebook.com/docs/pages/searching>.
 
-use crate::graph::accounts::Accounts;
+use crate::graph::accounts::Account;
 use crate::prelude::HttpConnection;
 use crate::universal::errors::ClientErr;
 use serde::{Deserialize, Serialize};
@@ -14,7 +14,7 @@ pub struct PagesAPI {
 }
 
 impl PagesAPI {
-    pub fn new(accounts: Accounts) -> PagesAPI {
+    pub fn new(accounts: Account) -> PagesAPI {
         PagesAPI::default()
             .add_page_access_token(accounts.access_token())
             .add_page_id(accounts.id())

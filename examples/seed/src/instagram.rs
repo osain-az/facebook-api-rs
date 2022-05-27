@@ -73,7 +73,7 @@ pub struct InstaPostingOption {
 #[derive(Default)]
 pub struct Model {
     pub user_tokens: Option<UserToken>,
-    pub accounts: Option<Data<Accounts>>,
+    pub accounts: Option<Accounts>,
     pub pages_api: PagesAPI,
     pub selected_account: Option<SelectedAccount>,
     pub insta_account: Option<InstaAccountIds>, // this is just the instagram id
@@ -604,12 +604,12 @@ fn pages_search() -> Node<Msg> {
     ]
 }
 
-pub fn display_account(accounts: &Data<Accounts>, model: &Model) -> Node<Msg> {
+pub fn display_account(accounts: &Accounts, model: &Model) -> Node<Msg> {
     div![accounts.data.iter().map(|account| {
         let selected_account = SelectedAccount {
-            name: String::from(&account.name),
-            id: String::from(&account.id),
-            access_token: String::from(&account.access_token),
+            name: account.name().to_string(),
+            id: account.id().to_string(),
+            access_token: account.access_token().to_string(),
         };
 
         div![
@@ -636,7 +636,7 @@ pub fn display_account(accounts: &Data<Accounts>, model: &Model) -> Node<Msg> {
                     })
                 ]
             },
-            span!["Business : ".to_owned() + &account.name,],
+            span!["Business : ".to_owned() + account.name(),],
         ]
     })]
 }

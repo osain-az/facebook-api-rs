@@ -20,7 +20,7 @@ use crate::universal::HttpClient;
 use crate::graph::me::Me;
 use crate::prelude::account::{InstaAccountIds, InstagramAccount};
 use crate::prelude::video::VideoParams;
-use crate::prelude::{Accounts, Data};
+use crate::prelude::{Account, Data};
 #[cfg(any(feature = "reqwest_async"))]
 use reqwest::multipart::Form;
 use serde_json::Value;

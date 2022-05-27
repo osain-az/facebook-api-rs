@@ -10,10 +10,9 @@
 //! will depend on the "Fields" parameters  you pass along the get request
 //! exmaple fields=id,name,email,picture......
 
-use crate::graph::accounts::{Accounts, AccountsAPI};
-use crate::graph::data::Data;
+use crate::graph::accounts::{Account, AccountsAPI};
 use crate::prelude::errors::ClientErr;
-use crate::prelude::HttpConnection;
+use crate::prelude::{Accounts, HttpConnection};
 use serde::{Deserialize, Serialize};
 
 /// This struct contain different data gotten as a response  when a user sign in
@@ -88,7 +87,7 @@ impl MeApi {
     /// varies with pages depending on the page privacy
     ///  
     /// [facebook accounts docs](https://developers.facebook.com/docs/graph-api/reference/user/accounts/)
-    pub async fn get(self) -> Result<Data<Accounts>, ClientErr> {
+    pub async fn get(self) -> Result<Accounts, ClientErr> {
         Ok(AccountsAPI::new(self.url).get().await?)
     }
 
