@@ -17,9 +17,9 @@ all-features = false
 wasm-bindgen-test = "0.3.18"
 
 [features]
-default = [ "web_sys_async" ]
-reqwest_async = [ "reqwest"]
-web_sys_async = [ "web-sys"]
+default = ["reqwst"]
+reqwst = ["reqwest"]
+web_sis = [ "web-sys"]
 
 [dependencies]
 serde = { version = "1", features = ["derive","rc"] }
@@ -52,7 +52,7 @@ url = { version = "2"}
 thiserror = "1.0.30"
     [dependencies.reqwest]
     version = "0.11.8"
-    features = [ "gzip", "json","multipart","stream","blocking" ]
+    features = [ "gzip", "json","multipart","stream" ]
     optional = true
     [dependencies.http-types]
     version = "2.10"

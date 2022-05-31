@@ -1,11 +1,10 @@
-//! This utils will contain different methods and struct that are shared within the pages  mod
-//!
+//! This utils will contain different methods and struct that are shared within
+//! the pages  mod
 
 use crate::prelude::video::{UploadPhase, VideoParams};
 use serde::{Deserialize, Serialize};
-#[cfg(any(feature = "web_sys_async", feature = "seed_async"))]
+#[cfg(any(feature = "web_sis", feature = "seed_async"))]
 use web_sys::{Blob, File, FormData};
-
 
 #[derive(Deserialize, Debug, Serialize)]
 pub struct Fields {
@@ -116,6 +115,3 @@ impl ChunksUploadResponse {
         self.start_offset
     }
 }
-
-
-

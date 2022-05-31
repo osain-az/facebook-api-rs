@@ -17,12 +17,27 @@ use chrono::{DateTime, TimeZone, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-/// The following struct is used to describe a token which may be retrieved from
-/// the login flow of Facebook.
+/// UserToken
+///
+/// This kind of access token is needed any time the app calls an API to read,
+/// modify or write a specific person's Facebook data on their behalf. User
+/// access tokens are generally obtained via a login dialog and require a person
+/// to permit your app to obtain one.
+
 #[derive(Deserialize, Default, Clone, Debug)]
 pub struct UserToken {
-    /// access_token is used for API calls and it contains response data such as
-    /// scopes
+    /// Response data is included as URL parameters and contains code parameter
+    /// (an encrypted string unique to each login request). This is the default
+    /// behavior if this parameter is not specified. It's most useful when your
+    /// server will be handling the token.
+    ///
+    /// If the  login redirect url contain code the you must used to the to
+    /// exchange for access_token. This must be done at the server.
+    pub code: String,
+    /// access_token is used for API calls
+    ///
+    /// This token is obtain either from exchnage with  `code` or direct from
+    /// the login redirect url.
     pub access_token: String,
 
     /// Expires in 90 days based when the user was last active
@@ -40,6 +55,19 @@ pub struct UserToken {
     /// makes a request to Facebook's servers. If no requests are made, the
     /// token will expire after about 60 days and the person will have to go
     /// through the login flow again to get a new token.
+    ///
+    /// Note: Long access token can also expired due to other reasons, to check
+    /// if a given tokn has expired use the method :
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use facebook_api_rs::prelude::UserToken;
+    ///  let valid_token = "".to_owned();
+    ///  let debug_token = "".to_owned(); // the token you want check or debug
+    ///
+    ///  UserToken::access_token_information(valid_token, debug_token)
+    /// ```
     pub long_lived_token: String,
 
     /// A string value created by your app to maintain state between the request
@@ -48,8 +76,10 @@ pub struct UserToken {
 }
 
 impl UserToken {
+    //@Todo: do we need this constructor ?
     pub fn new(access_token: String, long_lived_token: String) -> Self {
         UserToken {
+            code: "".to_string(),
             access_token,
             data_access_expiration_time: "".to_string(),
             expires_in: "".to_string(),
@@ -64,13 +94,33 @@ impl UserToken {
         self
     }
 
-    /// Method that extract different tokens and its parameters  from a
-    /// successful login url from facebook.
+    /// Extract different tokens and its parameters  from a
+    /// successful login redirect url.
     ///
-    /// Token from the current URL by extracting the query query of
-    /// the URL
+    /// # Argumenmt
+    /// * `hash` - A String of hash from the redirect url.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use crate::facebook_api_rs::prelude::UserToken;
+    ///  // The redirect url used when building the login url
+    ///  let redirect_url = " your reddirect url ".to_string();
+    ///   let login_response_url =  "redirect_url/?#........................".to_string();
+    ///   let hash = login_response_url.replace("redirect_url","");
+    ///
+    ///  let user_token =   UserToken::extract_user_tokens(hash);
+    ///
+    ///
+    ///    // When using Seed.rs, the hash can easily be build from the URL
+    ///    let url = URL;
+    ///      let user_token = url
+    ///         .hash()
+    ///         .map(|hash| UserToken::extract_user_tokens(hash.to_string()));    ///
+    /// ```
     pub fn extract_user_tokens(hash: String) -> UserToken {
-        let query = extract_query_fragments(hash);
+        let updated_hash = hash.replace("?#", "");
+        let query = extract_query_fragments(updated_hash);
         let iterations = query.iter();
 
         let mut response = UserToken::default();
@@ -79,6 +129,9 @@ impl UserToken {
             match e.0.as_str() {
                 "access_token" => {
                     response.access_token = e.1.to_string();
+                }
+                "code" => {
+                    response.code = e.1.to_string();
                 }
                 "data_access_expiration_time" => {
                     response.data_access_expiration_time = e.1.to_string();
@@ -92,8 +145,7 @@ impl UserToken {
                 "state" => {
                     response.state = e.1.to_string();
                 }
-                _ => {}
-                //_ => panic!("unknown field: {}", e.0.as_str()),
+                _ => {} //_ => panic!("unknown field: {}", e.0.as_str()),
             }
         }
         response
@@ -150,28 +202,15 @@ impl UserToken {
     /// * `debug_access_token` -  A String of the access token you intend to get
     ///   information.
     ///
-    /// The response data are struct
-    /// ```rust
-    ///  struct AccessTokenInformation {
-    ///   //Expire date in your unix time
-    ///     expires_at: u64,
-    ///    // The type of token ( USER/PAGE
-    ///     token_type: String,
-    ///    // Expire date in your lcal time
-    ///     expires_at_local_date: String,
-    ///     is_valid: bool,
-    ///    //when the token can not access data anymore in unix time
-    ///     data_access_expires_at: u64,
-    ///   //when the token can not access data anymore, in your local time
-    ///    pub data_access_expires_at_local_date: String,    ///
-    /// }
+    /// The response data is a struct
+    /// ```
+    ///  use crate::facebook_api_rs::prelude::{AccessTokenInformation};
     /// ```
     /// Note: when you try to debug a long live token, the expires_at value will
     /// be "expires_at: 0" which means it never expires for information
     ///
     /// For more information about  Facebook debung token check [facebook debug token api](https://developers.facebook.com/docs/facebook-login/access-tokens/debugging-and-error-handling)
     pub async fn access_token_information(
-        self,
         valid_access_token: String,
         debug_access_token: String,
     ) -> Result<AccessTokenInformation, ClientErr> {

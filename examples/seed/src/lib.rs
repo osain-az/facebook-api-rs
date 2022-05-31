@@ -17,12 +17,10 @@ add_router!();
 // `init` describes what should happen when your app started.
 fn init(url: Url, orders: &mut impl Orders<Msg>) -> Model {
     orders.subscribe(Msg::UrlChanged);
-
     let token_response = url
         .clone()
         .hash()
         .map(|hash| UserToken::extract_user_tokens(hash.to_string()));
-    log!(token_response);
     sync_router!();
     orders.perform_cmd(async {
         let client_id = "151169367145468".to_owned(); // this should not be hard code, it can be stored in the env variable  depends
@@ -96,7 +94,7 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
     match msg {
         Msg::ConfigFetched(config) => {
             model.login_url = LoginUrlParameters::new(config)
-                .add_response_type("token")
+                .add_response_type(LoginResponseType::TOKEN)
                 .add_scope(vec!["email".to_string()])
                 .full_login_url()
         }
