@@ -2,17 +2,17 @@
 /// mod
 use serde::{Deserialize, Serialize};
 use serde_json::ser::CharEscape::FormFeed;
-#[cfg(any(feature = "web_sys_async", feature = "seed_async"))]
+#[cfg(any(feature = "web_sis", feature = "seed_async"))]
 use web_sys::Blob;
-#[cfg(any(feature = "web_sys_async", feature = "seed_async"))]
+#[cfg(any(feature = "web_sis", feature = "seed_async"))]
 use web_sys::File;
 
-#[cfg(any(feature = "reqwest_async"))]
+#[cfg(any(feature = "reqwst"))]
 pub mod file_analyze;
 
 //#[derive(Deserialize, Debug, Serialize)]
 #[derive(Clone, Debug)]
-#[cfg(any(feature = "web_sys_async", feature = "seed_async"))]
+#[cfg(any(feature = "web_sis", feature = "seed_async"))]
 pub struct FileResult {
     file_size_gb: f64,
     file_size_byte: f64,
@@ -22,7 +22,7 @@ pub struct FileResult {
     chunk_upload_size: u64,
 }
 //#[cfg(any(feature = "seed_async"))]
-#[cfg(any(feature = "web_sys_async", feature = "seed_async"))]
+#[cfg(any(feature = "web_sis", feature = "seed_async"))]
 impl FileResult {
     /// This method will take the file  and return  a struct of   struc
     /// FileResult {  size_gb: f64,   file_byte: f64,   upload_method: String }

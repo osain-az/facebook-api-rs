@@ -7,12 +7,12 @@ use std::sync::Arc;
 
 use crate::universal::errors::ClientErr;
 // use crate::universal::reqwest::ReqwestClient;
-#[cfg(any(feature = "reqwest_async"))]
+#[cfg(any(feature = "reqwst"))]
 use crate::universal::reqwest::ReqwestClient;
 use crate::universal::response::{deserialize_response, ClientResult};
 #[cfg(any(feature = "seed_async"))]
 use crate::universal::seed_client::SeedClient;
-#[cfg(any(feature = "web_sys_async"))]
+#[cfg(any(feature = "web_sis"))]
 use crate::universal::web_sys_client::Web_sysClient;
 
 use crate::universal::HttpClient;
@@ -21,21 +21,21 @@ use crate::graph::me::Me;
 use crate::prelude::account::{InstaAccountIds, InstagramAccount};
 use crate::prelude::video::VideoParams;
 use crate::prelude::{Account, Data};
-#[cfg(any(feature = "reqwest_async"))]
+#[cfg(any(feature = "reqwst"))]
 use reqwest::multipart::Form;
 use serde_json::Value;
 use url::Url;
 
 use crate::prelude::utils::UploadingData;
-#[cfg(any(feature = "web_sys_async", feature = "seed_async"))]
+#[cfg(any(feature = "web_sis", feature = "seed_async"))]
 use web_sys::FormData;
 
-#[cfg(any(feature = "reqwest_async"))]
+#[cfg(any(feature = "reqwst"))]
 pub type HttpConnection = GenericClientConnection<ReqwestClient>;
 #[cfg(any(feature = "seed_async"))]
 pub type HttpConnection = GenericClientConnection<SeedClient>;
 
-#[cfg(any(feature = "web_sys_async"))]
+#[cfg(any(feature = "web_sis"))]
 pub type HttpConnection = GenericClientConnection<Web_sysClient>;
 
 #[derive(Debug, Clone)]
@@ -86,7 +86,7 @@ impl<HttpC: HttpClient> GenericClientConnection<HttpC> {
         Ok(result)
     }
 
-    #[cfg(any(feature = "reqwest_async"))]
+    #[cfg(any(feature = "reqwst"))]
     pub async fn video_post<R>(build_url: String, body: VideoParams) -> Result<R, ClientErr>
     where
         Self: Sized,
@@ -99,7 +99,7 @@ impl<HttpC: HttpClient> GenericClientConnection<HttpC> {
         Ok(result)
     }
 
-    #[cfg(any(feature = "web_sys_async", feature = "seed_async"))]
+    #[cfg(any(feature = "web_sis", feature = "seed_async"))]
     pub async fn video_post<R>(build_url: String, body: FormData) -> Result<R, ClientErr>
     where
         Self: Sized,
@@ -113,7 +113,7 @@ impl<HttpC: HttpClient> GenericClientConnection<HttpC> {
     }
 
     // this will be used for rqwest_async feature
-    #[cfg(any(feature = "reqwest_async"))]
+    #[cfg(any(feature = "reqwst"))]
     pub async fn resumable_video_post<R>(
         build_url: String,
         body: UploadingData,
@@ -132,7 +132,7 @@ impl<HttpC: HttpClient> GenericClientConnection<HttpC> {
     }
 
     // this will be used for rqwest_async feature
-    #[cfg(any(feature = "reqwest_async"))]
+    #[cfg(any(feature = "reqwst"))]
     pub async fn request_by_bytes_and_params<R>(
         build_url: String,
         body: (Vec<u8>, VideoParams),

@@ -1,5 +1,5 @@
-#[cfg(any(feature = "web_sys_async", feature = "seed_async"))]
+#[cfg(any(feature = "web_sis", feature = "seed_async"))]
 pub mod web_sys_form;
 
-#[cfg(any(feature = "reqwest_async"))]
+#[cfg(any(feature = "reqwst"))]
 pub mod reqwest_form;

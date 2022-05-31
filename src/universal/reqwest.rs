@@ -5,7 +5,7 @@ use std::io::Read;
 // use crate::universal::utils::generic_req;
 use crate::universal::HttpClient;
 use ::reqwest::Body;
-#[cfg(feature = "reqwest_async")]
+#[cfg(feature = "reqwst")]
 use ::reqwest::Client;
 use async_trait::async_trait;
 use http::header::HeaderMap;
@@ -159,11 +159,6 @@ impl HttpClient for ReqwestClient {
                 .map_err(|e| ClientErr::HttpClient(format!("{:?}", e)))?;
             response
         } else if body.upload_phase == "transfer".to_string() {
-            use futures_util::stream::StreamExt;
-            use futures_util::{future, stream};
-            use std::io::Cursor;
-            // use tokio::fs::File;
-            use bytes::{Buf, BufMut, Bytes, BytesMut};
             use std::fs::File;
 
             let mut file = File::open(body.file_path.clone()).unwrap();
@@ -177,11 +172,11 @@ impl HttpClient for ReqwestClient {
             // reqwest::Error>( "part1 part2".to_owned(),
             // ))));
             //   let stream = reqwest::Body::wrap_stream(stream_body);
-            let bytes = Bytes::from(buffer.to_vec());
+            //  let bytes = Bytes::from(buffer.to_vec());
 
             // let mut reader = BufReader::new(&*test.chun).buffer();
             // let stream_part = Part::bytes(buffer.to_vec());
-            let part = reqwest::multipart::Part::stream(bytes);
+            let part = reqwest::multipart::Part::bytes(buffer.to_vec());
 
             let form = reqwest::multipart::Form::new().part("video_file_chunk", part);
             // println!("form data  :{:?}", form);
@@ -220,7 +215,6 @@ impl HttpClient for ReqwestClient {
             .text()
             .await
             .map_err(|e| ClientErr::HttpClient(format!("{:?}", e)))?;
-        println!("facebook api {}", content.clone());
 
         let mut build = http::Response::builder();
         for header in headers.iter() {

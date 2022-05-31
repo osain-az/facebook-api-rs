@@ -4,7 +4,7 @@ use std::borrow::BorrowMut;
 use std::fs::File;
 
 /// Creating form_data for reqwest Client
-#[cfg(any(feature = "reqwest_async"))]
+#[cfg(any(feature = "reqwst"))]
 pub fn resumable_form_data_reqwest(
     upload_phase: UploadPhase,
     upload_session_id: String,

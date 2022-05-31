@@ -17,20 +17,20 @@
 use crate::prelude::errors::ClientErr;
 use crate::prelude::utils::{ChunksUploadResponse, PostResponse, UploadingData};
 use crate::prelude::HttpConnection;
-#[cfg(any(feature = "reqwest_async"))]
+#[cfg(any(feature = "reqwst"))]
 use std::fs::File;
 use std::io::Read;
 use std::sync::Arc;
 
 use serde::{Deserialize, Serialize};
 
-#[cfg(any(feature = "web_sys_async"))]
+#[cfg(any(feature = "web_sis"))]
 use web_sys::{Blob, File, FormData};
 
-#[cfg(any(feature = "reqwest_async"))]
+#[cfg(any(feature = "reqwst"))]
 use crate::prelude::media_upload::video_by_reqwest::VideoApi_reqwest;
 
-#[cfg(any(feature = "web_sys_async"))]
+#[cfg(any(feature = "web_sis"))]
 use crate::prelude::media_upload::video_by_web_sys::VideoApi_seed;
 
 /// Facebook video api accepts different parameters that could be passed to the
@@ -256,7 +256,7 @@ impl VideoApi {
     /// so extra time than usuall is expect until the issue is fixed.
     ///
     /// for more infromation  check  https://developers.facebook.com/docs/video-api/guides/publishing
-    #[cfg(any(feature = "web_sys_async"))]
+    #[cfg(any(feature = "web_sis"))]
     pub async fn resumable_post(
         &self,
         file: File,
@@ -270,7 +270,7 @@ impl VideoApi {
             .await
     }
 
-    #[cfg(any(feature = "reqwest_async"))]
+    #[cfg(any(feature = "reqwst"))]
     pub async fn resumable_post(
         &self,
         file: File,
@@ -293,7 +293,7 @@ impl VideoApi {
     /// parameter struct,  if the video file is within this range it post
     /// the video but if the video is not within the range , the post will
     /// not be made but a Fetcherror will be gerated.
-    #[cfg(any(feature = "web_sys_async"))]
+    #[cfg(any(feature = "web_sis"))]
     pub async fn non_resumable_post(
         &self,
         video_params: VideoParams,
@@ -306,7 +306,7 @@ impl VideoApi {
             .await
     }
 
-    #[cfg(any(feature = "reqwest_async"))]
+    #[cfg(any(feature = "reqwst"))]
     pub async fn non_resumable_post(
         &self,
         video_params: VideoParams,

@@ -6,10 +6,9 @@
 use crate::graph::data::Data;
 use crate::prelude::errors::ClientErr;
 use crate::prelude::utils::GetPostResponse;
-#[cfg(any(feature = "web_sys_async", feature = "seed_async"))]
 use crate::prelude::HttpConnection;
 use serde::{Deserialize, Serialize};
-#[cfg(any(feature = "web_sys_async", feature = "seed_async"))]
+#[cfg(any(feature = "web_sis", feature = "seed_async"))]
 use web_sys::{Blob, File, FormData};
 
 #[derive(Clone)]
@@ -26,7 +25,7 @@ impl PhotoApi {
         }
     }
 
-    #[cfg(any(feature = "web_sys_async", feature = "seed_async"))]
+    #[cfg(any(feature = "web_sis", feature = "seed_async"))]
     pub async fn post_by_file(
         &self,
         file: File,
@@ -52,9 +51,9 @@ impl PhotoApi {
         Ok(resp)
     }
 
-    #[cfg(any(feature = "web_sys_async", feature = "seed_async"))]
+    #[cfg(any(feature = "web_sis", feature = "seed_async"))]
     fn form_data(self, photo_params: PhotoParams, file: File) -> FormData {
-        #[cfg(any(feature = "web_sys_async", feature = "seed_async"))]
+        #[cfg(any(feature = "web_sis", feature = "seed_async"))]
         let mut form_data = FormData::new().unwrap();
 
         form_data.append_with_blob("source", &file); // appped  the  current chunked file   to the form
