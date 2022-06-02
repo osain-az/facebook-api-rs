@@ -1,5 +1,5 @@
 #![crate_name = "doc"]
-
+#![allow(dead_code)]
 //! An access token is an opaque string that identifies a user, app, or Page
 //! and can be used by the app to make graph API calls.
 //!
@@ -17,13 +17,95 @@ use chrono::{DateTime, TimeZone, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-/// UserToken
+/// UserToken is Obtain after a successful login to Facebook.
 ///
 /// This kind of access token is needed any time the app calls an API to read,
 /// modify or write a specific person's Facebook data on their behalf. User
 /// access tokens are generally obtained via a login dialog and require a person
 /// to permit your app to obtain one.
-
+///
+/// The tokens are retrieved from a successful login redirect url from facebook.
+///
+/// The data in the redirect URL depends on the `LoginResponseType` chosen when
+/// building the login url.
+///
+/// By default, a `LoginResponseType::CODE` is used. This means that the
+/// value in response data from facebook will `code` instead of `access_token`.
+/// And you will need to exchange the code for an access token.
+///
+/// This is recommended by Facebook to be done in server side using the
+/// respective method.
+///
+/// # Examples
+///
+/// # Example when code is the response type
+///
+/// * Get code at the client side.
+/// ```
+/// use facebook_api_rs::prelude::Config;
+/// use crate::facebook_api_rs::prelude::UserToken;
+///  // Your redirect url used when building the login url
+///  let redirect_url = "your redirect uri".to_string();
+///  let login_response_url =  "redirect_url/?#........................".to_string();
+///  let hash = login_response_url.replace("redirect_url","");
+///
+///  let user_token =   UserToken::extract_user_tokens(hash);
+///  // send the code to sever side to exchange for an access_token
+///  let code  = user_token.code;
+///
+///    // When using `Seed.rs`, the hash can easily be build from the URL
+///    let url = URL;
+/// // Send the result (code) to the sever to Exchange the code for access token
+///      let user_token = url
+///         .hash()
+///         .map(|hash| UserToken::extract_user_tokens(hash.to_string()));
+///
+///   // send the code to sever side to exchange for an access_token
+///     let code  = user_token.code;
+/// ```
+///  * At the server side: exchange code for access token
+/// ```
+/// use crate::facebook_api_rs::prelude::{UserToken, Config};
+///   
+///    let code = "The code sent from client".to_string();
+///     let config = Config::new("your app_id".to_owned(), "your redirect_uri".to_string());
+///
+///  let access_token  = UserToken::default()
+///         .exchange_code_for_access_token_at_server(
+///         code,
+///         "your app_secret".to_string(), config);
+/// ```
+///
+/// # Example when token is the response type
+///
+/// When the response type is a token  instead of code, the response data will
+/// be an access_token. Ans you will need to verify that at the server side.
+///
+/// * Get token at the client side.
+/// ```
+///  use crate::facebook_api_rs::prelude::{UserToken, Config};
+///  let redirect_url = "your redirect uri".to_string();
+///  let login_response_url =  "redirect_url/?#........................".to_string();
+///  let hash = login_response_url.replace("redirect_url","");
+///
+///  let user_token =   UserToken::extract_user_tokens(hash);
+/// // send the access_token to sever verification
+///  let access_token  = user_token.access_token;
+/// ```
+///
+/// * At Server side: verified the
+///
+/// In the server side inspect the access_token gotten from the client
+/// ```    
+///  use crate::facebook_api_rs::prelude::{UserToken, Config};
+///  
+///  let access_token_information = UserToken::access_token_information(
+///        "a valid access_token".to_owned(),
+///          "inspecting_token".to_owned()
+///        );
+/// ```
+///
+/// For information on verifying of access_token and exchanging of code check Facebook [Confirming Identity](https://developers.facebook.com/docs/facebook-login/guides/advanced/manual-flow#confirm)
 #[derive(Deserialize, Default, Clone, Debug)]
 pub struct UserToken {
     /// Response data is included as URL parameters and contains code parameter
@@ -31,13 +113,14 @@ pub struct UserToken {
     /// behavior if this parameter is not specified. It's most useful when your
     /// server will be handling the token.
     ///
-    /// If the  login redirect url contain code the you must used to the to
-    /// exchange for access_token. This must be done at the server.
+    /// If the  login redirect url contain code then you must exchange it for
+    ///  access_token. This should be done at the server.
     pub code: String,
     /// access_token is used for API calls
     ///
-    /// This token is obtain either from exchnage with  `code` or direct from
-    /// the login redirect url.
+    /// This token is obtained either from exchange with  `code` or direct from
+    /// the login redirect url. If it is obtained from client side then it
+    /// should be verified at the server.
     pub access_token: String,
 
     /// Expires in 90 days based when the user was last active
@@ -56,8 +139,8 @@ pub struct UserToken {
     /// token will expire after about 60 days and the person will have to go
     /// through the login flow again to get a new token.
     ///
-    /// Note: Long access token can also expired due to other reasons, to check
-    /// if a given tokn has expired use the method :
+    /// Note: Long access token can also expire due to other reasons, to check
+    /// if a given token has expired use the method :
     ///
     /// # Example
     ///
@@ -97,26 +180,77 @@ impl UserToken {
     /// Extract different tokens and its parameters  from a
     /// successful login redirect url.
     ///
-    /// # Argumenmt
+    /// # Argument
     /// * `hash` - A String of hash from the redirect url.
     ///
     /// # Example
     ///
+    /// # Example when code in the response data
+    ///
+    /// * Get code at the client side.
     /// ```
+    /// use facebook_api_rs::prelude::Config;
     /// use crate::facebook_api_rs::prelude::UserToken;
-    ///  // The redirect url used when building the login url
-    ///  let redirect_url = " your reddirect url ".to_string();
-    ///   let login_response_url =  "redirect_url/?#........................".to_string();
-    ///   let hash = login_response_url.replace("redirect_url","");
+    ///  // Your redirect url used when building the login url
+    ///  let redirect_url = "your redirect uri".to_string();
+    ///  let login_response_url =  "redirect_url/?#........................".to_string();
+    ///  let hash = login_response_url.replace("redirect_url","");
     ///
     ///  let user_token =   UserToken::extract_user_tokens(hash);
+    ///  // send the code to sever side to exchange for an access_token
+    ///  let code  = user_token.code;
     ///
-    ///
-    ///    // When using Seed.rs, the hash can easily be build from the URL
+    ///    // When using `Seed.rs`, the hash can easily be build from the URL
     ///    let url = URL;
+    /// // Send the result (code) to the sever to Exchange the code for access token
     ///      let user_token = url
     ///         .hash()
-    ///         .map(|hash| UserToken::extract_user_tokens(hash.to_string()));    ///
+    ///         .map(|hash| UserToken::extract_user_tokens(hash.to_string()));
+    ///
+    ///   // send the code to sever side to exchange for an access_token
+    ///     let code  = user_token.code;
+    /// ```
+    ///  * At the server side: exchange code for access token
+    /// ```
+    /// use crate::facebook_api_rs::prelude::{UserToken, Config};
+    ///   
+    ///    let code = "The code sent from client".to_string();
+    ///     let config = Config::new("your app_id".to_owned(), "your redirect_uri".to_string());
+    ///
+    ///  let access_token  = UserToken::default()
+    ///         .exchange_code_for_access_token_at_server(
+    ///         code,
+    ///         "your app_secret".to_string(), config);
+    /// ```
+    ///
+    /// # Example when token is the response type
+    ///
+    /// When the response type is a token  instead of code, the response data
+    /// will be an access_token. And you will need to verify that at the
+    /// server side.
+    ///
+    /// * Get token at the client side.
+    /// ```
+    ///  use crate::facebook_api_rs::prelude::{UserToken, Config};
+    ///  let redirect_url = "your redirect uri".to_string();
+    ///  let login_response_url =  "redirect_url/?#........................".to_string();
+    ///  let hash = login_response_url.replace("redirect_url","");
+    ///
+    ///  let user_token =   UserToken::extract_user_tokens(hash);
+    /// // send the access_token to sever verification
+    ///  let access_token  = user_token.access_token;
+    /// ```
+    ///
+    /// * At Server side: verified the
+    ///
+    /// In the server side inspect the access_token gotten from the client
+    /// ```    
+    ///  use crate::facebook_api_rs::prelude::{UserToken, Config};
+    ///  
+    ///  let access_token_information = UserToken::access_token_information(
+    ///        "a valid access_token".to_owned(),
+    ///          "inspecting_token".to_owned()
+    ///        );
     /// ```
     pub fn extract_user_tokens(hash: String) -> UserToken {
         let updated_hash = hash.replace("?#", "");
@@ -173,6 +307,32 @@ impl UserToken {
         Ok(access_token)
     }
 
+    pub async fn generate_app_access_token_at_server(
+        self,
+        short_live_token: String,
+        app_secret: String,
+        app_id: String,
+    ) -> Result<String, ClientErr> {
+        let base_url = "https://graph.facebook.com/oauth/access_token";
+        let url = format!(
+            "{}?client_id={}
+            &client_secret={}
+            &grant_type=client_credentials",
+            base_url, app_id, app_secret
+        );
+
+        let access_token = HttpConnection::get::<String>(url, "".to_string()).await?;
+        Ok(access_token)
+    }
+
+    /// Exchanging Code for an access_token
+    ///
+    /// # Argument
+    ///
+    /// * `code`-  A string gotten from the extracted from login redirect url
+    /// * `app_secret`- The app secret from your [App Dashboard](https://developers.facebook.com/apps)
+    /// * `config` - A `Config` struct
+
     pub async fn exchange_code_for_access_token_at_server(
         self,
         code: String,
@@ -198,7 +358,8 @@ impl UserToken {
     ///
     ///  # Arguments
     ///
-    /// * `valid_access_token` - A String of a valid access token,
+    /// * `valid_access_token` - A String of a valid access token. This could be
+    ///   app_token, user_token, or page_token
     /// * `debug_access_token` -  A String of the access token you intend to get
     ///   information.
     ///
@@ -206,10 +367,9 @@ impl UserToken {
     /// ```
     ///  use crate::facebook_api_rs::prelude::{AccessTokenInformation};
     /// ```
-    /// Note: when you try to debug a long live token, the expires_at value will
-    /// be "expires_at: 0" which means it never expires for information
-    ///
-    /// For more information about  Facebook debung token check [facebook debug token api](https://developers.facebook.com/docs/facebook-login/access-tokens/debugging-and-error-handling)
+    //  Note: when you try to debug a long live token, the expires_at value will
+    //  be "expires_at: 0" which means it never expires for information
+    /// For more information about  Facebook debug token check [facebook debug token api](https://developers.facebook.com/docs/facebook-login/access-tokens/debugging-and-error-handling)
     pub async fn access_token_information(
         valid_access_token: String,
         debug_access_token: String,
@@ -225,7 +385,7 @@ impl UserToken {
         let access_token_expiring_date = access_token_response.data.expires_at.to_owned();
         let mut access_token_information = AccessTokenInformation::default();
 
-        // convert unix timestamp  date to human readable format  and update the new
+        // convert unix timestamp  date to human-readable format  and update the new
         // constructed struct
         if access_token_expiring_date != 0 {
             let token_expiring_date_utc = Utc.timestamp(access_token_expiring_date as i64, 0);
@@ -255,17 +415,15 @@ impl UserToken {
 
         Ok(access_token_information)
     }
-
-    // also the need to hanlde
 }
 
-/// Extract data from  from the url fragment and return an `IndexMap`
+/// Extract data from the url fragment and return an `IndexMap`
 /// for the Enum Variant.
 /// # Panics
 /// The function will panic a key that has no value.
 /// # Warns
-/// with no query. Theses choices are opinionated for now.
-pub fn extract_query_fragments(hash: String) -> HashMap<String, String> {
+/// with no query. These choices are opinionated for now.
+fn extract_query_fragments(hash: String) -> HashMap<String, String> {
     let mut query: HashMap<String, String> = HashMap::new();
 
     let key_value: Vec<&str> = hash.split('&').collect();
@@ -292,7 +450,7 @@ pub struct AccessTokenInformation {
     expires_at: u64,
     /// The type of token ( USER/PAGE
     token_type: String,
-    /// Expire date in your lcal time
+    /// Expire date in your local time
     expires_at_local_date: String,
     is_valid: bool,
     /// When the token can not access data anymore in unix time
@@ -330,7 +488,7 @@ pub struct GranularScopes {
     scope: String,
 }
 
-/// Enums of different types of lives of Facebook page token that a user can
+/// Enum of different types of lives of Facebook page token that a user can
 /// obtain.
 ///
 /// When obtaining a facebook page token, you can decide to obtain:
@@ -340,8 +498,8 @@ pub struct GranularScopes {
 /// * `short live toke` - this type of token will have a lifetime of about an
 ///   hour or two.
 ///
-/// Note:: You should not depend on these lifetimes remaining the same - the
-/// lifetime may change without warning or expire early.
+/// Note:: You should not depend on these lifetimes - the
+/// lifetime may change without warning or expire early due to other reasons
 /// Form more information on Token, check [facebook token guide](https://developers.facebook.com/docs/facebook-login/access-tokens/?translation)
 pub enum TokenLiveType {
     LONGLIVE,

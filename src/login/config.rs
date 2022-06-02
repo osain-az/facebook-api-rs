@@ -1,10 +1,12 @@
 use serde::{Deserialize, Serialize};
-/// A struct which describes the config.json file structure.
-/// the json file fields are stored in this struct, and are then
-/// added to the RedirectURL struct.
+/// A struct which describes the parameters used to construction of Facebook
+/// login
 #[derive(Deserialize, Debug, Serialize)]
 pub struct Config {
     /// The Facebook url preamble for the oath dialog.
+    ///
+    /// This parameters is set to default value to
+    /// https://www.facebook.com/v13.0/dialog/oauth?
     pub facebook_oath_url: String,
 
     /// The ID of your app, found in your app's dashboard.
