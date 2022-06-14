@@ -3,7 +3,7 @@
 
 use crate::prelude::video::{UploadPhase, VideoParams};
 use serde::{Deserialize, Serialize};
-#[cfg(any(feature = "web_sis", feature = "seed_async"))]
+#[cfg(any(feature = "web-sys"))]
 use web_sys::{Blob, File, FormData};
 
 #[derive(Deserialize, Debug, Serialize)]
@@ -43,7 +43,7 @@ pub struct GetPostResponse {
 }
 /// expected fields gotten from the get post request
 #[derive(Deserialize, Debug, Default, Serialize)]
-pub struct ResponseStatus {
+pub struct Id {
     pub id: String,
 }
 

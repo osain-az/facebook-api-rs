@@ -47,7 +47,7 @@ impl PagesAPI {
     }
 }
 
-#[derive(Deserialize, Debug, Serialize, Default)]
+#[derive(Deserialize, Debug, Default)]
 
 pub struct PageSearch {
     pub name: String,
@@ -58,7 +58,7 @@ pub struct PageSearch {
 
 /// this struct represent the data of the location of a page, Note: this data is
 /// only available if the page has enabled the location.
-#[derive(Deserialize, Serialize, Debug, Default)]
+#[derive(Deserialize, Debug, Clone, Default)]
 pub struct Location {
     pub city: String,
     pub country: String,
@@ -70,15 +70,15 @@ pub struct Location {
 }
 
 pub struct PagesSearchAPI {
-    pub page_acess_token: String,
+    pub page_access_token: String,
     pub base_url: String,
 }
 
 impl PagesSearchAPI {
-    pub fn new(base_url: String, page_acess_token: String) -> PagesSearchAPI {
+    pub fn new(base_url: String, page_access_token: String) -> PagesSearchAPI {
         PagesSearchAPI {
             base_url,
-            page_acess_token,
+            page_access_token,
         }
     }
 
@@ -96,7 +96,7 @@ impl PagesSearchAPI {
             + q
             + "&fields=id,name,location,link"
             + "&access_token="
-            + &self.page_acess_token;
+            + &self.page_access_token;
 
         let resp = HttpConnection::get::<PageSearch>(url, "".to_string()).await?;
         Ok(resp)

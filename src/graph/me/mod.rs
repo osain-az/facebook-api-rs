@@ -10,7 +10,7 @@
 //! will depend on the "Fields" parameters  you pass along the get request
 //! exmaple fields=id,name,email,picture......
 
-use crate::graph::accounts::{Account, AccountsAPI};
+use crate::graph::accounts::AccountsAPI;
 use crate::prelude::errors::ClientErr;
 use crate::prelude::{Accounts, HttpConnection};
 use serde::{Deserialize, Serialize};

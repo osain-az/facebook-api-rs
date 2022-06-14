@@ -142,7 +142,7 @@ impl VideoApi_reqwest {
         let start_phase_data = response;
         end_offset = Some(start_phase_data.end_offset); // update from the facebook response
 
-        #[cfg(any(feature = "reqwst"))]
+        #[cfg(any(feature = "reqwest"))]
         let chunked_file_data = FileResultServer::file_analyze("your file path".to_owned());
 
         let final_response = FinalResponeResumableUpload::default().update_params(

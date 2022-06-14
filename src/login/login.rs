@@ -17,6 +17,40 @@ use rand::{thread_rng, Rng};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
+/// Parameters for build Facebook login URL.
+///
+/// # Example
+///
+/// * Using default parameters
+/// ```
+/// use facebook_api_rs::prelude::{Config, LoginUrlParameters, LoginResponseType};
+/// let config = Config::new("your app id".to_string(), "your redirect uri".to_string());///
+///
+///  let login_url = LoginUrlParameters::new(config).full_login_url();
+/// ```
+/// * Adding custom parameters
+/// ```
+/// use facebook_api_rs::prelude::{Config, LoginUrlParameters, LoginResponseType};
+/// let config = Config::new("your app id".to_string(), "your redirect uri".to_string());
+///
+///   let login_url = LoginUrlParameters::new(config)
+///        .add_state("your state")
+///         .add_response_type(LoginResponseType::TOKEN)
+///         .add_scope(vec!["email".to_owned()])
+///         .full_login_url();
+/// ```
+///
+///  # Canceled Login
+///
+/// If people using your app don't accept the Login dialog and clicks
+/// Cancel, they'll be redirected to the following:
+///
+/// ```
+/// YOUR_REDIRECT_URI?
+///  error_reason=user_denied
+///  &error=access_denied
+///  &error_description=Permissions+error
+/// ```
 #[derive(Deserialize, Debug, Default, Clone, Serialize)]
 pub struct LoginUrlParameters {
     /// The Facebook url preamble for the oath dialog.
@@ -34,12 +68,18 @@ pub struct LoginUrlParameters {
     /// redirect URI.
     state: String,
 
-    /// Determines whether the response data included when the redirect back to
+    /// Determines whether the response data included in the redirect url  to
     /// the app occurs is in URL parameters or fragments.
+    ///
+    /// The Enum of the different types response type can be found at
+    ///
+    /// ```
+    /// use crate::facebook_api_rs::prelude::LoginResponseType;
+    /// ```
     response_type: String,
 
-    /// A comma or space separated list of Permissions to request from the
-    /// person.
+    /// A comma separated list of Permissions to request from the
+    ///   person using your app. To check [permission list](https://developers.facebook.com/docs/permissions/reference)
     scope: Vec<String>,
 
     /// The full url of the login flow.
@@ -47,20 +87,52 @@ pub struct LoginUrlParameters {
 }
 
 impl LoginUrlParameters {
-    /// Constructor of the Facebook login url parameters
+    /// Constructor for Facebook login url parameters
     ///
     /// The constructor accept a config  struct  with facebook_oath_url,
     /// client_id, and redirect_uri.
     ///
-    /// Other optional parameters are:
+    /// # optional parameters
     ///
-    /// * `state` - By default a random state will be generated or the user may
-    ///   chose to create their own
-    /// state.
+    /// * `state` - By default, a random state will be generated or the user may
+    ///   choose to create their own state.
+    ///
     /// * `response_type` has to be configured depending on the use case
-    /// of the application, or else the response will default to code upon
-    /// the login flow redirect. scope is optional, but inclusion must
-    /// fulfill a valid scope.
+    /// of the application. By default, it uses code as the response type.
+    ///
+    /// To determine which response type to used, check facebook guide on [Confirming Identity](https://developers.facebook.com/docs/facebook-login/guides/advanced/manual-flow#confirm)
+    ///
+    /// * `Scope` -  A comma separated list of Permissions to request from the
+    ///   person using your app. To check [permission list](https://developers.facebook.com/docs/permissions/reference)
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use facebook_api_rs::prelude::{Config, LoginUrlParameters, LoginResponseType};
+    /// let config = Config::new("your app id".to_string(), "your redirect uri".to_string());
+    ///
+    ///  // Using default parameters
+    ///  let login_url = LoginUrlParameters::new(config).full_login_url();
+    ///
+    /// // Override default parameters
+    ///   let login_url = LoginUrlParameters::new(config)
+    ///        .add_state("your state")
+    ///         .add_response_type(LoginResponseType::TOKEN)
+    ///         .add_scope(vec!["email".to_owned()])
+    ///         .full_login_url();
+    /// ```
+    ///
+    ///  # Canceled Login
+    ///
+    /// If people using your app don't accept the Login dialog and clicks
+    /// Cancel, they'll be redirected to the following:
+    ///
+    /// ```
+    /// "YOUR_REDIRECT_URI?
+    ///  error_reason=user_denied
+    ///  &error=access_denied
+    ///  &error_description=Permissions+error"
+    /// ```
     pub fn new(config: Config) -> LoginUrlParameters {
         LoginUrlParameters::default()
             .add_facebook_oath_url(&config.facebook_oath_url())
@@ -86,11 +158,32 @@ impl LoginUrlParameters {
         self
     }
 
+    /// A string value created by your app to maintain state between the request
+    /// and callback. This parameter should be used for preventing [Cross-site
+    /// Request Forgery](https://en.wikipedia.org/wiki/Cross-site_request_forgery) and will be passed back to you, unchanged, in your
+    /// redirect URI
     pub fn add_state(mut self, state: &str) -> Self {
         self.state = state.to_string();
         self
     }
 
+    /// Determines data included in the response url.
+    ///    
+    /// To determine which response type to used, check facebook guide on [Confirming Identity](https://developers.facebook.com/docs/facebook-login/guides/advanced/manual-flow#confirm)
+    ///
+    /// # Example
+    ///  ```
+    /// use facebook_api_rs::prelude::{Config, LoginUrlParameters,
+    /// LoginResponseType}; let config = Config::new("your app
+    /// id".to_string(), "your redirect url".to_string());
+    ///
+    /// // Override default parameters
+    ///   let login_url = LoginUrlParameters::new(config)
+    ///        .add_state("your state")
+    ///         .add_response_type(LoginResponseType::TOKEN)
+    ///         .add_scope(vec!["email".to_owned()])
+    ///         .full_login_url();
+    /// ```
     pub fn add_response_type(mut self, response_type: LoginResponseType) -> Self {
         let resp_type = match response_type {
             LoginResponseType::CODE20TOKEN => "code%20token".to_string(),
@@ -102,6 +195,8 @@ impl LoginUrlParameters {
         self
     }
 
+    /// A comma separated list of Permissions to request from the
+    /// person using your app. To check [permission list](https://developers.facebook.com/docs/permissions/reference)
     pub fn add_scope(mut self, scope: Vec<String>) -> Self {
         self.scope = scope;
         self
@@ -117,8 +212,6 @@ impl LoginUrlParameters {
         self
     }
 
-    /// Builds the redirect url for the login flow as a string so it may be
-    /// passed through a GET request
     fn build_login_url_as_string(&mut self) -> String {
         let full_url = "".to_string()
             + &self.facebook_oath_url
@@ -166,9 +259,11 @@ impl LoginUrlParameters {
     }
 }
 
-/// Determines the response data included in redirect url after successfull
+/// Enum that determines the response data included in redirect url after
+/// successfully.
+/// [Confirming Identity](https://developers.facebook.com/docs/facebook-login/guides/advanced/manual-flow#confirm)
 pub enum LoginResponseType {
-    /// Response data is included as URL parameters and contains code parameter
+    /// The parameters in response URL should contain a code
     /// (an encrypted string unique to each login request). This is the
     /// default behavior
     CODE,
@@ -201,20 +296,19 @@ mod tests {
         })
         .add_response_type(LoginResponseType::TOKEN)
         .add_state("0987654321")
-        .add_scope(&["test".to_string()])
-        .full_login_url();
+        .add_scope(vec!["test".to_string()].to_vec());
 
         assert_eq!(
-            redirect_url.facebook_oath_url,
+            redirect_url.facebook_oath_url(),
             "https://www.facebook.com/v11.0/dialog/oauth?"
         );
-        assert_eq!(redirect_url.client_id, "1234567890");
-        assert_eq!(redirect_url.redirect_uri, "http://localhost:8001");
-        assert_eq!(redirect_url.state, "0987654321");
-        assert_eq!(redirect_url.response_type, "token");
+        assert_eq!(redirect_url.client_id(), "1234567890");
+        assert_eq!(redirect_url.redirect_uri(), "http://localhost:8001");
+        assert_eq!(redirect_url.state(), "0987654321");
+        assert_eq!(redirect_url.response_type(), "token");
 
-        let scope = &["test".to_string()];
-        assert_eq!(redirect_url.scope, scope);
+        let scope = ["test".to_string()].to_vec();
+        assert_eq!(redirect_url.scope(), &scope);
 
         assert_eq!(redirect_url.full_url, "https://www.facebook.com/v11.0/dialog/oauth?client_id=1234567890&redirect_uri=http://localhost:8001&response_type=token&state=0987654321&scope=test")
     }
