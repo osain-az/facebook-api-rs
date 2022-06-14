@@ -14,7 +14,7 @@ use serde::{Deserialize, Serialize};
 /// This struct represent the data that will be return from facebook page
 ///
 /// For more information on page data check  [facebook account doc](https://developers.facebook.com/docs/graph-api/reference/page/)
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Deserialize, Debug, Clone, Default)]
 pub struct Account {
     /// The access token of this given page, which used to make operation that
     /// requires permission on this page example post and get request.

@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Deserialize, Debug, Clone, Serialize)]
+#[derive(Deserialize, Debug, Clone, Serialize, Default)]
 pub struct Engagement {
     /// Number of people who like this
     count: u32,

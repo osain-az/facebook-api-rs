@@ -111,7 +111,7 @@ impl InstagramApi {
 ///     pub website: String,
 /// }
 /// ```
-#[derive(Deserialize, Clone, Debug)]
+#[derive(Deserialize, Clone, Debug, Default)]
 pub struct InstagramAccount {
     pub biography: String,
     pub id: String,
