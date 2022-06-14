@@ -1,6 +1,5 @@
-#[cfg(any(feature = "reqwst"))]
+#[cfg(any(feature = "reqwest"))]
 pub mod video_by_reqwest;
 
-//#[cfg(any(feature = "seed_async"))]
-#[cfg(any(feature = "web_sis", feature = "seed_async"))]
+#[cfg(any(feature = "web-sys"))]
 pub mod video_by_web_sys;

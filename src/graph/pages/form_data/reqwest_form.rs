@@ -4,7 +4,7 @@ use std::borrow::BorrowMut;
 use std::fs::File;
 
 /// Creating form_data for reqwest Client
-#[cfg(any(feature = "reqwst"))]
+#[cfg(any(feature = "reqwest"))]
 pub fn resumable_form_data_reqwest(
     upload_phase: UploadPhase,
     upload_session_id: String,
@@ -12,10 +12,6 @@ pub fn resumable_form_data_reqwest(
     mut video_params: VideoParams,
     mut file: File,
 ) -> Form {
-    // phase is expected to be of an enum of either , start, transfer, and end
-    // depending on the  uplaoding stage
-    use reqwest::Body;
-    use std::fs::File;
     use std::io;
     use std::io::prelude::*;
     let mut current_upload_phase = "";

@@ -7,7 +7,7 @@
 //! https://developers.facebook.com/docs/graph-api/reference/post
 use crate::graph::pages::utils::{Fields, From, GetPostResponse};
 use crate::prelude::errors::ClientErr;
-use crate::prelude::utils::ResponseStatus;
+use crate::prelude::utils::Id;
 use crate::prelude::{Data, HttpConnection};
 use serde::{Deserialize, Serialize};
 
@@ -51,7 +51,7 @@ impl PostApi {
         Ok(resp)
     }
 
-    //TODO: impliment post uodated methods and test newly added methods
+    // TODO: impliment post uodated methods and test newly added methods
     pub async fn update() {}
 
     pub async fn comments(self) -> Result<Comments, ClientErr> {
@@ -61,18 +61,18 @@ impl PostApi {
         Ok(resp)
     }
 
-    pub async fn comment_on_post(self, message: String) -> Result<ResponseStatus, ClientErr> {
+    pub async fn comment_on_post(self, message: String) -> Result<Id, ClientErr> {
         let mut base_url = self.base_url.replace("EDGE", "commnets");
         let url = base_url + "?message=" + &message + "&access_token=" + &self.page_access_token;
 
-        let resp = HttpConnection::post::<ResponseStatus, String>(url, "".to_string()).await?;
+        let resp = HttpConnection::post::<Id, String>(url, "".to_string()).await?;
         Ok(resp)
     }
 
-    pub async fn delete(self) -> Result<ResponseStatus, ClientErr> {
+    pub async fn delete(self) -> Result<Id, ClientErr> {
         let mut base_url = self.base_url.replace("EDGE", "");
         let url = base_url + "&access_token=" + &self.page_access_token;
-        let resp = HttpConnection::delete::<ResponseStatus>(url, "".to_string()).await?;
+        let resp = HttpConnection::delete::<Id>(url, "".to_string()).await?;
         Ok(resp)
     }
 }

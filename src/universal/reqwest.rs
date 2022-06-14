@@ -5,7 +5,7 @@ use std::io::Read;
 // use crate::universal::utils::generic_req;
 use crate::universal::HttpClient;
 use ::reqwest::Body;
-#[cfg(feature = "reqwst")]
+#[cfg(feature = "reqwest")]
 use ::reqwest::Client;
 use async_trait::async_trait;
 use http::header::HeaderMap;

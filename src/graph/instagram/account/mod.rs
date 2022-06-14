@@ -1,20 +1,31 @@
-//! This Api is used to get instagram business account for any given facebook page
-//! <https://developers.facebook.com/docs/instagram-api/reference/page>
+//! An end_point to Instagram business account for any given facebook
+//! page
+//! [facebook docs](https://developers.facebook.com/docs/instagram-api/reference/page)
 
 use crate::prelude::errors::ClientErr;
 use crate::prelude::HttpConnection;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use urlencoding::encode;
 
-#[derive(Deserialize, Clone, Debug, Serialize)]
-pub struct InstaAccountIds {
-    pub instagram_business_account: InstaAccountId,
+/// Instagram business account
+/// ```
+/// use facebook_api_rs::prelude::InstagramAccountId;
+///
+///  struct InstagramAccountIds {
+///     pub instagram_business_account: InstagramAccountId:{
+///     pub id:String
+///  },
+///    pub id: String,
+/// }
+/// ```
+#[derive(Deserialize, Clone, Debug)]
+pub struct InstagramAccountIds {
+    pub instagram_business_account: InstagramAccountId,
     pub id: String,
 }
 
-#[derive(Deserialize, Clone, Debug, Serialize)]
-
-pub struct InstaAccountId {
+#[derive(Deserialize, Clone, Debug)]
+pub struct InstagramAccountId {
     pub id: String,
 }
 
@@ -32,24 +43,51 @@ impl InstagramApi {
         }
     }
 
-    /// This method is use to get instagram business account id.
-    /// for reference check <https://developers.facebook.com/docs/instagram-api/reference/page>
-    pub async fn account_id(self) -> Result<InstaAccountIds, ClientErr> {
-        let base_url = self.base_url.replace("EDGE", "?");
+    /// Instagram account id associated to a given facebook page
+    pub async fn account_id_by_facebook_page_id(
+        self,
+        facebook_page_id: String,
+    ) -> Result<InstagramAccountIds, ClientErr> {
+        let graph_url = self.base_url.replace("NODE", &facebook_page_id);
+        let base_url = graph_url.replace("EDGE", "?");
         let url = base_url
             + "fields=instagram_business_account"
             + "&access_token="
             + &self.page_access_token;
-        let resp = HttpConnection::get::<InstaAccountIds>(url, "".to_string()).await?;
+        let resp = HttpConnection::get::<InstagramAccountIds>(url, "".to_string()).await?;
         Ok(resp)
     }
 
-    /// This method is used to get instagram business account with its details (name, user, id ,etc).
-    /// It accepts the instagram page id.
-    /// for reference check <https://developers.facebook.com/docs/instagram-api/reference/ig-user>
-    pub async fn account_details(self) -> Result<InstagramAccount, ClientErr> {
-        let mut url = self.base_url.replace("EDGE", "?");
-        let url_fields = Fields::default().build_url_with_fields(); // build urlenconded url withe regired fields
+    /// Get request for Instagram account detail.
+    ///
+    /// The response is an [InstagramAccount](InstagramAccount) if successful or
+    /// [ClientErr](ClientErr) if request failed.
+    ///
+    /// # Argument
+    ///
+    /// * `instagram_id`- A string of instagram account id.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use facebook_api_rs::prelude::{Client, UserToken};
+    /// use facebook_api_rs::prelude::errors::ClientErr;
+    /// use facebook_api_rs::prelude::InstagramAccount;
+    ///
+    ///  let instagram_account : Result< InstagramAccount, ClientErr> =  
+    ///         Client::new(
+    ///               UserToken::default(),
+    ///               "the facebook page access_token".to_string()
+    ///              )
+    ///            .instagram_account()
+    ///           .account_by_id("instagram_account_id".to_owned()).await;
+    /// ```
+    /// [facebook account doc](https://developers.facebook.com/docs/instagram-api/reference/ig-user)
+    pub async fn account_by_id(self, instagram_id: String) -> Result<InstagramAccount, ClientErr> {
+        let graph_url = self.base_url.replace("NODE", &instagram_id);
+        let mut url = graph_url.replace("EDGE", "?");
+
+        let url_fields = Fields::default().build_url_with_fields();
 
         let mut request_url =
             url + "fields=" + url_fields.as_str() + "&access_token=" + &self.page_access_token;
@@ -58,48 +96,44 @@ impl InstagramApi {
     }
 }
 
-#[derive(Deserialize, Clone, Debug, Serialize)]
+/// Instagram account
+///
+/// ```
+///  struct InstagramAccount {
+///     pub biography: String,
+///     pub id: String,
+///     pub followers_count: u32,
+///     pub follows_count: u32,
+///     pub media_count: u32,
+///     pub name: String,
+///    pub profile_picture_url: String,
+///     pub username: String,
+///     pub website: String,
+/// }
+/// ```
+#[derive(Deserialize, Clone, Debug)]
 pub struct InstagramAccount {
-    //https://developers.facebook.com/docs/instagram-api/reference/ig-user/
-    //This is a public fields, which means it can be returned if available.
-    //  biography: String,
-    ///This is a public fields, which means it can be returned if available.
+    pub biography: String,
     pub id: String,
-
-    ///This is not a public fields, which means it may be returned depending on the user setting.
-    pub ig_id: u32,
-
-    ///This is a public fields, which means it can be returned if available.
     pub followers_count: u32,
-
-    ///This is not a public fields, which means it may be returned depending on the user setting.
     pub follows_count: u32,
-
-    ///This is not a public fields, which means it may be returned depending on the user setting.
+    // #[serde(default = 0)]
     pub media_count: u32,
-
-    ///This is not a public fields, which means it may be returned depending on the user setting.
     pub name: String,
-
-    //This is not a public fields, which means it may be returned depending on the user setting.
-    //  profile_picture_url:  String,
-    ///This is not a public fields, which means it may be returned depending on the user setting.
+    pub profile_picture_url: String,
     pub username: String,
-    //This is not a public fields, which means it may be returned depending on the user setting.
-    // website :  String,
+    pub website: String,
 }
-pub struct Fields {
+
+struct Fields {
     pub(crate) fields: Vec<String>,
 }
 
 impl Default for Fields {
-    /// These parameters are used as fields which are passed in as a query
-    /// parameters to the get post request and feeds request
     fn default() -> Self {
         let field_list = vec![
             "biography",
             "id",
-            "ig_id",
             "followers_count",
             "follows_count",
             "media_count",
@@ -122,7 +156,7 @@ impl Fields {
             if count < fields_count - 1 {
                 url_fields = url_fields + &field + ",";
             } else {
-                url_fields = url_fields + &field; // remove the comma in the last filed
+                url_fields = url_fields + &field;
             }
         }
         url_fields = String::from(encode(url_fields.as_str())); // encode the url

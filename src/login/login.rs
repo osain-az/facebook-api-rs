@@ -263,7 +263,7 @@ impl LoginUrlParameters {
 /// successfully.
 /// [Confirming Identity](https://developers.facebook.com/docs/facebook-login/guides/advanced/manual-flow#confirm)
 pub enum LoginResponseType {
-    /// Response data is included as URL parameters and contains code parameter
+    /// The parameters in response URL should contain a code
     /// (an encrypted string unique to each login request). This is the
     /// default behavior
     CODE,

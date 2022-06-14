@@ -2,7 +2,7 @@ use crate::prelude::video::{UploadPhase, VideoParams};
 use serde::{Deserialize, Serialize};
 use web_sys::{Blob, File, FormData};
 
-#[cfg(any(feature = "web_sis", feature = "seed_async"))]
+#[cfg(any(feature = "web-sys"))]
 pub fn form_data_seed(file: File, video_params: VideoParams) -> FormData {
     let mut form_data = FormData::new().unwrap();
 
@@ -23,7 +23,7 @@ pub fn form_data_seed(file: File, video_params: VideoParams) -> FormData {
     form_data
 }
 
-#[cfg(any(feature = "web_sis", feature = "seed_async"))]
+#[cfg(any(feature = "web-sys"))]
 pub fn resumable_form_data_seed(
     upload_phase: UploadPhase,
     current_blob_file: Blob,

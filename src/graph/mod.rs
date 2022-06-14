@@ -8,6 +8,6 @@ pub mod pages;
 pub mod utils;
 pub mod prelude {
     pub use crate::graph::{
-        accounts::*, client::*, data::*, image::*, instagram::*, me::*, pages::*, utils::*,
+        accounts::*, client::*, data::*, image::*, instagram::prelude::*, me::*, pages::*, utils::*,
     };
 }

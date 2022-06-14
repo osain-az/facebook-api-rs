@@ -1,6 +1,6 @@
 use crate::prelude::video::VideoParams;
 
-#[cfg(any(feature = "reqwst"))]
+#[cfg(any(feature = "reqwest"))]
 use reqwest::multipart::{Form, Part};
 use reqwest::Body;
 use std::fs::File;
@@ -9,7 +9,7 @@ use std::io::prelude::*;
 use std::io::Read;
 use std::io::{BufRead, BufReader, Seek, SeekFrom};
 
-#[cfg(any(feature = "reqwst"))]
+#[cfg(any(feature = "reqwest"))]
 pub fn create_form_data(video_params: VideoParams, buffer: Vec<u8>) -> Form {
     let form_data = Form::new();
 

@@ -16,6 +16,7 @@ use chrono::prelude::*;
 use chrono::{DateTime, TimeZone, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use url::Url;
 
 /// UserToken is Obtain after a successful login to Facebook.
 ///
@@ -191,24 +192,12 @@ impl UserToken {
     /// ```
     /// use facebook_api_rs::prelude::Config;
     /// use crate::facebook_api_rs::prelude::UserToken;
-    ///  // Your redirect url used when building the login url
-    ///  let redirect_url = "your redirect uri".to_string();
+    ///  // The redirect url after login
     ///  let login_response_url =  "redirect_url/?#........................".to_string();
-    ///  let hash = login_response_url.replace("redirect_url","");
     ///
-    ///  let user_token =   UserToken::extract_user_tokens(hash);
-    ///  // send the code to sever side to exchange for an access_token
+    ///  let user_token =   UserToken::extract_user_tokens(login_response_url);
+    ///  // Send the code to sever side to exchange for an access_token
     ///  let code  = user_token.code;
-    ///
-    ///    // When using `Seed.rs`, the hash can easily be build from the URL
-    ///    let url = URL;
-    /// // Send the result (code) to the sever to Exchange the code for access token
-    ///      let user_token = url
-    ///         .hash()
-    ///         .map(|hash| UserToken::extract_user_tokens(hash.to_string()));
-    ///
-    ///   // send the code to sever side to exchange for an access_token
-    ///     let code  = user_token.code;
     /// ```
     ///  * At the server side: exchange code for access token
     /// ```
@@ -232,16 +221,15 @@ impl UserToken {
     /// * Get token at the client side.
     /// ```
     ///  use crate::facebook_api_rs::prelude::{UserToken, Config};
-    ///  let redirect_url = "your redirect uri".to_string();
-    ///  let login_response_url =  "redirect_url/?#........................".to_string();
-    ///  let hash = login_response_url.replace("redirect_url","");
     ///
-    ///  let user_token =   UserToken::extract_user_tokens(hash);
+    ///  let login_response_url =  "redirect_url/?#........................".to_string();
+    ///
+    ///  let user_token =   UserToken::extract_user_tokens(login_response_url);
     /// // send the access_token to sever verification
     ///  let access_token  = user_token.access_token;
     /// ```
     ///
-    /// * At Server side: verified the
+    /// * At Server side: verified the access_token
     ///
     /// In the server side inspect the access_token gotten from the client
     /// ```    
@@ -252,36 +240,62 @@ impl UserToken {
     ///          "inspecting_token".to_owned()
     ///        );
     /// ```
-    pub fn extract_user_tokens(hash: String) -> UserToken {
-        let updated_hash = hash.replace("?#", "");
-        let query = extract_query_fragments(updated_hash);
-        let iterations = query.iter();
+    /// # Panic
+    /// It will panic when if :
+    ///
+    ///  * `Login error` ->
+    ///  If for any reason the login failed then the response url will contain
+    /// an `error`. If the URL with an error is passed in, panic will occur
+    /// with a message from the response url.
+    ///
+    ///  * Empty url query parameters ->  If no query parameters if found in the
+    ///    url, panic will occur.
 
+    pub fn extract_user_tokens(url: String) -> UserToken {
         let mut response = UserToken::default();
+        let query_params: HashMap<_, _> = Url::parse(&url)
+            .unwrap()
+            .query_pairs()
+            .into_owned()
+            .collect();
 
-        for e in iterations {
-            match e.0.as_str() {
-                "access_token" => {
-                    response.access_token = e.1.to_string();
+        if query_params.is_empty() {
+            panic!(
+                "There was no query parameter in uri argument that was passed in. error_message: number of argument found  {:?}.   The url argument : {} ",
+                query_params.len(), url
+            )
+        }
+
+        for params in query_params {
+            match params.0.as_str() {
+                "access_token.t" => {
+                    response.access_token = params.1;
                 }
                 "code" => {
-                    response.code = e.1.to_string();
+                    response.code = params.1;
                 }
                 "data_access_expiration_time" => {
-                    response.data_access_expiration_time = e.1.to_string();
+                    response.data_access_expiration_time = params.1;
                 }
                 "expires_in" => {
-                    response.expires_in = e.1.to_string();
+                    response.expires_in = params.1;
                 }
                 "long_lived_token" => {
-                    response.long_lived_token = e.1.to_string();
+                    response.long_lived_token = params.1;
                 }
                 "state" => {
-                    response.state = e.1.to_string();
+                    response.state = params.1;
                 }
-                _ => {} //_ => panic!("unknown field: {}", e.0.as_str()),
+                "error" => {
+                    panic!(
+                        "There was an error in login to facebook. error_message:  {}",
+                        params.1
+                    )
+                }
+                &_ => {}
             }
         }
+
         response
     }
 

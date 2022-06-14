@@ -1,16 +1,13 @@
-//!  This mod will server as method binder that allow  to access different end
-//! poinst availiable on the facebook-api.rs
+//!  This mod will serves as method binder that gives access different end
+//! poinst availiable on the facebook-api.rs.
 
-use crate::graph::instagram::media::InstagramMediaApi;
 use crate::graph::me::MeApi;
 use crate::graph::pages::feed::FeedApi;
 use crate::graph::pages::post::PostApi;
-use crate::graph::prelude::account::InstagramApi;
-use crate::graph::prelude::publish::InstagramPostApi;
 use crate::login::token::{TokenLiveType, UserToken};
-use crate::prelude::hashtag::HashtagAPi;
 use crate::prelude::search::PagesSearchAPI;
 use crate::prelude::video::VideoApi;
+use crate::prelude::{HashtagAPi, InstagramApi, InstagramMediaApi, InstagramPostApi};
 
 /// Client Struct for making calls to Facebook Graph
 #[derive(Debug)]
@@ -73,13 +70,23 @@ impl Client {
         self.graph
     }
 
-    /// This method  is used to pass user data/crediteniatls to the ME method
-    /// which will be used to reach the ME API.
-    /// since facebbok allows two access token ( short and long live )  to used
-    /// or get a long live token for your page passed in "long_live"  while
-    /// if you intented to used a short live token then pass in "short_live"
-    /// . For more information on facebook documenation check
-    /// <https://developers.facebook.com/docs/facebook-login/access-tokens/>
+    /// This method gives an entry point to User API and Facebook pages account
+    /// API
+    ///
+    /// # Argument
+    /// * `token_live_type` -  an enum of [TokenLiveType](TokenLiveType). This
+    ///   will
+    /// determine what type of pages access token in the respone.
+    /// If TokenLiveType::SHORTLIVE  is the passed in then the page access token
+    /// return will be short (expires in few hour).
+    ///
+    /// Note:: either way, if the UserToken passed in at the Client only
+    /// container a short live token then the page access token returned will
+    /// also be a short live
+    ///
+    /// For information on Tokens check [UserToken](UserToken)    
+    ///
+    /// Or check [Facebook token doc](https://developers.facebook.com/docs/facebook-login/access-tokens/)
     pub fn accounts(self, token_live_type: TokenLiveType) -> MeApi {
         match token_live_type {
             TokenLiveType::LONGLIVE => MeApi::new(if self.long_live_user_access_token.is_empty() {
@@ -125,13 +132,63 @@ impl Client {
         VideoApi::new(base_url, self.page_access_token) // initit videp Api
     }
 
-    // Instagram end point call
+    /// Entry point to instagram Account api.
+    ///
+    /// # Example for getting an instagram account id
+    ///
+    /// To get instagram business account id associated to a facebook page by
+    /// passing the page id
+    ///
+    /// Since facebook only allows getting business accountt through
+    /// facebook page
+    ///
+    /// ```
+    /// use facebook_api_rs::prelude::{Client, UserToken};
+    /// use facebook_api_rs::prelude::InstagramAccountIds;
+    ///
+    ///  let instagram_account_id: InstagramAccountIds =  Client::new(
+    ///               UserToken::default(),
+    ///               "the facebook page access_token".to_string()
+    ///              )
+    ///            .instagram_account()
+    ///            .account_id_by_facebook_page_id("facebook_page_id".to_owned()).await;
+    /// ```
+    ///  # Example for getting instagram account details
+    ///
+    /// If you already have an instagram account id, get the account information
+    /// by passing the account id
+    /// ```
+    /// use facebook_api_rs::prelude::{Client, UserToken};
+    /// use facebook_api_rs::prelude::InstagramAccount;
+    ///
+    ///  let instagram_account : InstagramAccount =  Client::new(
+    ///               UserToken::default(),
+    ///               "the facebook page access_token".to_string()
+    ///              )
+    ///            .instagram_account()
+    ///            .account_by_id("instagram_account_id".to_owned()).await?;
+    /// ```
 
-    pub fn instagram_account(self, facebook_page_id: String) -> InstagramApi {
-        let base_url = self.graph.replace("NODE", &facebook_page_id);
-        InstagramApi::new(self.page_access_token, base_url)
+    pub fn instagram_account(self) -> InstagramApi {
+        InstagramApi::new(self.page_access_token, self.graph)
     }
 
+    /// You can use the Instagram Graph API to publish single images or single
+    /// videos (single media posts), or posts containing multiple images and
+    /// videos (carousel posts), on Instagram Business accounts
+    ///
+    /// # Limitation
+    ///  *Instagram Creator accounts are not supported.
+    /// * Accounts are limited to 25 API-published posts within a 24 hour
+    ///   period. Carousels count as a single post.
+    /// * JPEG is the only image format supported. Extended JPEG formats such as
+    ///   MPO and JPS are not supported.
+    /// * Stories are not supported.
+    /// * Shopping tags are not supported.
+    /// * Branded content tags are not supported.
+    /// * Filters are not supported.
+    /// * The hashtag symbol (#) must be HTML URL-encoded %23 in captions.
+    /// * Publishing to Instagram TV is not supported
     pub fn instagram_publish(self, instagram_id: String) -> InstagramPostApi {
         let base_url = self.graph.replace("NODE", &instagram_id);
 
@@ -149,11 +206,27 @@ impl Client {
         PagesSearchAPI::new(base_url, self.page_access_token)
     }
 
+    /// Entry point to the instagram hashtag api
+    ///
+    /// # Limitation
+    /// * `Max query`-  You can query a maximum of 30 unique hashtags on behalf
+    ///   of an Instagram Business or Creator Account within a rolling,
+    /// 7 day period. Once you query a hashtag, it will count against this limit
+    /// for 7 days. Subsequent queries on the same hashtag within this time
+    /// frame will not count against your limit, and will not reset its initial
+    /// query 7 day timer.
+    ///
+    /// * Personally identifiable information will not be included in responses
+    ///
+    /// * Emojis in hashtag queries are not supported.
+    ///
+    /// * The API will return a generic error for any requests that include
+    /// hashtags that facebook have deemed sensitive or offensive.
+    ///
+    /// [facebook hashtag doc](https://developers.facebook.com/docs/instagram-api/guides/hashtag-search)
     pub fn instagram_hashtag(self, instagram_id: String) -> HashtagAPi {
-        let mut base_url = self
-            .graph
-            .replace("NODE/EDGE", "ig_hashtag_search?user_id=");
-        base_url = base_url + &instagram_id;
+        let mut base_url = self.graph.replace("NODE/", "");
+        base_url = base_url + "?user_id=" + &instagram_id;
         HashtagAPi::new(self.page_access_token, base_url)
     }
 

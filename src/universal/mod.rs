@@ -2,34 +2,34 @@ use crate::prelude::utils::UploadingData;
 use crate::prelude::video::VideoParams;
 use crate::universal::errors::ClientErr;
 
-#[cfg(any(feature = "reqwst"))]
+#[cfg(any(feature = "reqwest"))]
 use ::reqwest::multipart::Form;
 
 use async_trait::async_trait;
 use http::{HeaderMap, Request, Response};
 
 use url::Url;
-#[cfg(any(feature = "web_sis"))]
+#[cfg(any(feature = "web-sys"))]
 use web_sys::FormData;
 
-#[cfg(all(feature = "reqwst", feature = "web_sis"))]
+#[cfg(all(feature = "reqwest", feature = "web-sys"))]
 compile_error!(
-    r#"feature "reqwest_async" and "surf_async" cannot be set at the same time.
-If what you want is "seed_async", please turn off default features by adding "default-features=false" in your Cargo.toml"#
+    r#"feature "reqwest" and "web-sys" cannot be set at the same time.
+    By default reqwest is enabled  If what you want is "web-sys", please turn off default features by adding "default-features=false" in your Cargo.toml"#
 );
 
-#[cfg(all(feature = "reqwst", feature = "web_sis"))]
+#[cfg(all(feature = "reqwest", feature = "web-sys"))]
 compile_error!(r#"only one of features "reqwest_async", "seed_async" and "..." can be"#);
 
 pub mod client;
 pub mod errors;
-#[cfg(any(feature = "reqwst"))]
+#[cfg(any(feature = "reqwest"))]
 pub mod form_data;
-#[cfg(any(feature = "reqwst"))]
+#[cfg(any(feature = "reqwest"))]
 pub mod reqwest;
 pub mod response;
 
-#[cfg(any(feature = "web_sis"))]
+#[cfg(any(feature = "web-sys"))]
 pub mod web_sys_client;
 
 #[async_trait(?Send)]
@@ -66,7 +66,7 @@ pub trait HttpClient: Sync + Clone {
         .await
     }
 
-    #[cfg(any(feature = "web_sis"))]
+    #[cfg(any(feature = "web-sys"))]
     #[inline]
     async fn video_post(
         &self,
@@ -77,7 +77,7 @@ pub trait HttpClient: Sync + Clone {
             .await
     }
 
-    #[cfg(any(feature = "reqwst"))]
+    #[cfg(any(feature = "reqwest"))]
     #[inline]
     async fn video_post(
         &self,
@@ -88,7 +88,7 @@ pub trait HttpClient: Sync + Clone {
             .await
     }
 
-    #[cfg(any(feature = "reqwst"))]
+    #[cfg(any(feature = "reqwest"))]
     #[inline]
     async fn resumable_video_post(
         &self,
@@ -99,7 +99,7 @@ pub trait HttpClient: Sync + Clone {
             .await
     }
 
-    #[cfg(any(feature = "reqwst"))]
+    #[cfg(any(feature = "reqwest"))]
     #[inline]
     async fn upload_by_form_data(
         &self,
@@ -184,7 +184,7 @@ pub trait HttpClient: Sync + Clone {
     where
         Self: Sized;
 
-    #[cfg(any(feature = "reqwst"))]
+    #[cfg(any(feature = "reqwest"))]
     async fn video_request(
         &self,
         //  request: Request<FormData>,
@@ -193,7 +193,7 @@ pub trait HttpClient: Sync + Clone {
     where
         Self: Sized;
 
-    #[cfg(any(feature = "web_sis"))]
+    #[cfg(any(feature = "web-sys"))]
     async fn video_request(
         &self,
         request: Request<FormData>,
@@ -201,7 +201,7 @@ pub trait HttpClient: Sync + Clone {
     where
         Self: Sized;
 
-    #[cfg(any(feature = "reqwst"))]
+    #[cfg(any(feature = "reqwest"))]
     async fn resumable_video_request(
         &self,
         //  request: Request<FormData>,
@@ -210,7 +210,7 @@ pub trait HttpClient: Sync + Clone {
     where
         Self: Sized;
 
-    #[cfg(any(feature = "reqwst"))]
+    #[cfg(any(feature = "reqwest"))]
     async fn upload_by_form_data_request(
         &self,
         //  request: Request<FormData>,

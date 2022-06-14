@@ -1,4 +1,8 @@
-pub mod account;
-pub mod publish;
-pub mod media;
-pub mod hashtag;
+mod account;
+mod hashtag;
+mod media;
+mod publish;
+
+pub mod prelude {
+    pub use crate::graph::instagram::{account::*, hashtag::*, media::*, publish::*};
+}

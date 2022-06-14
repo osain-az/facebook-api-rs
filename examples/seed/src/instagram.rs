@@ -1,8 +1,8 @@
 use crate::instagram::Msg::{InstagramAccountDetailsSuccess, InstagramAccountIdSuccess};
-use facebook_api_rs::prelude::account::{InstaAccountIds, InstagramAccount};
+use facebook_api_rs::prelude::account::{InstagramAccount, InstagramAccountIds};
 use facebook_api_rs::prelude::errors::ClientErr;
 use facebook_api_rs::prelude::media::MediaContainerStatus;
-use facebook_api_rs::prelude::publish::{InstaMediaContainerId, InstaPostParams};
+use facebook_api_rs::prelude::publish::{InstagramMediaContainerId, InstagramPostParams};
 use facebook_api_rs::prelude::search::{PageSearch, PagesAPI};
 use facebook_api_rs::prelude::*;
 use seed::{prelude::*, *};
@@ -53,8 +53,8 @@ struct InstaPostData {
     location_id: String, // this should be coded
 }
 
-fn insta_post_params(url: String, location_id: String, caption: String) -> InstaPostParams {
-    InstaPostParams {
+fn insta_post_params(url: String, location_id: String, caption: String) -> InstagramPostParams {
+    InstagramPostParams {
         url,
         caption,
         location_id,
@@ -76,9 +76,9 @@ pub struct Model {
     pub accounts: Option<Accounts>,
     pub pages_api: PagesAPI,
     pub selected_account: Option<SelectedAccount>,
-    pub insta_account: Option<InstaAccountIds>, // this is just the instagram id
-    pub insta_post_param: Option<InstaPostParams>,
-    pub insta_media_container_id: Option<InstaMediaContainerId>,
+    pub insta_account: Option<InstagramAccountIds>, // this is just the instagram id
+    pub insta_post_param: Option<InstagramPostParams>,
+    pub insta_media_container_id: Option<InstagramMediaContainerId>,
     pub insta_posting_options: InstaPostingOption,
     pub access_token_info: Option<AccessTokenInformation>,
     instagram_account: Option<InstagramAccount>,
@@ -95,14 +95,14 @@ pub enum Msg {
     // Instagram operations
     GetInstagramAccountId,
     InstaMediaContainerInit,
-    InstaContainerResponse(InstaMediaContainerId),
-    InstagramAccountIdSuccess(InstaAccountIds),
-    UpdateInstaPostParams(InstaPostParams, String),
+    InstaContainerResponse(InstagramMediaContainerId),
+    InstagramAccountIdSuccess(InstagramAccountIds),
+    UpdateInstaPostParams(InstagramPostParams, String),
     InstagramVideoPost,
-    InstaPostSuccessful(InstaMediaContainerId),
+    InstaPostSuccessful(InstagramMediaContainerId),
     HandleInstaPostingOption(web_sys::Event),
     PagesSearch(String),
-    GetInstagramAccountDetails(InstaAccountIds),
+    GetInstagramAccountDetails(InstagramAccountIds),
     InstagramAccountDetailsSuccess(InstagramAccount),
     PageSearchResponse(PageSearch),
 
@@ -110,7 +110,7 @@ pub enum Msg {
     MediaContainerStatusResponse(MediaContainerStatus),
 
     FetchInstagramAccountId,
-    FetchInstagramAccountIdSuccess(InstaAccountIds),
+    FetchInstagramAccountIdSuccess(InstagramAccountIds),
 
     // every error should user this
     TestFailed(ClientErr),
@@ -133,7 +133,7 @@ pub fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
                     orders.perform_cmd(async move {
                         Client::new(UserToken::default(), page_access_token.clone())
                             .instagram_account(facebook_page_id)
-                            .account_id()
+                            .account_id_by_facebook_page_id()
                             .await
                             .map_or_else(Msg::TestFailed, InstagramAccountIdSuccess)
                     });
@@ -153,7 +153,7 @@ pub fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
                     orders.perform_cmd(async move {
                         Client::new(UserToken::default(), page_access_token.clone())
                             .instagram_account(facebook_page_id)
-                            .account_id()
+                            .account_id_by_facebook_page_id()
                             .await
                             .map_or_else(Msg::TestFailed, Msg::FetchInstagramAccountIdSuccess)
                     });
@@ -172,7 +172,7 @@ pub fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
                     orders.perform_cmd(async move {
                         Client::new(UserToken::default(), page_access_token.clone())
                             .instagram_account(instagram_id)
-                            .account_details()
+                            .account_by_id()
                             .await
                             .map_or_else(Msg::TestFailed, InstagramAccountDetailsSuccess)
                     });
@@ -239,7 +239,7 @@ pub fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
                         orders.perform_cmd(async move {
                             Client::new(UserToken::default(), page_access_token)
                                 .instagram_publish(insta_page_id)
-                                .post_media(post_param, "video".to_string()) //note: for photo passing in "photo" instead of "video" that was passed in
+                                .post_video(post_param, "video".to_string()) //note: for photo passing in "photo" instead of "video" that was passed in
                                 .await
                                 .map_or_else(Msg::ResponseFailed, Msg::InstaContainerResponse)
                         });
