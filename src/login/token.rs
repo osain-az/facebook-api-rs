@@ -385,7 +385,7 @@ impl UserToken {
         // convert unix timestamp  date to human-readable format  and update the new
         // constructed struct
         if access_token_expiring_date != 0 {
-            let token_expiring_date_utc = Utc.timestamp(access_token_expiring_date as i64, 0);
+            let token_expiring_date_utc = Utc.timestamp(access_token_expiring_date, 0);
             let token_expiring_date_local: DateTime<Local> =
                 DateTime::from(token_expiring_date_utc);
             access_token_information.expires_at_local_date = token_expiring_date_local.to_rfc2822();
@@ -394,7 +394,7 @@ impl UserToken {
         }
 
         let token_expiring_data_time =
-            Utc.timestamp(access_token_response.data.data_access_expires_at as i64, 0);
+            Utc.timestamp(access_token_response.data.data_access_expires_at, 0);
         let token_expiring_data_time_local: DateTime<Local> =
             DateTime::from(token_expiring_data_time);
 
@@ -444,84 +444,42 @@ impl UserToken {
 /// ```
 /// pub struct AccessTokenInformation {
 ///     //Expire date in your unix time /
-///     expires_at: u64,
+///    pub expires_at: u64,
 ///     // The type of token ( USER/PAGE
-///     token_type: String,
+///    pub token_type: String,
 ///     // Expire date in your local time
-///     expires_at_local_date: String,
-///     is_valid: bool,
+///    pub expires_at_local_date: String,
+///    pub is_valid: bool,
 ///     /// When the token can not access data anymore in unix time
-///     data_access_expires_at: u64,
+///    pub data_access_expires_at: i64,
 ///     /// When the token can not access data anymore, in your local time,
 ///     pub data_access_expires_at_local_date: String,
-///     app_id: String,
-///     application: String,
-///     scopes: Vec<String>,
-///     granular_scopes: Vec<GranularScopes>,
-///     user_id: u32,
+///    pub app_id: String,
+///    pub application: String,
+///    pub scopes: Vec<String>,
+///    pub granular_scopes: Vec<GranularScopes>,
+///    pub user_id: u32,
 /// }
 /// ```
 
 #[derive(Deserialize, Default, Clone, Debug, Serialize)]
 pub struct AccessTokenInformation {
     /// Expire date in your unix time /
-    expires_at: u64,
+    pub expires_at: i64,
     /// The type of token ( USER/PAGE
-    token_type: String,
+    pub token_type: String,
     /// Expire date in your local time
-    expires_at_local_date: String,
-    is_valid: bool,
+    pub expires_at_local_date: String,
+    pub is_valid: bool,
     /// When the token can not access data anymore in unix time
-    data_access_expires_at: u64,
+    pub data_access_expires_at: i64,
     /// When the token can not access data anymore, in your local time,
     pub data_access_expires_at_local_date: String,
-    app_id: String,
-    application: String,
-    scopes: Vec<String>,
-    granular_scopes: Vec<GranularScopes>,
-    user_id: u32,
-}
-
-impl AccessTokenInformation {
-    pub fn expires_at(&self) -> u64 {
-        self.expires_at
-    }
-
-    pub fn token_type(&self) -> &str {
-        &self.token_type
-    }
-
-    pub fn expires_at_local_date(&self) -> &str {
-        &self.expires_at_local_date
-    }
-
-    pub fn is_valid(&self) -> bool {
-        self.is_valid
-    }
-
-    pub fn data_access_expires_at(&self) -> u64 {
-        self.data_access_expires_at
-    }
-
-    pub fn app_id(&self) -> &str {
-        &self.app_id
-    }
-
-    pub fn application(&self) -> &str {
-        &self.application
-    }
-
-    pub fn scopes(&self) -> &Vec<String> {
-        &self.scopes
-    }
-
-    pub fn granular_scopes(&self) -> &Vec<GranularScopes> {
-        &self.granular_scopes
-    }
-
-    pub fn user_id(&self) -> u32 {
-        self.user_id
-    }
+    pub app_id: String,
+    pub application: String,
+    pub scopes: Vec<String>,
+    pub granular_scopes: Vec<GranularScopes>,
+    pub user_id: String,
 }
 
 #[derive(Deserialize, Clone, Debug)]
@@ -531,15 +489,15 @@ struct TokenResponseInformation {
 
 #[derive(Deserialize, Default, Clone, Debug, Serialize)]
 struct TokenResponseData {
-    expires_at: u64,
+    expires_at: i64,
     r#type: String,
     is_valid: bool,
-    data_access_expires_at: u64,
+    data_access_expires_at: i64,
     app_id: String,
     application: String,
     scopes: Vec<String>,
     granular_scopes: Vec<GranularScopes>,
-    user_id: u32,
+    user_id: String,
 }
 
 #[derive(Deserialize, Default, Clone, Debug, Serialize)]
