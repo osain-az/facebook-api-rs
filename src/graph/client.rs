@@ -7,7 +7,7 @@ use crate::graph::pages::post::PostApi;
 use crate::login::token::{TokenLiveType, UserToken};
 use crate::prelude::search::PagesSearchAPI;
 use crate::prelude::video::VideoApi;
-use crate::prelude::{HashtagAPi, InstagramApi, InstagramMediaApi, InstagramPostApi};
+use crate::prelude::{HashtagAPi, InstagramApi, InstagramContentPublishingApi, InstagramMediaApi};
 
 /// Client Struct for making calls to Facebook Graph
 #[derive(Debug)]
@@ -189,14 +189,36 @@ impl Client {
     /// * Filters are not supported.
     /// * The hashtag symbol (#) must be HTML URL-encoded %23 in captions.
     /// * Publishing to Instagram TV is not supported
-    pub fn instagram_publish(self, instagram_id: String) -> InstagramPostApi {
+    ///  
+    /// Different methods can be found here
+    /// [InstagramContentPublishingApi](InstagramContentPublishingApi)
+    ///
+    /// For more information check [Facebook content doc](https://developers.facebook.com/docs/instagram-api/guides/content-publishing)
+    pub fn instagram_content_publishing(
+        self,
+        instagram_id: String,
+    ) -> InstagramContentPublishingApi {
         let base_url = self.graph.replace("NODE", &instagram_id);
 
-        InstagramPostApi::new(self.page_access_token, base_url)
+        InstagramContentPublishingApi::new(self.page_access_token, base_url)
     }
 
-    pub fn instagram_media_container(self, media_container_id: String) -> InstagramMediaApi {
-        let base_url = self.graph.replace("NODE", &media_container_id);
+    /// Represents an Instagram album, photo, story, or video (uploaded video,
+    /// live video, or video created with the Instagram TV app).
+    ///
+    /// Note: The api onlr read existing media on instagram and can`t be used
+    /// for post. To craete or upload media use
+    /// [instagram_content_publishing](Client::instagram_content_publishing)
+    ///
+    /// # Endpoints
+    /// This api allows you to perform the following operation:
+    ///
+    /// * Reading of media on instagram.
+    /// * Comment on a media.
+    /// * Update a post.
+    /// * Insights on a media
+    pub fn instagram_media(self, media_id: String) -> InstagramMediaApi {
+        let base_url = self.graph.replace("NODE", &media_id);
 
         InstagramMediaApi::new(self.page_access_token, base_url)
     }

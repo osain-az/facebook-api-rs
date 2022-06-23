@@ -39,37 +39,24 @@ use url::Url;
 ///
 /// # Examples
 ///
-/// # Example when code is the response type
+/// # Example for when code is the response type
 ///
 /// * Get code at the client side.
 /// ```
 /// use facebook_api_rs::prelude::Config;
 /// use crate::facebook_api_rs::prelude::UserToken;
-///  // Your redirect url used when building the login url
-///  let redirect_url = "your redirect uri".to_string();
+///
 ///  let login_response_url =  "redirect_url/?#........................".to_string();
-///  let hash = login_response_url.replace("redirect_url","");
-///
-///  let user_token =   UserToken::extract_user_tokens(hash);
+///  let user_token =   UserToken::extract_user_tokens(login_response_url);
 ///  // send the code to sever side to exchange for an access_token
-///  let code  = user_token.code;
-///
-///    // When using `Seed.rs`, the hash can easily be build from the URL
-///    let url = URL;
-/// // Send the result (code) to the sever to Exchange the code for access token
-///      let user_token = url
-///         .hash()
-///         .map(|hash| UserToken::extract_user_tokens(hash.to_string()));
-///
-///   // send the code to sever side to exchange for an access_token
-///     let code  = user_token.code;
+///  let code = user_token.code;
 /// ```
-///  * At the server side: exchange code for access token
+///  * At the server side: exchange code for access_token
 /// ```
 /// use crate::facebook_api_rs::prelude::{UserToken, Config};
 ///   
-///    let code = "The code sent from client".to_string();
-///     let config = Config::new("your app_id".to_owned(), "your redirect_uri".to_string());
+///  let code = "The code sent from client".to_string();
+///  let config = Config::new("your app_id".to_owned(), "your redirect_uri".to_string());
 ///
 ///  let access_token  = UserToken::default()
 ///         .exchange_code_for_access_token_at_server(
@@ -77,26 +64,23 @@ use url::Url;
 ///         "your app_secret".to_string(), config);
 /// ```
 ///
-/// # Example when token is the response type
-///
+/// # Example for when token is the response type
 /// When the response type is a token  instead of code, the response data will
 /// be an access_token. Ans you will need to verify that at the server side.
 ///
 /// * Get token at the client side.
 /// ```
 ///  use crate::facebook_api_rs::prelude::{UserToken, Config};
-///  let redirect_url = "your redirect uri".to_string();
-///  let login_response_url =  "redirect_url/?#........................".to_string();
-///  let hash = login_response_url.replace("redirect_url","");
 ///
-///  let user_token =   UserToken::extract_user_tokens(hash);
-/// // send the access_token to sever verification
+///  let login_response_url =  "redirect_url/?#........................".to_string();
+///  let user_token =   UserToken::extract_user_tokens(login_response_url);
+/// // send the access_token to sever for verification
 ///  let access_token  = user_token.access_token;
 /// ```
-///
-/// * At Server side: verified the
-///
-/// In the server side inspect the access_token gotten from the client
+/// * At Server side: Verify the token.
+/// The verification can be done by inspecting the access_token gotten from the
+/// client which the response will be
+/// [AccessTokenInformation](AccessTokenInformation)
 /// ```    
 ///  use crate::facebook_api_rs::prelude::{UserToken, Config};
 ///  
@@ -105,7 +89,6 @@ use url::Url;
 ///          "inspecting_token".to_owned()
 ///        );
 /// ```
-///
 /// For information on verifying of access_token and exchanging of code check Facebook [Confirming Identity](https://developers.facebook.com/docs/facebook-login/guides/advanced/manual-flow#confirm)
 #[derive(Deserialize, Default, Clone, Debug)]
 pub struct UserToken {
@@ -178,7 +161,7 @@ impl UserToken {
         self
     }
 
-    /// Extract different tokens and its parameters  from a
+    /// Extract different tokens and its parameters from a
     /// successful login redirect url.
     ///
     /// # Argument
@@ -186,7 +169,7 @@ impl UserToken {
     ///
     /// # Example
     ///
-    /// # Example when code in the response data
+    /// # Example for when code in the response data
     ///
     /// * Get code at the client side.
     /// ```
@@ -212,7 +195,7 @@ impl UserToken {
     ///         "your app_secret".to_string(), config);
     /// ```
     ///
-    /// # Example when token is the response type
+    /// # Example for when token is the response type
     ///
     /// When the response type is a token  instead of code, the response data
     /// will be an access_token. And you will need to verify that at the
@@ -231,7 +214,7 @@ impl UserToken {
     ///
     /// * At Server side: verified the access_token
     ///
-    /// In the server side inspect the access_token gotten from the client
+    /// At the server side inspect the access_token gotten from the client
     /// ```    
     ///  use crate::facebook_api_rs::prelude::{UserToken, Config};
     ///  
@@ -241,8 +224,7 @@ impl UserToken {
     ///        );
     /// ```
     /// # Panic
-    /// It will panic when if :
-    ///
+    /// It will panic when :
     ///  * `Login error` ->
     ///  If for any reason the login failed then the response url will contain
     /// an `error`. If the URL with an error is passed in, panic will occur
@@ -253,7 +235,8 @@ impl UserToken {
 
     pub fn extract_user_tokens(url: String) -> UserToken {
         let mut response = UserToken::default();
-        let query_params: HashMap<_, _> = Url::parse(&url)
+        let updated_url = url.replace("#", "");
+        let query_params: HashMap<_, _> = Url::parse(&updated_url)
             .unwrap()
             .query_pairs()
             .into_owned()
@@ -268,7 +251,7 @@ impl UserToken {
 
         for params in query_params {
             match params.0.as_str() {
-                "access_token.t" => {
+                "access_token" => {
                     response.access_token = params.1;
                 }
                 "code" => {
@@ -431,32 +414,53 @@ impl UserToken {
     }
 }
 
-/// Extract data from the url fragment and return an `IndexMap`
-/// for the Enum Variant.
-/// # Panics
-/// The function will panic a key that has no value.
-/// # Warns
-/// with no query. These choices are opinionated for now.
-fn extract_query_fragments(hash: String) -> HashMap<String, String> {
-    let mut query: HashMap<String, String> = HashMap::new();
+// /// Extract data from the url fragment and return an `IndexMap`
+// for the Enum Variant.
+// # Panics
+// The function will panic a key that has no value.
+// # Warns
+// with no query. These choices are opinionated for now.
+// fn extract_query_fragments(hash: String) -> HashMap<String, String> {
+// let mut query: HashMap<String, String> = HashMap::new();
+//
+// let key_value: Vec<&str> = hash.split('&').collect();
+//
+// for pair in key_value {
+// let mut sub = pair.split('=');
+// let key = sub.next().unwrap_or_else(|| {
+// panic!(
+// "we should have a key for the parameter key but got {}",
+// hash
+// )
+// });
+// let value = sub
+// .next()
+// .unwrap_or_else(|| panic!("we should have a value for the key but got {}",
+// hash)); query.insert(key.to_string(), value.to_string());
+// }
+// query
+// }
 
-    let key_value: Vec<&str> = hash.split('&').collect();
-
-    for pair in key_value {
-        let mut sub = pair.split('=');
-        let key = sub.next().unwrap_or_else(|| {
-            panic!(
-                "we should have a key for the parameter key but got {}",
-                hash
-            )
-        });
-        let value = sub
-            .next()
-            .unwrap_or_else(|| panic!("we should have a value for the key but got {}", hash));
-        query.insert(key.to_string(), value.to_string());
-    }
-    query
-}
+/// ```
+/// pub struct AccessTokenInformation {
+///     //Expire date in your unix time /
+///     expires_at: u64,
+///     // The type of token ( USER/PAGE
+///     token_type: String,
+///     // Expire date in your local time
+///     expires_at_local_date: String,
+///     is_valid: bool,
+///     /// When the token can not access data anymore in unix time
+///     data_access_expires_at: u64,
+///     /// When the token can not access data anymore, in your local time,
+///     pub data_access_expires_at_local_date: String,
+///     app_id: String,
+///     application: String,
+///     scopes: Vec<String>,
+///     granular_scopes: Vec<GranularScopes>,
+///     user_id: u32,
+/// }
+/// ```
 
 #[derive(Deserialize, Default, Clone, Debug, Serialize)]
 pub struct AccessTokenInformation {
@@ -476,6 +480,48 @@ pub struct AccessTokenInformation {
     scopes: Vec<String>,
     granular_scopes: Vec<GranularScopes>,
     user_id: u32,
+}
+
+impl AccessTokenInformation {
+    pub fn expires_at(&self) -> u64 {
+        self.expires_at
+    }
+
+    pub fn token_type(&self) -> &str {
+        &self.token_type
+    }
+
+    pub fn expires_at_local_date(&self) -> &str {
+        &self.expires_at_local_date
+    }
+
+    pub fn is_valid(&self) -> bool {
+        self.is_valid
+    }
+
+    pub fn data_access_expires_at(&self) -> u64 {
+        self.data_access_expires_at
+    }
+
+    pub fn app_id(&self) -> &str {
+        &self.app_id
+    }
+
+    pub fn application(&self) -> &str {
+        &self.application
+    }
+
+    pub fn scopes(&self) -> &Vec<String> {
+        &self.scopes
+    }
+
+    pub fn granular_scopes(&self) -> &Vec<GranularScopes> {
+        &self.granular_scopes
+    }
+
+    pub fn user_id(&self) -> u32 {
+        self.user_id
+    }
 }
 
 #[derive(Deserialize, Clone, Debug)]

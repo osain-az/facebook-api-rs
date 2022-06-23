@@ -78,11 +78,11 @@ pub struct Model {
     pub selected_account: Option<SelectedAccount>,
     pub insta_account: Option<InstagramAccountIds>, // this is just the instagram id
     pub insta_post_param: Option<InstagramPostParams>,
-    pub insta_media_container_id: Option<InstagramMediaContainerId>,
+    pub insta_media_container_id: Option<InstagramMediaId>,
     pub insta_posting_options: InstaPostingOption,
     pub access_token_info: Option<AccessTokenInformation>,
     instagram_account: Option<InstagramAccount>,
-    media_container_status: Option<MediaContainerStatus>,
+    media_container_status: Option<ContainerStatus>,
 }
 
 // ------ ------
@@ -95,11 +95,11 @@ pub enum Msg {
     // Instagram operations
     GetInstagramAccountId,
     InstaMediaContainerInit,
-    InstaContainerResponse(InstagramMediaContainerId),
+    InstaContainerResponse(InstagramMediaId),
     InstagramAccountIdSuccess(InstagramAccountIds),
     UpdateInstaPostParams(InstagramPostParams, String),
     InstagramVideoPost,
-    InstaPostSuccessful(InstagramMediaContainerId),
+    InstaPostSuccessful(InstagramMediaId),
     HandleInstaPostingOption(web_sys::Event),
     PagesSearch(String),
     GetInstagramAccountDetails(InstagramAccountIds),
@@ -107,7 +107,7 @@ pub enum Msg {
     PageSearchResponse(PageSearch),
 
     MediaContainerStatus,
-    MediaContainerStatusResponse(MediaContainerStatus),
+    MediaContainerStatusResponse(ContainerStatus),
 
     FetchInstagramAccountId,
     FetchInstagramAccountIdSuccess(InstagramAccountIds),
@@ -211,8 +211,8 @@ pub fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
                             if model.insta_post_param.clone().is_some() {
                                 orders.perform_cmd(async move {
                                     Client::new(UserToken::default(), page_access_token)
-                                        .instagram_publish(insta_page_id)
-                                        .publish_media(insta_media_container)
+                                        .instagram_content_publishing(insta_page_id)
+                                        .publish_container(insta_media_container)
                                         .await
                                         .map_or_else(Msg::ResponseFailed, Msg::InstaPostSuccessful)
                                 });
@@ -238,8 +238,8 @@ pub fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
                     if let Some(post_param) = model.insta_post_param.clone() {
                         orders.perform_cmd(async move {
                             Client::new(UserToken::default(), page_access_token)
-                                .instagram_publish(insta_page_id)
-                                .post_video(post_param, "video".to_string()) //note: for photo passing in "photo" instead of "video" that was passed in
+                                .instagram_content_publishing(insta_page_id)
+                                .upload_video(post_param, "video".to_string()) //note: for photo passing in "photo" instead of "video" that was passed in
                                 .await
                                 .map_or_else(Msg::ResponseFailed, Msg::InstaContainerResponse)
                         });
@@ -296,7 +296,7 @@ pub fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
                         let insta_media_container = insta_media_container_id.id.clone();
                         orders.perform_cmd(async move {
                             Client::new(UserToken::default(), page_access_token)
-                                .instagram_media_container(insta_media_container)
+                                .instagram_media(insta_media_container)
                                 .status()
                                 .await
                                 .map_or_else(Msg::ResponseFailed, Msg::MediaContainerStatusResponse)

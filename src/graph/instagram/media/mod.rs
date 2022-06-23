@@ -1,6 +1,10 @@
-//! This mode Represents Instagram api for  Photo, Video, Story, Album, or
-//! Instagram TV media. Reels are not supported. It allow´ you to get media
-//! details ( comments, like, etc). for details check <https://developers.facebook.com/docs/instagram-api/reference/ig-media>.
+//! Representation of Instagram api for Photo, Video, Story, Album, or
+//! Instagram TV media. Reels are not supported.
+//!
+//! It allow´ you to get media details ( comments, like, etc). This endpoint
+//! does not allow creation of either of the media type.
+//!
+//! For more information check [Facebook doc](https://developers.facebook.com/docs/instagram-api/reference/ig-media).
 
 use crate::prelude::errors::ClientErr;
 use crate::prelude::HttpConnection;
@@ -21,8 +25,7 @@ impl InstagramMediaApi {
         }
     }
 
-    /// this method allow´s you to post on a give media container.
-    // for details check <https://developers.facebook.com/docs/instagram-api/reference/ig-media/comments>
+    /// This method allow´s you to post a comment on a give media container.
     pub async fn post_comments(
         self,
         comment_message: String,
@@ -42,7 +45,11 @@ impl InstagramMediaApi {
         Ok(resp)
     }
 
-    pub async fn data(self) -> Result<MediaContainerData, ClientErr> {
+    /// Get information regarding a given media.
+    ///
+    /// It returns the information about the media with response of
+    /// [MediaContainerData](MediaContainerData)
+    pub async fn media_data(self) -> Result<MediaContainerData, ClientErr> {
         let mut url = self.base_url.replace("EDGE", "?fields=");
 
         let mut fields_count = Fields::default().fields.len();
@@ -58,35 +65,68 @@ impl InstagramMediaApi {
         let resp = HttpConnection::get::<MediaContainerData>(url, "".to_string()).await?;
         Ok(resp)
     }
-
-    /// This method allows you to check the status for a given media, this is
-    /// important to check before calling the publish_media method.
-    /// for details check <https://developers.facebook.com/docs/instagram-api/reference/ig-container#reading>
-    pub async fn status(self) -> Result<MediaContainerStatus, ClientErr> {
-        let base_url = self.base_url.replace("EDGE", "?fields=status_code");
-        let url = base_url + "&access_token=" + &self.access_token;
-
-        let resp = HttpConnection::get::<MediaContainerStatus>(url, "".to_string()).await?;
-        Ok(resp)
-    }
+    // This method allows you to check the status for a given media.
+    // pub async fn status(self) -> Result<MediaContainerStatus, ClientErr> {
+    // let base_url = self.base_url.replace("EDGE", "?fields=status_code");
+    // let url = base_url + "&access_token=" + &self.access_token;
+    //
+    // let resp = HttpConnection::get::<MediaContainerStatus>(url,
+    // "".to_string()).await?; Ok(resp)
+    // }
 }
+// #[derive(Deserialize, Debug, Clone)]
+// pub struct MediaContainerStatus {
+// pub status_code: String,
+// }
 
-#[derive(Deserialize, Debug, Clone)]
-pub struct MediaContainerStatus {
-    pub status_code: String,
-}
-
+/// ```
+/// use facebook_api_rs::prelude::Owner;
+/// pub struct MediaContainerData {
+///     /// Media type. Can be CAROUSEL_ALBUM, IMAGE, or VIDEO.
+///    pub media_type: String,
+///    pub media_url: String,
+///    pub owner: Owner,
+///    pub timestamp: String,
+///    pub username: String,
+///    pub id: String,
+///    pub permalink: String,
+///     /// Count of likes on the media, including replies on comments.
+///     /// Excludes likes on album child media and likes on promoted posts created
+///     /// from the media.
+///     ///
+///     /// If the owner has hide this field then it will be set to None
+///    pub like_count: Option<u32>,
+///    pub thumbnail_url: String,
+///    pub is_comment_enabled: String,
+///   pub  comments_count: String,
+///     /// Caption. Excludes album children. The @ symbol is excluded, unless the
+///     /// app user can perform admin-equivalent tasks on the Facebook Page
+///     /// connected to the Instagram account used to create the caption.
+///    pub caption: String,
+/// }
 #[derive(Deserialize, Debug, Clone)]
 pub struct MediaContainerData {
-    media_type: String,
-    media_url: String,
-    owner: Owner,
-    timestamp: String,
-    username: String,
-    permalink: String,
-    like_count: String,
-    comments_count: String,
-    caption: String,
+    /// Media type. Can be CAROUSEL_ALBUM, IMAGE, or VIDEO.
+    pub media_type: String,
+    pub media_url: String,
+    pub owner: Owner,
+    pub timestamp: String,
+    pub username: String,
+    pub id: String,
+    pub permalink: String,
+    /// Count of likes on the media, including replies on comments.
+    /// Excludes likes on album child media and likes on promoted posts created
+    /// from the media.
+    ///
+    /// If the owner has hide this field then it will be set to None
+    pub like_count: Option<u32>,
+    pub thumbnail_url: String,
+    pub is_comment_enabled: String,
+    pub comments_count: String,
+    /// Caption. Excludes album children. The @ symbol is excluded, unless the
+    /// app user can perform admin-equivalent tasks on the Facebook Page
+    /// connected to the Instagram account used to create the caption.
+    pub caption: String,
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -110,7 +150,6 @@ impl Default for Fields {
         let field_list = vec![
             "caption",
             "id",
-            "ig_id",
             "comments_count",
             "follows_count",
             "like_count",

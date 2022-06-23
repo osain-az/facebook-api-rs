@@ -11,3 +11,8 @@ impl Engagement {
         self.count
     }
 }
+
+pub enum MediaType {
+    Video,
+    Image,
+}
