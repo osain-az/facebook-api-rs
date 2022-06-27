@@ -16,7 +16,7 @@ use crate::prelude::{Accounts, HttpConnection};
 use serde::{Deserialize, Serialize};
 
 /// This struct contain different data gotten as a response  when a user sign in
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Clone, Debug, Default)]
 pub struct Me {
     name: String,
     id: String,
@@ -52,12 +52,12 @@ impl Me {
     }
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Clone, Debug, Default)]
 pub struct PictureData {
     pub data: FacebookPictureUserPicture,
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Clone, Debug, Default)]
 pub struct FacebookPictureUserPicture {
     url: String,
 }
