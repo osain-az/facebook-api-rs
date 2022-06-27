@@ -304,9 +304,7 @@ impl UserToken {
         Ok(access_token)
     }
 
-    pub async fn generate_app_access_token_at_server(
-        self,
-        short_live_token: String,
+    pub async fn app_access_token_at_server(
         app_secret: String,
         app_id: String,
     ) -> Result<String, ClientErr> {
@@ -317,7 +315,6 @@ impl UserToken {
             &grant_type=client_credentials",
             base_url, app_id, app_secret
         );
-
         let access_token = HttpConnection::get::<String>(url, "".to_string()).await?;
         Ok(access_token)
     }
@@ -502,7 +499,6 @@ struct TokenResponseData {
 
 #[derive(Deserialize, Default, Clone, Debug, Serialize)]
 pub struct GranularScopes {
-    target_ids: Vec<String>,
     scope: String,
 }
 

@@ -15,7 +15,7 @@ use serde::{Deserialize, Serialize};
 ///
 /// For more information on page data check  [facebook account doc](https://developers.facebook.com/docs/graph-api/reference/page/)
 #[derive(Deserialize, Debug, Clone, Default)]
-pub struct Account {
+pub struct PageAccount {
     /// The access token of this given page, which used to make operation that
     /// requires permission on this page example post and get request.
     access_token: String,
@@ -63,6 +63,28 @@ pub struct Account {
     tasks: Vec<String>,
 }
 
+#[derive(Deserialize, Debug, Clone, Default)]
+pub struct Account {
+    /// The access token of this given page, which used to make operation that
+    /// requires permission on this page example post and get request.
+    access_token: String,
+    /// The category shows the name of the major category the pages belog to
+    category: String,
+    /// this is this list of categories  with their names and id  { name:"
+    /// category_name", id: ""1223333
+    category_list: Vec<ListDetails>,
+    /// The facebook page name
+    name: String,
+    /// The ID representing a Facebook Page.
+    id: String,
+    /// The Business associated with this Page. Requires business_management
+    /// permissions, and a page or user access token. The person requesting
+    /// the access token must be an admin of the page.
+
+    /// this is the list of operation/task the user can perform on this page
+    tasks: Vec<String>,
+}
+
 /// This is the struct of name and id of category that page belongs to
 #[derive(Deserialize, Debug, Clone, Default, Serialize)]
 pub struct ListDetails {
@@ -76,6 +98,38 @@ pub struct Accounts {
 }
 
 impl Account {
+    /// This will return the page access token
+    pub fn access_token(&self) -> &String {
+        &self.access_token
+    }
+
+    pub fn category(&self) -> &String {
+        &self.category
+    }
+
+    /// This will return the list of category the page  belong
+    pub fn category_list(&self) -> &Vec<ListDetails> {
+        &self.category_list
+    }
+
+    /// This will return the page name
+    pub fn name(&self) -> &String {
+        &self.name
+    }
+
+    /// This will return the page id
+    pub fn id(&self) -> &String {
+        &self.id
+    }
+
+    /// This will returned the list of permission and tasks the user is
+    /// permitted to perform on the page
+    pub fn tasks(&self) -> &Vec<String> {
+        &self.tasks
+    }
+}
+
+impl PageAccount {
     /// This will return the page access token
     pub fn access_token(&self) -> &String {
         &self.access_token
