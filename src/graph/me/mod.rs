@@ -23,7 +23,7 @@ pub struct Me {
     last_name: String,
     first_name: String,
     picture: PictureData,
-    email: String,
+    email: Option<String>,
 }
 
 impl Me {
@@ -43,12 +43,12 @@ impl Me {
         &self.picture
     }
 
-    pub fn email(&self) -> &str {
-        &self.email
-    }
-
     pub fn last_name(&self) -> &str {
         &self.last_name
+    }
+
+    pub fn email(&self) -> &Option<String> {
+        &self.email
     }
 }
 

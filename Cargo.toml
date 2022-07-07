@@ -17,7 +17,7 @@ all-features = false
 wasm-bindgen-test = "0.3.18"
 
 [features]
-default = ["web-sys"]
+default = ["reqwest"]
 reqwest = ["dep:reqwest"]
 web-sys = [ "dep:web-sys"]
 

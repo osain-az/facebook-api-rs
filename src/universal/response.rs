@@ -1,3 +1,4 @@
+use http::StatusCode;
 use std::ops::Deref;
 
 use serde::{
@@ -8,8 +9,38 @@ use serde_json::value::Value;
 
 use crate::universal::errors::{ClientErr, FacebookAPiError};
 
-///
-pub(crate) fn deserialize_response<T>(text: &str) -> Result<T, ClientErr>
+pub fn deserialize_response_handler<T>(
+    response: Result<http::Response<String>, ClientErr>,
+) -> Result<T, ClientErr>
+where
+    T: DeserializeOwned,
+{
+    match response {
+        Ok(result) => {
+            match result.status() {
+                StatusCode::OK => {
+                    let result = deserialize_response::<T>(result.body())?;
+                    Ok(result)
+                }
+                StatusCode::BAD_REQUEST => Err(client_error_deserialize_response(result.body())?),
+                _ => {
+                    //  let result = deserialize_response::<T>(result.body())?;
+                    //@Todo:  handle the possible response error
+                    Err(ClientErr::CustomError(format!(
+                        "unhandled facebook response error.  response: {}",
+                        result.body().to_string(),
+                    )))
+                }
+            }
+        }
+        Err(err) => {
+            //  let result = deserialize_response::<T>(result.body())?;
+            Err(err)
+        }
+    }
+}
+
+fn deserialize_response<T>(text: &str) -> Result<T, ClientErr>
 where
     T: DeserializeOwned,
 {
@@ -17,7 +48,7 @@ where
     Ok(Into::<Result<T, FacebookAPiError>>::into(response)?)
 }
 
-pub(crate) fn client_error_deserialize_response(text: &str) -> Result<ClientErr, ClientErr> {
+fn client_error_deserialize_response(text: &str) -> Result<ClientErr, ClientErr> {
     let error: FacebookAPiError = serde_json::from_str(text)?;
     Err(ClientErr::Facebook(error))
 }
@@ -73,22 +104,3 @@ where
         }
     }
 }
-// #[derive(Deserialize, Debug)]
-// pub(crate) struct ClientResult<T> {
-// #[serde(rename = "result")]
-// result: T,
-// }
-//
-// impl<T> ClientResult<T> {
-// pub fn unwrap(self) -> T {
-// self.result
-// }
-// }
-//
-// impl<T> Deref for ClientResult<T> {
-// type Target = T;
-//
-// fn deref(&self) -> &Self::Target {
-// &self.result
-// }
-// }

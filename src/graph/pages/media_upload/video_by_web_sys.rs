@@ -99,7 +99,7 @@ impl VideoApi_seed {
             Ok(resp)
         } else {
             Err(ClientErr::FacebookError(
-                "The uplaoded file is above 1 gb, use Resumable method ".to_string(),
+                "The uploading file is above 1 gb, use Resumable method".to_string(),
             )) // try to generate a customer
                // error
         }

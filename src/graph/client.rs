@@ -120,13 +120,33 @@ impl Client {
         PostApi::new(base_url, self.page_access_token)
     }
 
-    /// This method allows developers to choose which viddeo uploading method
-    /// they want to use. For Large file greater than 1gb and 20 minute
-    ///  method called resumable_upload must be used, for video files smaller
-    /// than that either of the method can be used  ("non_resumable",
-    /// "resumable_upload"), for video hosted online(video_url), the method
-    /// called "post_by_link" can be used. Note: facebook recommend  using
-    /// resumable method when uploading direct directly.
+    /// Facebook Video API allows you to publish Videos on Pages and Groups.
+    /// Publishing on Users is not supported.
+    // The process for publishing Videos involves choosing an upload protocol and sending a POST
+    // request.
+    /// The API suppports both Resumable and Non-Resumable upload protocols.
+    /// Facebook recommend that you use the Resumable Upload protocol as it
+    /// is more versatile and can gracefully handle connection interruptions.
+    ///
+    /// #Uploading protocools
+    ///
+    /// * Resumable Upload
+    ///
+    /// The Resumable Upload protocol is the preferred publishing protocol
+    /// because it large videos into smaller chunks to avoid timeouts. This is
+    /// especially useful for large videos where you are more likely to
+    /// encounter a connection error. If you encounter a connection error while
+    /// uploading a large video, you normally would have to reupload the entire
+    /// video. But by using the Resumable Upload protocol you only have to
+    /// reupload the affected chunk; chunks that have alread been uploaded do
+    /// not need to be reuploaded. This method allows developers to choose
+    /// which viddeo uploading method they want to use. For Large file
+    /// greater than 1gb and 20 minute  method called resumable_upload must
+    /// be used, for video files smaller than that either of the method can
+    /// be used  ("non_resumable", "resumable_upload"), for video hosted
+    /// online(video_url), the method called "post_by_link" can be used.
+    /// Note: facebook recommend  using resumable method when uploading
+    /// direct directly.
     pub fn video_upload(self, page_id: String) -> VideoApi {
         let base_url = self.graph.replace("NODE", &page_id);
         VideoApi::new(base_url, self.page_access_token) // initit videp Api

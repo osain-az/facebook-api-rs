@@ -90,6 +90,18 @@ use url::Url;
 ///        );
 /// ```
 /// For information on verifying of access_token and exchanging of code check Facebook [Confirming Identity](https://developers.facebook.com/docs/facebook-login/guides/advanced/manual-flow#confirm)
+///
+/// # User CANCELED login
+/// ```rust
+/// let response_url = "YOUR_REDIRECT_URI?
+///  error_reason=user_denied
+///  &error=access_denied
+///  &error_description=Permissions+error";
+///
+///  use crate::facebook_api_rs::prelude::{UserToken, Config};
+/// // Capture the error
+///   let user_token =   UserToken::extract_user_tokens(login_response_url).login_error;
+/// ```
 #[derive(Deserialize, Default, Clone, Debug)]
 pub struct UserToken {
     /// Response data is included as URL parameters and contains code parameter
@@ -140,6 +152,9 @@ pub struct UserToken {
     /// A string value created by your app to maintain state between the request
     /// and callback.
     pub state: String,
+    /// The error that occurs when login. This is mostly a user has "Cancelled"
+    /// the login. The reason of the error will be available.
+    pub login_error: Option<LoginError>,
 }
 
 impl UserToken {
@@ -152,6 +167,7 @@ impl UserToken {
             expires_in: "".to_string(),
             long_lived_token,
             state: "".to_string(),
+            login_error: None,
         }
     }
 }
@@ -243,13 +259,15 @@ impl UserToken {
             .collect();
 
         if query_params.is_empty() {
+            //@Todo: replace panic with "warning" instead
             panic!(
                 "There was no query parameter in uri argument that was passed in. error_message: number of argument found  {:?}.   The url argument : {} ",
                 query_params.len(), url
             )
         }
 
-        for params in query_params {
+        let mut login_error = LoginError::default();
+        for params in query_params.clone() {
             match params.0.as_str() {
                 "access_token" => {
                     response.access_token = params.1;
@@ -270,15 +288,22 @@ impl UserToken {
                     response.state = params.1;
                 }
                 "error" => {
-                    panic!(
-                        "There was an error in login to facebook. error_message:  {}",
-                        params.1
-                    )
+                    login_error.error = params.1;
                 }
+                "error_reason" => {
+                    login_error.error_reason = params.1;
+                }
+                "error_description" => {
+                    login_error.error_description = params.1;
+                }
+
                 &_ => {}
             }
         }
 
+        if query_params.contains_key("error") {
+            response.login_error = Some(login_error)
+        }
         response
     }
 
@@ -528,4 +553,11 @@ pub struct ExchangeToken {
     token_type: String,
     /// {seconds-til-expiration}
     expires_in: u32,
+}
+
+#[derive(Deserialize, Default, Clone, Debug)]
+pub struct LoginError {
+    error: String,
+    error_reason: String,
+    error_description: String,
 }

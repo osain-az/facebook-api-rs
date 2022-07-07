@@ -11,6 +11,7 @@ pub fn resumable_form_data_reqwest(
     start_offset: String,
     mut video_params: VideoParams,
     mut file: File,
+    //  thumb_file:Option<File>
 ) -> Form {
     use std::io;
     use std::io::prelude::*;
@@ -24,7 +25,6 @@ pub fn resumable_form_data_reqwest(
     let formdata = match upload_phase {
         UploadPhase::start => {
             current_upload_phase = "start";
-            println!("file zise {}", file.metadata().unwrap().clone().len());
             let form_data = Form::new()
                 .text("file_size", file.metadata().unwrap().len().to_string())
                 .text(" upload_phase", "start");
@@ -55,19 +55,15 @@ pub fn resumable_form_data_reqwest(
                 .text("upload_session_id", upload_session_id.clone())
                 .text("upload_phase", current_upload_phase);
 
-            if !video_params.video_title.is_empty() {
-                main_form_data =
-                    Form::from(form_data).text("video_title", video_params.video_title.clone());
-            }
-
             if !video_params.description.is_empty() {
                 main_form_data = Form::from(main_form_data)
                     .text("description", video_params.description.clone());
             }
-
-            if !video_params.thum.is_empty() {
-                main_form_data = Form::from(main_form_data).text("thum", video_params.thum.clone());
-            };
+/*
+            if let Some(thumb) = video_params.thumb {
+                // main_form_data = Form::from(main_form_data).text("thumBG",
+                // video_params.thum.clone());
+            };*/
             main_form_data
         }
         // this method has not been implimented yet.
