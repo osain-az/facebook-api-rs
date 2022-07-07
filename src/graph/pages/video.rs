@@ -39,10 +39,8 @@ use crate::prelude::media_upload::video_by_web_sys::VideoApi_seed;
 /// Note : video_title, file_name, and title will not appear in your feed. use
 /// "description" to describe your video  which will appear at the top of the
 /// post.
-#[derive(Clone, Deserialize, Serialize)]
+#[derive(Clone)]
 pub struct VideoParams {
-    /// The video_title parameter will not be display on your post feed
-    pub video_title: String,
     /// The description parameter is used to describe your video  which will
     /// appear at the top of the post
     pub description: String,
@@ -51,7 +49,8 @@ pub struct VideoParams {
     /// File Size: 10MB or less.
     /// There are no image dimension requirements, but it should share the same
     /// aspect ratio as your video.
-    pub thum: String,
+    #[cfg(any(feature = "web-sys"))]
+    pub thumb: Option<File>,
 
     /// Enum for different categories that the uploaded video will belong to
     /// as defined on facebook  graph api documentation. Choose any from the
@@ -61,15 +60,15 @@ pub struct VideoParams {
     pub title: String,
 }
 
-/// UsageType is an enum that is use to indication where  you are using the
-/// method,  Client or Server
-#[derive(Deserialize, Debug, Serialize)]
-pub enum UsageType {
-    /// Client is when you are using it for at frontend or wasm
-    Client,
-    /// Server is when you are using this method at the backend
-    Server,
-}
+// /// UsageType is an enum that is use to indication where  you are using the
+// method,  Client or Server
+// #[derive(Deserialize, Debug, Serialize)]
+// pub enum UsageType {
+// Client is when you are using it for at frontend or wasm
+// Client,
+// Server is when you are using this method at the backend
+// Server,
+// }
 /// Response for successful uploading of video using non_resumable method
 
 /// Enum for different categories that the uploaded video will belong to as
@@ -114,7 +113,7 @@ struct InitializeUploadResponse {
 /// Note: for video uploaded using the video_ur method, only the video_id
 /// parameter will have a value other will be empty  since other parameter are
 /// not used.
-#[derive(Deserialize, Default, Debug, Clone, Serialize)]
+#[derive(Deserialize, Default, Debug, Clone)]
 pub struct FinalResponeResumableUpload {
     // this struct will be data constructed from all the different uploads
     success: bool,
@@ -189,9 +188,9 @@ impl Default for VideoParams {
     /// this default method will create the struct will default
     fn default() -> Self {
         Self {
-            video_title: "".to_string(),
             description: "video feed".to_string(),
-            thum: "".to_string(),
+            #[cfg(any(feature = "web-sys"))]
+            thumb: None,
             content_category: ContentCategory::OTHER,
             title: " ".to_string(),
         }
@@ -210,16 +209,15 @@ impl VideoParams {
     }
 
     pub fn new(
-        video_title: String,
         description: String,
-        thum: String,
+        #[cfg(any(feature = "web-sys"))] thumb: Option<File>,
         content_category: ContentCategory,
         title: String,
     ) -> Self {
         VideoParams {
-            video_title,
             description,
-            thum,
+            #[cfg(any(feature = "web-sys"))]
+            thumb,
             content_category,
             title,
         }
@@ -246,17 +244,26 @@ struct FeedPostSuccess {
     id: String,
 }
 
+// -------- Handle  web-sys upload request ------
+#[cfg(any(feature = "web-sys"))]
 impl VideoApi {
-    /// This method is used for uploading large video files, it does that by
-    /// chunking the file and uplaoding them individually until is complete.
-    /// The method takes two parameter( file, video parameter struct).
-    /// the waiting time depend  on the video size uplaoded
+    /// This method is used for uploading large video files. It does that by
+    /// chunking the file and uploading them individually until is complete.
     ///
-    /// Note there is an issue with chunking method that only chunk smaller size
-    /// so extra time than usuall is expect until the issue is fixed.
+    /// # Limitation
+    ///
+    /// Videos are limited to 10GB and 4 hours.
+    ///
+    /// # Argument
+    ///
+    /// * `file` - A web-sys file.
+    /// * `video_description` - A string text describing a post that may be
+    ///   shown in a story about it. It may include rich text information, such
+    ///   as entities and emojis.
+    /// * `title` - A string of text. emojis are supported.
     ///
     /// for more infromation  check  https://developers.facebook.com/docs/video-api/guides/publishing
-    #[cfg(any(feature = "web-sys"))]
+    //  #[cfg(any(feature = "web-sys"))]
     pub async fn resumable_post(
         &self,
         file: File,
@@ -270,20 +277,6 @@ impl VideoApi {
             .await
     }
 
-    #[cfg(any(feature = "reqwest"))]
-    pub async fn resumable_post(
-        &self,
-        file: File,
-        video_param: VideoParams,
-    ) -> Result<FinalResponeResumableUpload, ClientErr> {
-        let base_url = self.base_url.clone();
-        let page_token = self.page_access_token.clone();
-
-        VideoApi_reqwest::new(base_url, page_token)
-            .resumable_post(video_param, file)
-            .await
-    }
-
     /// facebook recommend that you upload files using the Resumable Upload
     /// method because it handles connection interruptions more efficiently
     /// and supports larger files. However, if you prefer to upload files
@@ -293,7 +286,7 @@ impl VideoApi {
     /// parameter struct,  if the video file is within this range it post
     /// the video but if the video is not within the range , the post will
     /// not be made but a Fetcherror will be gerated.
-    #[cfg(any(feature = "web-sys"))]
+    // #[cfg(any(feature = "web-sys"))]
     pub async fn non_resumable_post(
         &self,
         video_params: VideoParams,
@@ -305,21 +298,64 @@ impl VideoApi {
             .non_resumable_post(video_params, file)
             .await
     }
+}
 
-    #[cfg(any(feature = "reqwest"))]
+// -------- Handle request upload ------
+
+#[cfg(any(feature = "reqwest"))]
+impl VideoApi {
+    /// This method is used for uploading large video files, it does that by
+    /// chunking the file and uplaoding them individually until is complete.
+    /// The method takes two parameter( file, video parameter struct).
+    /// the waiting time depend  on the video size uplaoded
+    ///
+    /// Note there is an issue with chunking method that only chunk smaller size
+    /// so extra time than usuall is expect until the issue is fixed.
+    ///
+    /// for more infromation  check  https://developers.facebook.com/docs/video-api/guides/publishing
+
+    //#[cfg(any(feature = "reqwest"))]
+    pub async fn resumable_post(
+        &self,
+        file: File,
+        video_param: VideoParams,
+        thumb_file: Option<File>,
+    ) -> Result<FinalResponeResumableUpload, ClientErr> {
+        let base_url = self.base_url.clone();
+        let page_token = self.page_access_token.clone();
+
+        VideoApi_reqwest::new(base_url, page_token)
+            .resumable_post(video_param, file, thumb_file)
+            .await
+    }
+
+    /// facebook recommend that you upload files using the Resumable Upload
+    /// method because it handles connection interruptions more efficiently
+    /// and supports larger files. However, if you prefer to upload files
+    /// using the Non-Resumable Upload method.
+    ///
+    /// This method is expecting a video file less than 1 gb, and a video
+    /// parameter struct,  if the video file is within this range it post
+    /// the video but if the video is not within the range , the post will
+    /// not be made but a Fetch error will be generated.
+    // #[cfg(any(feature = "reqwest"))]
     pub async fn non_resumable_post(
         &self,
         video_params: VideoParams,
         mut file: File,
+        thumb_file: Option<File>,
     ) -> Result<PostResponse, ClientErr> {
         let base_url = self.base_url.clone();
         let page_token = self.page_access_token.clone();
 
         VideoApi_reqwest::new(base_url, page_token)
-            .non_resumable_post(video_params, file)
+            .non_resumable_post(video_params, file, thumb_file)
             .await
     }
 }
+
+// -------- Posting by video host url ------
+
 impl VideoApi {
     /// This Method is used for posting media  by there url.
     ///

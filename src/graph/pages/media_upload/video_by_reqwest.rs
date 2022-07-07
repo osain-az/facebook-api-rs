@@ -77,6 +77,7 @@ impl VideoApi_reqwest {
         &self,
         video_params: VideoParams,
         mut file: File,
+        thumb_file: Option<File>,
     ) -> Result<PostResponse, ClientErr> {
         // let file_result =
         // FileResultServer::file_analyze(video_params.file_path.clone()); check
@@ -109,6 +110,7 @@ impl VideoApi_reqwest {
         &self,
         video_param: VideoParams,
         file: File,
+        thumb_file: Option<File>,
     ) -> Result<FinalResponeResumableUpload, ClientErr> {
         let mut start_offset = Some("0".to_string()); // this  data will be updated  fopm the respones
         let mut end_offset = Some("0".to_string()); // this  data will be updated  fopm the respones

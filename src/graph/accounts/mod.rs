@@ -29,8 +29,7 @@ pub struct PageAccount {
     /// Information about the Page. Can be read with Page Public Content Access
     /// or Page Public Metadata Access. This value maps to the Description
     /// setting in the Edit Page Info user interface. Limit of 100 characters
-    #[serde(default)]
-    about: String,
+    about: Option<String>,
     /// The ID representing a Facebook Page.
     id: String,
     /// The Business associated with this Page. Requires business_management
@@ -160,7 +159,7 @@ impl PageAccount {
         &self.tasks
     }
 
-    pub fn about(&self) -> &str {
+    pub fn about(&self) -> &Option<String> {
         &self.about
     }
 

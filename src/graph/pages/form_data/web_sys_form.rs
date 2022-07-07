@@ -8,17 +8,13 @@ pub fn form_data_seed(file: File, video_params: VideoParams) -> FormData {
 
     form_data.append_with_blob("source", &file); // appped  the  current chunked file   to the form
 
-    if !video_params.video_title.is_empty() {
-        form_data.append_with_str("video_title", &video_params.video_title);
-    }
-
     if !video_params.description.is_empty() {
         form_data.append_with_str("description", &video_params.description);
     }
 
-    if !video_params.thum.is_empty() {
-        form_data.append_with_str("thum", &video_params.thum);
-    };
+    if let Some(thumb) = video_params.thumb {
+        form_data.append_with_blob("thumb", &thumb);
+    }
 
     form_data
 }
@@ -58,17 +54,14 @@ pub fn resumable_form_data_seed(
             current_upload_phase = "finish";
 
             form_data.append_with_str("upload_session_id", &upload_session_id);
-            if !video_params.video_title.is_empty() {
-                form_data.append_with_str("video_title", &video_params.video_title);
-            }
 
             if !video_params.description.is_empty() {
                 form_data.append_with_str("description", &video_params.description);
             }
 
-            if !video_params.thum.is_empty() {
-                form_data.append_with_str("thum", &video_params.thum);
-            };
+            if let Some(thumb) = video_params.thumb {
+                form_data.append_with_blob("thumb", &thumb);
+            }
         }
         // this method has not been implimented yet.
         UploadPhase::cancel => {

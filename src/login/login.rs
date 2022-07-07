@@ -9,6 +9,7 @@
 use crate::login::config::Config;
 use crate::universal::client::HttpConnection;
 use crate::universal::errors::ClientErr;
+use std::fmt::format;
 
 use crate::prelude::ResponseType;
 use crate::universal::HttpClient;
@@ -51,7 +52,7 @@ use std::sync::Arc;
 ///  &error=access_denied
 ///  &error_description=Permissions+error
 /// ```
-#[derive(Deserialize, Debug, Default, Clone, Serialize)]
+#[derive(Debug, Default, Clone, Serialize)]
 pub struct LoginUrlParameters {
     /// The Facebook url preamble for the oath dialog.
     facebook_oath_url: String,
@@ -80,7 +81,8 @@ pub struct LoginUrlParameters {
 
     /// A comma separated list of Permissions to request from the
     ///   person using your app. To check [permission list](https://developers.facebook.com/docs/permissions/reference)
-    scope: Vec<String>,
+    scope: Vec<&'static str>,
+    scope_as_string: String,
 
     /// The full url of the login flow.
     full_url: String,
@@ -118,7 +120,7 @@ impl LoginUrlParameters {
     ///   let login_url = LoginUrlParameters::new(config)
     ///        .add_state("your state")
     ///         .add_response_type(LoginResponseType::TOKEN)
-    ///         .add_scope(vec!["email".to_owned()])
+    ///         .add_scope(vec!["email"])
     ///         .full_login_url();
     /// ```
     ///
@@ -128,10 +130,39 @@ impl LoginUrlParameters {
     /// Cancel, they'll be redirected to the following:
     ///
     /// ```
-    /// "YOUR_REDIRECT_URI?
+    ///  use crate::facebook_api_rs::prelude::{UserToken, Config};
+    /// let response_url = "YOUR_REDIRECT_URI?
     ///  error_reason=user_denied
     ///  &error=access_denied
-    ///  &error_description=Permissions+error"
+    ///  &error_description=Permissions+error";
+    ///
+    /// // Check if the response url contain an error and Capture it.
+    ///   if response_url.contains("error"){
+    ///   let login_error = UserToken::extract_user_tokens(login_response_url).login_error;
+    ///     };
+    ///     // Or we don`t have to check
+    ///   let user_token = UserToken::extract_user_tokens(login_response_url);
+    ///     // check if the token has an error
+    ///     if let Some(login_error) = user_token.login_error{
+    ///      // handle error
+    ///    };
+    /// ```
+    ///
+    /// # Re-asking for Declined Permissions
+    /// Facebook Login lets people decline sharing some permissions with your
+    /// app. If they declined any permissions, they wont be asked again.
+    ///
+    /// This is because once someone has declined a permission, the Login Dialog
+    /// will not re-ask them for it unless you explicitly tell the dialog you're
+    /// re-asking for a declined permission.
+    ///
+    /// To re.request for declined permission:
+    /// ```
+    ///   let login_url = LoginUrlParameters::new(config)
+    ///        .add_state("your state")
+    ///         .add_response_type(LoginResponseType::TOKEN)
+    ///         .add_scope(vec!["email".to_owned()])
+    ///         .re_request_permission__url();
     /// ```
     pub fn new(config: Config) -> LoginUrlParameters {
         LoginUrlParameters::default()
@@ -140,7 +171,7 @@ impl LoginUrlParameters {
             .add_redirect_uri(&config.redirect_uri())
             .add_random_state()
             .add_response_type(LoginResponseType::CODE)
-            .add_scope(["".to_owned()].to_vec())
+            .add_scope([""].to_vec())
     }
 
     pub fn add_client_id(mut self, client_id: &str) -> Self {
@@ -181,7 +212,7 @@ impl LoginUrlParameters {
     ///   let login_url = LoginUrlParameters::new(config)
     ///        .add_state("your state")
     ///         .add_response_type(LoginResponseType::TOKEN)
-    ///         .add_scope(vec!["email".to_owned()])
+    ///         .add_scope(vec!["email"].to_vec())
     ///         .full_login_url();
     /// ```
     pub fn add_response_type(mut self, response_type: LoginResponseType) -> Self {
@@ -197,8 +228,22 @@ impl LoginUrlParameters {
 
     /// A comma separated list of Permissions to request from the
     /// person using your app. To check [permission list](https://developers.facebook.com/docs/permissions/reference)
-    pub fn add_scope(mut self, scope: Vec<String>) -> Self {
-        self.scope = scope;
+    pub fn add_scope(mut self, scopes: Vec<&'static str>) -> Self {
+        let scope_count = scopes.len();
+        self.scope = scopes;
+        let mut loop_count = 1;
+        let mut scopes_string = "".to_owned();
+
+        for scope_ in &self.scope {
+            if scope_count == loop_count {
+                scopes_string += &*format!("{scope_}")
+            } else {
+                scopes_string += &*format!("{scope_},")
+            }
+            loop_count += 1;
+        }
+
+        self.scope_as_string = scopes_string;
         self
     }
 
@@ -224,13 +269,63 @@ impl LoginUrlParameters {
             + "&state="
             + &*self.state
             + "&scope="
-            + &self.scope.iter().cloned().collect::<String>();
+            + &self.scope_as_string;
+        self.full_url = full_url.clone();
+        full_url
+    }
+
+    fn build_re_request_permission_url(&mut self) -> String {
+        let full_url = "".to_string()
+            + &self.facebook_oath_url
+            + "client_id="
+            + &self.client_id
+            + "&redirect_uri="
+            + &self.redirect_uri
+            + "&response_type="
+            + &self.response_type
+            + "&state="
+            + &*self.state
+            + "&auth_type=rerequest"
+            + "&scope="
+            + &self.scope_as_string;
+        self.full_url = full_url.clone();
+        full_url
+    }
+
+    /// Re-authentication enables your app to confirm a person's identity even
+    /// if it was verified previously.
+    fn build_enabling_re_authentication_url(&mut self) -> String {
+        let full_url = "".to_string()
+            + &self.facebook_oath_url
+            + "client_id="
+            + &self.client_id
+            + "&redirect_uri="
+            + &self.redirect_uri
+            + "&response_type="
+            + &self.response_type
+            + "&state="
+            + &*self.state
+            + "&auth_type=reauthenticate"
+            + "&scope="
+            + &self.scope_as_string;
         self.full_url = full_url.clone();
         full_url
     }
 
     pub fn full_login_url(mut self) -> String {
         self.full_url = self.build_login_url_as_string();
+        self.full_url
+    }
+
+    pub fn re_request_permission_url(mut self) -> String {
+        self.full_url = self.build_re_request_permission_url();
+        self.full_url
+    }
+
+    /// Re-authentication enables your app to confirm a person's identity even
+    /// if it was verified previously.
+    pub fn re_authentication_url(mut self) -> String {
+        self.full_url = self.build_enabling_re_authentication_url();
         self.full_url
     }
 
@@ -254,7 +349,7 @@ impl LoginUrlParameters {
         &self.response_type
     }
 
-    pub fn scope(&self) -> &Vec<String> {
+    pub fn scope(&self) -> &Vec<&'static str> {
         &self.scope
     }
 }
@@ -296,7 +391,7 @@ mod tests {
         })
         .add_response_type(LoginResponseType::TOKEN)
         .add_state("0987654321")
-        .add_scope(vec!["test".to_string()].to_vec());
+        .add_scope(vec!["test"].to_vec());
 
         assert_eq!(
             redirect_url.facebook_oath_url(),
