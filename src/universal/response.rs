@@ -62,14 +62,8 @@ pub(crate) enum Response<T> {
 impl<T> Into<Result<T, FacebookAPiError>> for Response<T> {
     fn into(self) -> Result<T, FacebookAPiError> {
         match self {
-            Response::Ok(success) => {
-                println!("the response :''");
-                Ok(success)
-            }
-            Response::Err(err) => {
-                println!("the  error response :'{err:#?}'");
-                Err(err)
-            }
+            Response::Ok(success) => Ok(success),
+            Response::Err(err) => Err(err),
         }
     }
 }
@@ -90,14 +84,10 @@ where
         let rest = Value::Object(map);
 
         if error {
-            println!("This is the errr ................ :''");
-
             FacebookAPiError::deserialize(rest)
                 .map(Response::Err)
                 .map_err(de::Error::custom)
         } else {
-            println!("This is the response ................ :''");
-
             T::deserialize(rest)
                 .map(Response::Ok)
                 .map_err(de::Error::custom)
