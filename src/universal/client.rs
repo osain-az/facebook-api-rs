@@ -141,7 +141,7 @@ impl<HttpC: HttpClient> GenericClientConnection<HttpC> {
         Ok(deserialize_response_handler::<T>(response)?)
     }
 
-    // this will be used for rqwest_async feature
+    /*  // this will be used for rqwest_async feature
     #[cfg(any(feature = "reqwest"))]
     pub async fn request_by_bytes<T>(build_url: String, body: Vec<u8>) -> Result<T, ClientErr>
     where
@@ -160,5 +160,5 @@ impl<HttpC: HttpClient> GenericClientConnection<HttpC> {
         }
 
         Ok(deserialize_response_handler::<T>(response)?)
-    }
+    }*/
 }
