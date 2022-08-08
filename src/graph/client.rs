@@ -7,7 +7,9 @@ use crate::graph::pages::post::PostApi;
 use crate::login::token::{TokenLiveType, UserToken};
 use crate::prelude::search::PagesSearchAPI;
 use crate::prelude::video::VideoApi;
-use crate::prelude::{HashtagAPi, InstagramApi, InstagramContentPublishingApi, InstagramMediaApi};
+use crate::prelude::{
+    BatchApi, HashtagAPi, InstagramApi, InstagramContentPublishingApi, InstagramMediaApi,
+};
 
 /// Client Struct for making calls to Facebook Graph
 #[derive(Debug)]
@@ -26,7 +28,7 @@ pub struct Client {
 /// Empty Client
 impl Default for Client {
     fn default() -> Self {
-        let graph = "https://graph.facebook.com/v11.0/NODE/EDGE".to_string();
+        let graph = "https://graph.facebook.com/v13.0/NODE/EDGE".to_string();
         Self {
             graph,
             short_live_user_access_token: "".to_string(),
@@ -37,6 +39,10 @@ impl Default for Client {
 }
 
 impl Client {
+    pub fn add_access_token(mut self, access_token: String) -> Client {
+        self.page_access_token = access_token;
+        self
+    }
     /// This method add access token to the client, the method is expecting two
     /// input ( access token and access token type ). Since the access token
     /// type could be user token or page token , use access_token_type  to
@@ -88,20 +94,39 @@ impl Client {
     ///
     /// Or check [Facebook token doc](https://developers.facebook.com/docs/facebook-login/access-tokens/)
     pub fn accounts(self, token_live_type: TokenLiveType) -> MeApi {
-        match token_live_type {
-            TokenLiveType::LONGLIVE => MeApi::new(if self.long_live_user_access_token.is_empty() {
-                self.graph + &"?access_token=".to_string() + &self.short_live_user_access_token
-            } else {
-                self.graph + &"?access_token=".to_string() + &self.long_live_user_access_token
-            }),
-            TokenLiveType::SHORTLIVE => {
-                MeApi::new(if self.short_live_user_access_token.is_empty() {
-                    self.graph + &"?access_token=".to_string() + &self.long_live_user_access_token
-                } else {
-                    self.graph + &"?access_token=".to_string() + &self.short_live_user_access_token
-                })
+        let mut base_url = "".to_owned();
+        if self.short_live_user_access_token.is_empty()
+            && self.long_live_user_access_token.is_empty()
+        {
+            base_url = self.graph + &"?access_token=".to_string() + &self.page_access_token
+        } else {
+            match token_live_type {
+                TokenLiveType::LONGLIVE => {
+                    base_url = if self.long_live_user_access_token.is_empty() {
+                        self.graph
+                            + &"?access_token=".to_string()
+                            + &self.short_live_user_access_token
+                    } else {
+                        self.graph
+                            + &"?access_token=".to_string()
+                            + &self.long_live_user_access_token
+                    }
+                }
+                TokenLiveType::SHORTLIVE => {
+                    base_url = if self.short_live_user_access_token.is_empty() {
+                        self.graph
+                            + &"?access_token=".to_string()
+                            + &self.long_live_user_access_token
+                    } else {
+                        self.graph
+                            + &"?access_token=".to_string()
+                            + &self.short_live_user_access_token
+                    }
+                }
             }
         }
+
+        MeApi::new(base_url)
     }
 
     ///  This method is used to pass user data/crediteniatls to the Post CONTENT
@@ -122,8 +147,9 @@ impl Client {
 
     /// Facebook Video API allows you to publish Videos on Pages and Groups.
     /// Publishing on Users is not supported.
-    // The process for publishing Videos involves choosing an upload protocol and sending a POST
-    // request.
+    ///
+    /// The process for publishing Videos involves choosing an upload protocol
+    /// and sending a POST request.
     /// The API suppports both Resumable and Non-Resumable upload protocols.
     /// Facebook recommend that you use the Resumable Upload protocol as it
     /// is more versatile and can gracefully handle connection interruptions.
@@ -135,18 +161,36 @@ impl Client {
     /// The Resumable Upload protocol is the preferred publishing protocol
     /// because it large videos into smaller chunks to avoid timeouts. This is
     /// especially useful for large videos where you are more likely to
-    /// encounter a connection error. If you encounter a connection error while
-    /// uploading a large video, you normally would have to reupload the entire
-    /// video. But by using the Resumable Upload protocol you only have to
-    /// reupload the affected chunk; chunks that have alread been uploaded do
-    /// not need to be reuploaded. This method allows developers to choose
-    /// which viddeo uploading method they want to use. For Large file
-    /// greater than 1gb and 20 minute  method called resumable_upload must
-    /// be used, for video files smaller than that either of the method can
-    /// be used  ("non_resumable", "resumable_upload"), for video hosted
-    /// online(video_url), the method called "post_by_link" can be used.
-    /// Note: facebook recommend  using resumable method when uploading
-    /// direct directly.
+    /// encounter a connection error.
+    ///
+    /// It is limited to Videos of 10GB and 4 hours.
+    ///
+    /// * Non-Resumable Upload
+    ///
+    /// Non-resumable upload can be used to uplaod video of less  than 1gb and
+    /// 20 minute  if greater than that then resumable_upload must be used,
+    ///
+    /// ```rust
+    ///  use facebook_api_rs::prelude::{UserToken,Client};
+    ///
+    /// let video_url = "video hosted url";
+    /// let post_description = "This is the description of the our post";
+    /// let title = "A video about nature";   
+    /// ```
+    ///
+    /// * Hosted video
+    ///
+    /// ```rust
+    ///  use facebook_api_rs::prelude::{UserToken,Client};
+    ///
+    /// let video_url = "video hosted url";
+    /// let post_description = "This is the description of the our post";
+    /// let title = "A video about nature";
+    ///
+    /// let resp =  Client::new(UserToken::default(),"your page token".to_owned())
+    ///   .video_upload("page_id".to_owned())
+    ///  .post_by_link(video_url, post_description,title).await?;
+    /// ```
     pub fn video_upload(self, page_id: String) -> VideoApi {
         let base_url = self.graph.replace("NODE", &page_id);
         VideoApi::new(base_url, self.page_access_token) // initit videp Api
@@ -272,9 +316,14 @@ impl Client {
         HashtagAPi::new(self.page_access_token, base_url)
     }
 
-    pub fn token_info(self) -> UserToken {
+    pub fn user_token(self) -> UserToken {
         // AccessTokenInformation::default()
-        UserToken::default()
+        UserToken::default().set_url(self.graph)
+    }
+
+    pub fn batch_request(self, page_id: String) -> BatchApi {
+        let base_url = self.graph.replace("/NODE/EDGE", "");
+        BatchApi::new(base_url, self.page_access_token, page_id)
     }
 }
 

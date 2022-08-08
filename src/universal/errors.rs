@@ -17,18 +17,18 @@ pub enum ClientErr {
     HttpClient(String),
 }
 
-#[derive(Deserialize, Debug, Error)]
+#[derive(Deserialize, Debug, Clone, Error)]
 pub struct ApiError {
     pub code: u16,
     pub message: String,
-    pub r#type: String,
+    pub r#type: Option<String>,
     pub error_subcode: Option<u16>,
-    pub fbtrace_id: String,
+    pub fbtrace_id: Option<String>,
     pub error_user_title: Option<String>,
     pub error_user_msg: Option<String>,
 }
 
-#[derive(Deserialize, Debug, Error)]
+#[derive(Deserialize, Debug, Clone, Error)]
 pub struct FacebookAPiError {
     pub error: ApiError,
 }
@@ -49,7 +49,7 @@ impl ApiError {
         self.code
     }
 
-    pub fn error_type(&self) -> &str {
+    pub fn error_type(&self) -> &Option<String> {
         &self.r#type
     }
 
@@ -57,7 +57,7 @@ impl ApiError {
         &self.message
     }
 
-    pub fn fbtrace_id(&self) -> &str {
+    pub fn fbtrace_id(&self) -> &Option<String> {
         &self.fbtrace_id
     }
 }

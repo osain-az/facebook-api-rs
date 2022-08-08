@@ -87,21 +87,39 @@ impl MeApi {
     /// varies with pages depending on the page privacy
     ///  
     /// [facebook accounts docs](https://developers.facebook.com/docs/graph-api/reference/user/accounts/)
-    pub async fn get(self) -> Result<Accounts, ClientErr> {
+    pub async fn pages_by_me(self) -> Result<Accounts, ClientErr> {
         Ok(AccountsAPI::new(self.url).get().await?)
+    }
+
+    pub async fn pages_by_user_id(self, user_id: String) -> Result<Accounts, ClientErr> {
+        Ok(AccountsAPI::new(self.url.replace("me", &user_id))
+            .get()
+            .await?)
     }
 
     /// The /me node is a special endpoint that translates to the object ID of
     /// the person or Page whose access token is currently being used
     /// to make the API calls. If you had a User access token, you could
-    /// retrieve a User's name and ID by using: The data in the response
-    /// will depend on the "Fields" parameters  you pass along the get request
-    /// exmaple fields=id,name,email,picture.......
     pub async fn user(&self) -> Result<Me, ClientErr> {
         let fields =
             "&fields=id,name,picture, email,first_name,last_name,about,birthday,gender,link";
         let base_ur = self.url.replace("EDGE", "");
         let url = base_ur + fields;
+
+        let resp = HttpConnection::get::<Me>(url, "".to_string()).await?;
+        Ok(resp)
+    }
+
+    /// The /me node is a special endpoint that translates to the object ID of
+    /// the person or Page whose access token is currently being used
+    /// to make the API calls. If you had a User access token, you could
+    pub async fn user_by_id(&self, user_id: String) -> Result<Me, ClientErr> {
+        let base_url = self.url.replace("me", &user_id);
+
+        let fields =
+            "&fields=id,name,picture, email,first_name,last_name,about,birthday,gender,link";
+        let base_url = base_url.replace("EDGE", "");
+        let url = base_url + fields;
 
         let resp = HttpConnection::get::<Me>(url, "".to_string()).await?;
         Ok(resp)

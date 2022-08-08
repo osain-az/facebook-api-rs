@@ -66,6 +66,7 @@ pub struct PageAccount {
 pub struct Account {
     /// The access token of this given page, which used to make operation that
     /// requires permission on this page example post and get request.
+    #[serde(default)]
     access_token: String,
     /// The category shows the name of the major category the pages belog to
     category: String,
@@ -224,7 +225,7 @@ impl PageAccount {
 /// let token = UserToken::default();
 ///  // for long live to token.
 ///    let page_access_token_type = TokenLiveType::LONGLIVE;
-///  let page :Result<Accounts, ClientErr>  = Client::new(token, "".to_owned()).accounts(page_access_token_type).get().await;
+///  let page :Result<Accounts, ClientErr>  = Client::new(token, "".to_owned()).accounts(page_access_token_type).pages_by_me().await;
 /// ```
 pub struct AccountsAPI {
     url: String,
@@ -251,7 +252,7 @@ impl AccountsAPI {
     /// let token = UserToken::default();
     ///  // for long live to token.
     ///    let page_access_token_type = TokenLiveType::LONGLIVE;
-    ///  let page :Result<Accounts, ClientErr>  = Client::new(token, "".to_owned()).accounts(page_access_token_type).get().await;
+    ///  let page :Result<Accounts, ClientErr> = Client::new(token, "".to_owned()).accounts(page_access_token_type).pages_by_me().await;
     /// ```
     pub async fn get(&self) -> Result<Accounts, ClientErr> {
         let resp = HttpConnection::get::<Accounts>(self.url.to_string(), "".to_string()).await?;
