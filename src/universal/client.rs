@@ -22,7 +22,7 @@ use serde_json::Value;
 use url::Url;
 
 use crate::prelude::errors::FacebookAPiError;
-use crate::prelude::response::deserialize_response_handler;
+use crate::prelude::response::{deserialize_batch_handler, deserialize_response_handler};
 use crate::prelude::utils::UploadingData;
 #[cfg(any(feature = "web-sys"))]
 use web_sys::FormData;
@@ -59,6 +59,17 @@ impl<HttpC: HttpClient> GenericClientConnection<HttpC> {
         let client = HttpC::new(None)?;
         let response = client.post(build_url.parse().unwrap(), body).await;
         Ok(deserialize_response_handler::<R>(response)?)
+    }
+
+    pub async fn batch_post<R, T>(build_url: String, body: T) -> Result<R, ClientErr>
+    where
+        Self: Sized,
+        R: DeserializeOwned, // response Type
+        T: Into<String> + Send,
+    {
+        let client = HttpC::new(None)?;
+        let response = client.post(build_url.parse().unwrap(), body).await;
+        Ok(deserialize_batch_handler::<R>(response)?)
     }
 
     pub async fn delete<T>(build_url: String, body: String) -> Result<T, ClientErr>
@@ -127,6 +138,27 @@ impl<HttpC: HttpClient> GenericClientConnection<HttpC> {
         let response = client
             .upload_by_form_data(build_url.parse().unwrap(), body)
             .await;
+        Ok(deserialize_response_handler::<T>(response)?)
+    }
+
+    // this will be used for rqwest_async feature
+    #[cfg(any(feature = "reqwest"))]
+    pub async fn request_by_bytes<T>(build_url: String, body: Vec<u8>) -> Result<T, ClientErr>
+    where
+        Self: Sized,
+        T: DeserializeOwned, /* response Type
+                              * T: Send + DeserializeOwned, */
+    {
+        let client = HttpC::new(None)?;
+        let response = client
+            .video_post_by_bytes(build_url.parse().unwrap(), body)
+            .await;
+        if response.as_ref().is_ok() {
+            println!("{:?}", response.as_ref().unwrap());
+        } else {
+            println!("{:?}", response.as_ref().err());
+        }
+
         Ok(deserialize_response_handler::<T>(response)?)
     }
 }

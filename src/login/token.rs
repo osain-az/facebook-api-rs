@@ -155,6 +155,7 @@ pub struct UserToken {
     /// The error that occurs when login. This is mostly a user has "Cancelled"
     /// the login. The reason of the error will be available.
     pub login_error: Option<LoginError>,
+    url: String,
 }
 
 impl UserToken {
@@ -168,6 +169,19 @@ impl UserToken {
             long_lived_token,
             state: "".to_string(),
             login_error: None,
+            url: "".to_string(),
+        }
+    }
+    pub fn new_with_url(url: String) -> Self {
+        UserToken {
+            code: "".to_string(),
+            access_token: "".to_string(),
+            data_access_expiration_time: "".to_string(),
+            expires_in: "".to_string(),
+            long_lived_token: "".to_string(),
+            state: "".to_string(),
+            login_error: None,
+            url,
         }
     }
 }
@@ -307,29 +321,33 @@ impl UserToken {
         response
     }
 
-    pub async fn exchange_short_live_to_long_live_token_at_server(
+    pub async fn exchange_short_live_for_long_live_token(
         self,
         short_live_token: String,
         app_secret: String,
-        config: Config,
+        client_id: String,
+        redirect_uri: String,
     ) -> Result<ExchangeToken, ClientErr> {
-        let url = config
-            .facebook_oath_url()
-            .replace("dialog/oauth", "oauth/access_token")
-            + "&client_id="
-            + &config.client_id
+        let url = self.url.replace("NODE/EDGE", "oauth/access_token")
+            + "?client_id="
+            + &client_id
             + "&client_secret="
             + &app_secret
             + "&fb_exchange_token="
             + &short_live_token
+            + "&redirect_uri="
+            + &redirect_uri
             + "&grant_type="
             + "fb_exchange_token";
+
+        println!("url: {url}");
 
         let access_token = HttpConnection::get::<ExchangeToken>(url, "".to_string()).await?;
         Ok(access_token)
     }
 
     pub async fn app_access_token_at_server(
+        self,
         app_secret: String,
         app_id: String,
     ) -> Result<String, ClientErr> {
@@ -356,15 +374,16 @@ impl UserToken {
         self,
         code: String,
         app_secret: String,
-        config: Config,
+        client_id: String,
+        redirect_uri: String,
     ) -> Result<ExchangeToken, ClientErr> {
-        let url = config
-            .facebook_oath_url()
-            .replace("dialog/oauth", "oauth/access_token")
-            + "&client_id="
-            + &config.client_id
+        let url = self.url.replace("NODE/EDGE", "oauth/access_token")
+            + "?client_id="
+            + &client_id
             + "&client_secret="
             + &app_secret
+            + "&redirect_uri="
+            + &redirect_uri
             + "&code="
             + &code;
 
@@ -433,6 +452,10 @@ impl UserToken {
         access_token_information.scopes = access_token_response.data.scopes;
 
         Ok(access_token_information)
+    }
+    pub fn set_url(mut self, url: String) -> Self {
+        self.url = url;
+        self
     }
 }
 
@@ -552,7 +575,19 @@ pub struct ExchangeToken {
     /// {type}
     token_type: String,
     /// {seconds-til-expiration}
-    expires_in: u32,
+    expires_in: Option<u32>,
+}
+
+impl ExchangeToken {
+    pub fn access_token(&self) -> &str {
+        &self.access_token
+    }
+    pub fn token_type(&self) -> &str {
+        &self.token_type
+    }
+    pub fn expires_in(&self) -> Option<u32> {
+        self.expires_in
+    }
 }
 
 #[derive(Deserialize, Default, Clone, Debug)]

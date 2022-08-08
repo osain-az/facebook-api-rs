@@ -109,7 +109,7 @@ fn update(msg: Msg, model: &mut Model, orders: &mut impl Orders<Msg>) {
                     // live methed by passing "long_live_token" to the method
                     client
                         .accounts(TokenLiveType::LONGLIVE)
-                        .get()
+                        .pages_by_me()
                         .await
                         .map_or_else(Msg::ResponseFailed, Msg::GetAccountSuccess)
                 });
