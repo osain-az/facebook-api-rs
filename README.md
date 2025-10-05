@@ -534,9 +534,6 @@ cargo publish
 
 ## Related Projects
 
-- [facebook-graph-api](https://crates.io/crates/facebook-graph-api) - Alternative Facebook API client
-- [social-media-api](https://crates.io/crates/social-media-api) - Multi-platform social media API
-
----
+- [facebook-graph-api](https://crates.io/crates/facebook-graph-api)
 
 **Note**: This is an unofficial library and is not affiliated with Meta Platforms, Inc.
