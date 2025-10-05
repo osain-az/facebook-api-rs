@@ -1,4 +1,3 @@
-#![crate_name = "doc"]
 #![allow(dead_code)]
 //! An access token is an opaque string that identifies a user, app, or Page
 //! and can be used by the app to make graph API calls.

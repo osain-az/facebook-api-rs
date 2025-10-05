@@ -18,3 +18,4 @@
 /examples/seed/config.json
 Cargo.lock
 PUBLISHING.md
+PRE_PUBLISH_CHECKLIST.md
