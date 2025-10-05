@@ -22,7 +22,7 @@ A Rust client library for the **Facebook Graph API v23.0**, with full support fo
 
 ## Requirements
 
-- Rust 1.63.0 or later
+- Rust 1.81.0 or later
 - A Facebook App with App ID and App Secret ([Create one here](https://developers.facebook.com/apps/))
 - Valid Facebook access tokens for API calls
 
@@ -30,8 +30,6 @@ A Rust client library for the **Facebook Graph API v23.0**, with full support fo
 
 - [API Documentation on docs.rs](https://docs.rs/facebook_api_rs)
 - [Facebook Graph API Reference](https://developers.facebook.com/docs/graph-api/)
-- 🔄 [Migration Guide to v23.0](MIGRATION_TO_V23.md)
-- ✨ [Enhancements Documentation](ENHANCEMENTS_V23.md)
 
 ## Installation
 
@@ -39,7 +37,7 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-facebook_api_rs = "0.1.0"
+facebook_api_rs = "0.1.2"
 ```
 
 Or install via cargo:
