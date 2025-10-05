@@ -1,6 +1,6 @@
 [package]
 name = "facebook_api_rs"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["Azibodusi osain"]
 description = "A Rust client library for the Facebook Graph API v23.0, with full support for both native and WebAssembly (WASM) environments"
 documentation = "https://docs.rs/facebook_api_rs"
@@ -11,7 +11,7 @@ categories = ["api-bindings", "web-programming", "wasm", "authentication"]
 license = "MIT"
 readme = "README.md"
 edition = "2021"
-rust-version = "1.63"
+rust-version = "1.81"
 exclude = [
     ".github/",
     ".gitignore",
@@ -21,9 +21,10 @@ exclude = [
 
 # Configuration for docs.rs
 [package.metadata.docs.rs]
-all-features = true
+# Build only with default features (reqwest) since web-sys targets wasm32
+features = ["reqwest"]
 rustdoc-args = ["--cfg", "docsrs"]
-targets = ["x86_64-unknown-linux-gnu", "wasm32-unknown-unknown"]
+default-target = "x86_64-unknown-linux-gnu"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
