@@ -1,12 +1,12 @@
 # facebook-api-rs
 
+[![Crate](https://img.shields.io/crates/v/facebook_api_rs.svg)](https://crates.io/crates/facebook_api_rs)
+[![Documentation](https://docs.rs/facebook_api_rs/badge.svg)](https://docs.rs/facebook_api_rs)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Rust](https://img.shields.io/badge/rust-1.63%2B-orange.svg)](https://www.rust-lang.org/)
 [![Facebook API](https://img.shields.io/badge/Facebook%20API-v23.0-blue.svg)](https://developers.facebook.com/docs/graph-api/)
 
 A Rust client library for the **Facebook Graph API v23.0**, with full support for both native and WebAssembly (WASM) environments.
-
-> **Note**: This crate is currently in development and not yet published to crates.io. Use the Git installation method below.
 
 ## Features
 
@@ -28,13 +28,29 @@ A Rust client library for the **Facebook Graph API v23.0**, with full support fo
 
 ## Documentation
 
+- [API Documentation on docs.rs](https://docs.rs/facebook_api_rs)
 - [Facebook Graph API Reference](https://developers.facebook.com/docs/graph-api/)
 - 🔄 [Migration Guide to v23.0](MIGRATION_TO_V23.md)
 - ✨ [Enhancements Documentation](ENHANCEMENTS_V23.md)
 
 ## Installation
 
-Since this crate is not yet published to crates.io, install it directly from GitHub:
+Add this to your `Cargo.toml`:
+
+```toml
+[dependencies]
+facebook_api_rs = "0.1.0"
+```
+
+Or install via cargo:
+
+```bash
+cargo add facebook_api_rs
+```
+
+### Alternative: Install from Git
+
+You can also install directly from GitHub:
 
 ```toml
 [dependencies]

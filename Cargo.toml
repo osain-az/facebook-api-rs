@@ -1,6 +1,6 @@
 [package]
 name = "facebook_api_rs"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Azibodusi osain"]
 description = "A Rust client library for the Facebook Graph API v23.0, with full support for both native and WebAssembly (WASM) environments"
 documentation = "https://docs.rs/facebook_api_rs"
@@ -18,6 +18,12 @@ exclude = [
     "examples/seed/target/",
     "target/",
 ]
+
+# Configuration for docs.rs
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+targets = ["x86_64-unknown-linux-gnu", "wasm32-unknown-unknown"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

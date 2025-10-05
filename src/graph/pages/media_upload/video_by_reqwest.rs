@@ -71,7 +71,7 @@ impl VideoApi_reqwest {
     /// the video but if the video is not within the range , the post will
     /// not be made but a Fetcherror will be gerated.
     ///
-    /// For  more information cehck   https://developers.facebook.com/docs/video-api/guides/publishing
+    /// For more information check <https://developers.facebook.com/docs/video-api/guides/publishing>
 
     pub async fn non_resumable_post(
         &self,

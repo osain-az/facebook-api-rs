@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 /// The feed API of Facebook Page let you publish and get data of the page,
 /// the API have different end points depending on the operation you want to
 /// perform  on the page. For more information on different endpoint for get and
-/// publish post check Facebook document https://developers.facebook.com/docs/graph-api/reference/v23.0/page/feed#publish.
+/// publish post check Facebook document <https://developers.facebook.com/docs/graph-api/reference/v23.0/page/feed#publish>.
 pub struct FeedApi {
     base_url: String,
     page_access_token: String,

@@ -16,7 +16,7 @@ use crate::prelude::{
 /// According to Facebook's versioning policy, each API version is supported for at least 2 years.
 /// v23.0 was released in 2024 and will be supported until at least 2026.
 ///
-/// See: https://developers.facebook.com/docs/graph-api/guides/versioning
+/// See: <https://developers.facebook.com/docs/graph-api/guides/versioning>
 pub const DEFAULT_GRAPH_API_VERSION: &str = "v23.0";
 
 /// Client Struct for making calls to Facebook Graph

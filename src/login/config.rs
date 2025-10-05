@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 /// According to Facebook's versioning policy, each API version is supported for at least 2 years.
 /// v23.0 was released in 2024 and will be supported until at least 2026.
 ///
-/// See: https://developers.facebook.com/docs/graph-api/guides/versioning
+/// See: <https://developers.facebook.com/docs/graph-api/guides/versioning>
 pub const DEFAULT_API_VERSION: &str = "v23.0";
 
 /// Validates if an API version string is in the correct format
@@ -50,7 +50,7 @@ pub struct Config {
     /// The Facebook url preamble for the oath dialog.
     ///
     /// This parameters is set to default value to
-    /// https://www.facebook.com/v23.0/dialog/oauth?
+    /// <https://www.facebook.com/v23.0/dialog/oauth?>
     pub facebook_oath_url: String,
 
     /// The ID of your app, found in your app's dashboard.

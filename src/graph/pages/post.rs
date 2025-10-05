@@ -4,7 +4,7 @@
 //! The profile could be a user, page, app, or group.;
 //! Note: This end point does not allow you to create post or delete.
 //! for more details check facebook documentation on post Api.
-//! https://developers.facebook.com/docs/graph-api/reference/post
+//! <https://developers.facebook.com/docs/graph-api/reference/post>
 use crate::graph::pages::utils::{Fields, From, GetPostResponse};
 use crate::prelude::errors::ClientErr;
 use crate::prelude::utils::Id;

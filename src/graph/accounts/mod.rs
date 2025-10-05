@@ -3,8 +3,12 @@
 //!
 //! This endpoint let you create facebook page or get different pages
 //!
-//! [facebook account doc] (https://developers.facebook.com/docs/graph-api/reference/user/accounts/)
-
+//! [facebook account doc](<https:    /// This request  will get the list of Facebook Pages that a person owns or
+/// have access to perform tasks
+///
+/// [facebook account doc](<https://developers.facebook.com/docs/graph-api/reference/user/accounts/>)
+///
+/// # Example for getting pageslopers.facebook.com/docs/graph-api/reference/user/accounts/>)
 use crate::prelude::errors::ClientErr;
 use crate::prelude::search::Location;
 use crate::prelude::structs::Engagement;
@@ -214,7 +218,7 @@ impl PageAccount {
 ///
 /// This endpoint let you create facebook page or get different pages
 ///
-/// [facebook account doc] (https://developers.facebook.com/docs/graph-api/reference/user/accounts/)
+/// [facebook account doc](<https://developers.facebook.com/docs/graph-api/reference/user/accounts/>)
 ///
 /// # Example for getting pages
 ///
