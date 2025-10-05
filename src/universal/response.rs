@@ -1,7 +1,5 @@
 use http::StatusCode;
-use std::ops::Deref;
 
-use crate::prelude::BatchResponseBody;
 use serde::{
     de::{self, DeserializeOwned, Deserializer},
     Deserialize,
@@ -84,7 +82,7 @@ fn deserialize_response_batch<T>(text: &str) -> Result<T, ClientErr>
 where
     T: DeserializeOwned,
 {
-    let response: T = serde_json::from_str(text.clone())?;
+    let response: T = serde_json::from_str(text)?;
     Ok(response)
 }
 

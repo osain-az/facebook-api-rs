@@ -13,7 +13,6 @@ pub fn resumable_form_data_reqwest(
     mut file: File,
     //  thumb_file:Option<File>
 ) -> Form {
-    use std::io;
     use std::io::prelude::*;
     let mut current_upload_phase = "";
 
@@ -59,7 +58,7 @@ pub fn resumable_form_data_reqwest(
                 main_form_data = Form::from(main_form_data)
                     .text("description", video_params.description.clone());
             }
-/*
+            /*
             if let Some(thumb) = video_params.thumb {
                 // main_form_data = Form::from(main_form_data).text("thumBG",
                 // video_params.thum.clone());

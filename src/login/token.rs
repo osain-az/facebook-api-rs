@@ -8,8 +8,6 @@
 //! temporary, secure access to Facebook APIs. Access tokens are obtained via a
 //! number of methods.
 //! Form more information about token  check  [facebook api Token doc](https://developers.facebook.com/docs/facebook-login/access-tokens/?translation)
-use crate::graph::client::Client;
-use crate::login::config::Config;
 use crate::prelude::errors::ClientErr;
 use crate::prelude::HttpConnection;
 use chrono::prelude::*;

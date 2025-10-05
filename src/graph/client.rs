@@ -11,6 +11,14 @@ use crate::prelude::{
     BatchApi, HashtagAPi, InstagramApi, InstagramContentPublishingApi, InstagramMediaApi,
 };
 
+/// Default Facebook Graph API version
+///
+/// According to Facebook's versioning policy, each API version is supported for at least 2 years.
+/// v23.0 was released in 2024 and will be supported until at least 2026.
+///
+/// See: https://developers.facebook.com/docs/graph-api/guides/versioning
+pub const DEFAULT_GRAPH_API_VERSION: &str = "v23.0";
+
 /// Client Struct for making calls to Facebook Graph
 #[derive(Debug)]
 pub struct Client {
@@ -28,7 +36,7 @@ pub struct Client {
 /// Empty Client
 impl Default for Client {
     fn default() -> Self {
-        let graph = "https://graph.facebook.com/v13.0/NODE/EDGE".to_string();
+        let graph = "https://graph.facebook.com/v23.0/NODE/EDGE".to_string();
         Self {
             graph,
             short_live_user_access_token: "".to_string(),
@@ -55,6 +63,58 @@ impl Client {
         Client::default().add_access_tokens(user_access_token, page_token)
     }
 
+    /// Create a new Client with a custom API version
+    ///
+    /// # Arguments
+    /// * `user_access_token` - The user's access token
+    /// * `page_token` - The page access token
+    /// * `api_version` - The Facebook Graph API version (e.g., "v23.0", "v22.0")
+    ///
+    /// # Notes
+    /// Facebook's versioning policy guarantees each version for at least 2 years.
+    /// Using older versions may result in deprecated endpoints or reduced functionality.
+    ///
+    /// # Panics
+    /// Panics if the API version format is invalid. The version must be in format "vXX.X".
+    ///
+    /// # Example
+    /// ```
+    /// use facebook_api_rs::prelude::{Client, UserToken};
+    ///
+    /// let client = Client::new_with_version(
+    ///     UserToken::default(),
+    ///     "page_token".to_string(),
+    ///     "v23.0".to_string()
+    /// );
+    /// ```
+    pub fn new_with_version(
+        user_access_token: UserToken,
+        page_token: String,
+        api_version: String,
+    ) -> Client {
+        // Import the validation function from config module
+        use crate::prelude::is_valid_api_version;
+
+        if !is_valid_api_version(&api_version) {
+            panic!(
+                "Invalid API version format: '{}'. Expected format: 'vXX.X' (e.g., 'v23.0')",
+                api_version
+            );
+        }
+
+        let graph = format!("https://graph.facebook.com/{}/NODE/EDGE", api_version);
+        let mut client = Client {
+            graph,
+            short_live_user_access_token: "".to_string(),
+            long_live_user_access_token: "".to_string(),
+            page_access_token: "".to_string(),
+        };
+        client.long_live_user_access_token = user_access_token.long_lived_token;
+        client.short_live_user_access_token = user_access_token.access_token;
+        client.page_access_token = page_token;
+        client
+    }
+
     /// This method add access token to the client when the user has
     /// authenticate from the frontend
     pub fn add_access_tokens(
@@ -74,6 +134,28 @@ impl Client {
 
     pub fn base_url(self) -> String {
         self.graph
+    }
+
+    /// Extract the API version from the client's graph URL
+    ///
+    /// # Returns
+    /// The API version as a string slice (e.g., "v23.0"), or None if not found
+    ///
+    /// # Example
+    /// ```
+    /// use facebook_api_rs::prelude::{Client, UserToken};
+    ///
+    /// let client = Client::new(
+    ///     UserToken::default(),
+    ///     "page_token".to_string()
+    /// );
+    ///
+    /// assert_eq!(client.api_version(), Some("v23.0"));
+    /// ```
+    pub fn api_version(&self) -> Option<&str> {
+        self.graph
+            .split('/')
+            .find(|s| s.starts_with('v') && s.contains('.'))
     }
 
     /// This method gives an entry point to User API and Facebook pages account
@@ -330,8 +412,44 @@ impl Client {
 #[cfg(test)]
 mod test {
     use crate::graph::client::Client;
-    use crate::login::prelude::TokenLiveType;
     use crate::login::token::UserToken;
+
+    #[test]
+    fn test_default_api_version() {
+        let client = Client::new(UserToken::default(), "page_token".to_string());
+        assert_eq!(client.api_version(), Some("v23.0"));
+        assert!(client.graph.contains("v23.0"));
+    }
+
+    #[test]
+    fn test_custom_api_version() {
+        let client = Client::new_with_version(
+            UserToken::default(),
+            "page_token".to_string(),
+            "v22.0".to_string(),
+        );
+        assert_eq!(client.api_version(), Some("v22.0"));
+        assert!(client.graph.contains("v22.0"));
+    }
+
+    #[test]
+    fn test_api_version_extraction() {
+        let client = Client::new(UserToken::default(), "page_token".to_string());
+        let version = client.api_version();
+        assert!(version.is_some());
+        assert!(version.unwrap().starts_with('v'));
+        assert!(version.unwrap().contains('.'));
+    }
+
+    #[test]
+    #[should_panic(expected = "Invalid API version format")]
+    fn test_invalid_version_format_panic() {
+        let _client = Client::new_with_version(
+            UserToken::default(),
+            "page_token".to_string(),
+            "23.0".to_string(), // Missing 'v' prefix
+        );
+    }
 
     //  #[test]
     // fn test_builder() {
@@ -343,7 +461,7 @@ mod test {
     // .accounts(TokenLiveType::LONGLIVE)
     // .get();
     // assert_eq!(
-    // "https://graph.facebook.com/v11.0/me/accounts?access_token=123",
+    // "https://graph.facebook.com/v23.0/me/accounts?access_token=123",
     // accounts.url()
     // )
     // }

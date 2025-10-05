@@ -1,7 +1,7 @@
 //! The feed API of Facebook Page let you published and get data of facebok page
 //! the API have different end points depending on the operation you want to
 //! perform  on the page. For more information on different endpoint for get and
-//! publish post check facebook document <https://developers.facebook.com/docs/graph-api/reference/v12.0/page/feed#publish>.
+//! publish post check facebook document <https://developers.facebook.com/docs/graph-api/reference/v23.0/page/feed#publish>.
 
 use crate::graph::pages::utils::{Fields, GetPostResponse};
 use crate::prelude::errors::ClientErr;
@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 /// The feed API of Facebook Page let you publish and get data of the page,
 /// the API have different end points depending on the operation you want to
 /// perform  on the page. For more information on different endpoint for get and
-/// publish post check Facebook document https://developers.facebook.com/docs/graph-api/reference/v12.0/page/feed#publish.
+/// publish post check Facebook document https://developers.facebook.com/docs/graph-api/reference/v23.0/page/feed#publish.
 pub struct FeedApi {
     base_url: String,
     page_access_token: String,
@@ -210,15 +210,15 @@ pub enum CallToActionType {
 /// automatically supplied based on the og_object_id.
 pub struct Feeling {
     /// An action, i.e., feeling, watching, etc.
-    /// Each feeling is represented by an id. The id can be found  <https://developers.facebook.com/docs/graph-api/reference/v13.0/page/feed/feelings#actions>
+    /// Each feeling is represented by an id. The id can be found  <https://developers.facebook.com/docs/graph-api/reference/v23.0/page/feed/feelings#actions>
     og_action_type_id: String,
 
     /// An icon perhaps representing the action type, i.e., a smiley face, a
-    /// movie icon, etc. Each feeling is represented by an id. The id can be found  <https://developers.facebook.com/docs/graph-api/reference/v13.0/page/feed/feelings#actions>
+    /// movie icon, etc. Each feeling is represented by an id. The id can be found  <https://developers.facebook.com/docs/graph-api/reference/v23.0/page/feed/feelings#actions>
     og_icon_id: String,
 
     /// An object_id can be any page_id or a predefined object. Feelings
-    ///    Each feeling is represented by an id. The id can be found  <https://developers.facebook.com/docs/graph-api/reference/v13.0/page/feed/feelings#actions>
+    ///    Each feeling is represented by an id. The id can be found  <https://developers.facebook.com/docs/graph-api/reference/v23.0/page/feed/feelings#actions>
     og_object_id: String,
 }
 

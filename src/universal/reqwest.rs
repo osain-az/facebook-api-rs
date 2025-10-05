@@ -4,7 +4,6 @@ use std::convert::TryInto;
 use std::io::Read;
 // use crate::universal::utils::generic_req;
 use crate::universal::HttpClient;
-use ::reqwest::Body;
 #[cfg(feature = "reqwest")]
 use ::reqwest::Client;
 use async_trait::async_trait;
@@ -12,13 +11,10 @@ use http::header::HeaderMap;
 use http::Method;
 
 // use reqwest::multipart;
-use crate::prelude::video::{ContentCategory, VideoParams};
-use crate::universal::form_data::{create_form_data, form_data_with_bytes};
-use reqwest::multipart::Form;
-use reqwest::{multipart, Request, RequestBuilder};
+use crate::prelude::video::VideoParams;
+use crate::universal::form_data::create_form_data;
 
 use crate::prelude::utils::UploadingData;
-use std::borrow::BorrowMut;
 
 #[derive(Debug, Clone)]
 pub struct ReqwestClient {

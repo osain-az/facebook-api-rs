@@ -1,17 +1,28 @@
 [package]
 name = "facebook_api_rs"
 version = "0.1.0"
-description = "App Description"
-categories = ["wasm"]
+authors = ["Azibodusi osain"]
+description = "A Rust client library for the Facebook Graph API v23.0, with full support for both native and WebAssembly (WASM) environments"
+documentation = "https://docs.rs/facebook_api_rs"
+homepage = "https://github.com/osain-az/facebook-api-rs"
+repository = "https://github.com/osain-az/facebook-api-rs"
+keywords = ["facebook", "graph-api", "instagram", "oauth", "wasm"]
+categories = ["api-bindings", "web-programming", "wasm", "authentication"]
 license = "MIT"
-readme = "./README.md"
-edition = "2018"
+readme = "README.md"
+edition = "2021"
+rust-version = "1.63"
+exclude = [
+    ".github/",
+    ".gitignore",
+    "examples/seed/target/",
+    "target/",
+]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [lib]
 crate-type = ["cdylib","rlib"]
-all-features = false
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3.18"
@@ -46,12 +57,12 @@ web-sys = {version = "0.3.40",  optional = true,features = [
     "XmlHttpRequestEventTarget",
 ]}
 
-http = "0.2.5"
+http = "1.0"
 url = { version = "2"}
 
 thiserror = "1.0.30"
     [dependencies.reqwest]
-    version = "0.11.8"
+    version = "0.12.23"
     features = [ "gzip", "json","multipart","stream" ]
     optional = true
     [dependencies.http-types]

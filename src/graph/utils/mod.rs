@@ -1,7 +1,3 @@
-/// This mod will contain different utils methods that could be use in different
-/// mod
-use serde::{Deserialize, Serialize};
-use serde_json::ser::CharEscape::FormFeed;
 #[cfg(any(feature = "web-sys"))]
 use web_sys::Blob;
 #[cfg(any(feature = "web-sys"))]

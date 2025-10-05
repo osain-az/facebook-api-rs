@@ -1,9 +1,8 @@
 use crate::prelude::errors::{ClientErr, FacebookAPiError};
 use crate::prelude::HttpConnection;
 use serde::de::DeserializeOwned;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use serde_json::{json, Value};
-use std::collections::HashMap;
 use std::fmt::Debug;
 
 pub struct BatchApi {

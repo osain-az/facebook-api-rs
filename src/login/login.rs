@@ -7,16 +7,10 @@
 //! //! For details of facebook manual login flow, check [facebook doc](https://developers.facebook.com/docs/facebook-login/guides/advanced/manual-flow#login).
 
 use crate::login::config::Config;
-use crate::universal::client::HttpConnection;
-use crate::universal::errors::ClientErr;
-use std::fmt::format;
 
-use crate::prelude::ResponseType;
-use crate::universal::HttpClient;
 use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
-use serde::{Deserialize, Serialize};
-use std::sync::Arc;
+use serde::Serialize;
 
 /// Parameters for build Facebook login URL.
 ///
@@ -385,7 +379,7 @@ mod tests {
     #[test]
     fn test_build_url() {
         let redirect_url = LoginUrlParameters::new(Config {
-            facebook_oath_url: "https://www.facebook.com/v11.0/dialog/oauth?".to_string(),
+            facebook_oath_url: "https://www.facebook.com/v23.0/dialog/oauth?".to_string(),
             client_id: "1234567890".to_string(),
             redirect_uri: "http://localhost:8001".to_string(),
         })
@@ -395,7 +389,7 @@ mod tests {
 
         assert_eq!(
             redirect_url.facebook_oath_url(),
-            "https://www.facebook.com/v11.0/dialog/oauth?"
+            "https://www.facebook.com/v23.0/dialog/oauth?"
         );
         assert_eq!(redirect_url.client_id(), "1234567890");
         assert_eq!(redirect_url.redirect_uri(), "http://localhost:8001");
@@ -405,6 +399,7 @@ mod tests {
         let scope = ["test".to_string()].to_vec();
         assert_eq!(redirect_url.scope(), &scope);
 
-        assert_eq!(redirect_url.full_url, "https://www.facebook.com/v11.0/dialog/oauth?client_id=1234567890&redirect_uri=http://localhost:8001&response_type=token&state=0987654321&scope=test")
+        let full_url = redirect_url.full_login_url();
+        assert_eq!(full_url, "https://www.facebook.com/v23.0/dialog/oauth?client_id=1234567890&redirect_uri=http://localhost:8001&response_type=token&state=0987654321&scope=test")
     }
 }

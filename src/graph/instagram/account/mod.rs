@@ -85,11 +85,11 @@ impl InstagramApi {
     /// [facebook account doc](https://developers.facebook.com/docs/instagram-api/reference/ig-user)
     pub async fn account_by_id(self, instagram_id: String) -> Result<InstagramAccount, ClientErr> {
         let graph_url = self.base_url.replace("NODE", &instagram_id);
-        let mut url = graph_url.replace("EDGE", "?");
+        let url = graph_url.replace("EDGE", "?");
 
         let url_fields = Fields::default().build_url_with_fields();
 
-        let mut request_url =
+        let request_url =
             url + "fields=" + url_fields.as_str() + "&access_token=" + &self.page_access_token;
         let resp = HttpConnection::get::<InstagramAccount>(request_url, "".to_string()).await?;
         Ok(resp)

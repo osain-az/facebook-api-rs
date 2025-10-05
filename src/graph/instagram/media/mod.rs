@@ -52,7 +52,7 @@ impl InstagramMediaApi {
     pub async fn media_data(self) -> Result<MediaContainerData, ClientErr> {
         let mut url = self.base_url.replace("EDGE", "?fields=");
 
-        let mut fields_count = Fields::default().fields.len();
+        let fields_count = Fields::default().fields.len();
         for (count, field) in Fields::default().fields.into_iter().enumerate() {
             if count < fields_count - 1 {
                 url = url + &field + ",";

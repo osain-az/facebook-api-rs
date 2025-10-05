@@ -32,7 +32,7 @@ impl PostApi {
     }
 
     ///  this method sends a get request to the facebook api (GET
-    /// /v12.0/{post-id}). it returns the data of the post_id  you have
+    /// /v23.0/{post-id}). it returns the data of the post_id  you have
     /// provided
     pub async fn get(self) -> Result<GetPostResponse, ClientErr> {
         let mut url = self.base_url.replace("EDGE", "?fields=");
@@ -55,14 +55,14 @@ impl PostApi {
     pub async fn update() {}
 
     pub async fn comments(self) -> Result<Comments, ClientErr> {
-        let mut base_url = self.base_url.replace("EDGE", "commnets");
+        let base_url = self.base_url.replace("EDGE", "commnets");
         let url = base_url + "&access_token=" + &self.page_access_token;
         let resp = HttpConnection::get::<Comments>(url, "".to_string()).await?;
         Ok(resp)
     }
 
     pub async fn comment_on_post(self, message: String) -> Result<Id, ClientErr> {
-        let mut base_url = self.base_url.replace("EDGE", "commnets");
+        let base_url = self.base_url.replace("EDGE", "commnets");
         let url = base_url + "?message=" + &message + "&access_token=" + &self.page_access_token;
 
         let resp = HttpConnection::post::<Id, String>(url, "".to_string()).await?;
@@ -70,7 +70,7 @@ impl PostApi {
     }
 
     pub async fn delete(self) -> Result<Id, ClientErr> {
-        let mut base_url = self.base_url.replace("EDGE", "");
+        let base_url = self.base_url.replace("EDGE", "");
         let url = base_url + "&access_token=" + &self.page_access_token;
         let resp = HttpConnection::delete::<Id>(url, "".to_string()).await?;
         Ok(resp)

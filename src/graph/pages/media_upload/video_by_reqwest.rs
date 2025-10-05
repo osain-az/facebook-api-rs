@@ -119,7 +119,7 @@ impl VideoApi_reqwest {
 
         let base_url = self.base_url.replace("EDGE", "videos").clone();
 
-        let mut form_data = resumable_form_data_reqwest(
+        let form_data = resumable_form_data_reqwest(
             UploadPhase::start,
             "".to_string(),
             "0".to_string(),

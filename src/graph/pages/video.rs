@@ -15,12 +15,10 @@
 //! For information on different opertaions on facebook page  check  <https://developers.facebook.com/docs/graph-api/reference/page/videos/#Creating>
 
 use crate::prelude::errors::ClientErr;
-use crate::prelude::utils::{ChunksUploadResponse, PostResponse, UploadingData};
+use crate::prelude::utils::PostResponse;
 use crate::prelude::HttpConnection;
 #[cfg(any(feature = "reqwest"))]
 use std::fs::File;
-use std::io::Read;
-use std::sync::Arc;
 
 use serde::{Deserialize, Serialize};
 
@@ -342,7 +340,7 @@ impl VideoApi {
     pub async fn non_resumable_post(
         &self,
         video_params: VideoParams,
-        mut file: File,
+        file: File,
         thumb_file: Option<File>,
     ) -> Result<PostResponse, ClientErr> {
         let base_url = self.base_url.clone();

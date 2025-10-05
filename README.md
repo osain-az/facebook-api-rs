@@ -1,185 +1,528 @@
-# Facebook API for Rust and Wasm
+# facebook-api-rs
 
-- This crate is intended for front_end and supposed to be used with the custom `https client` of your choice as long as it uses [http-types](https://docs.rs/http-types/2.11.0/http_types/).
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Rust](https://img.shields.io/badge/rust-1.63%2B-orange.svg)](https://www.rust-lang.org/)
+[![Facebook API](https://img.shields.io/badge/Facebook%20API-v23.0-blue.svg)](https://developers.facebook.com/docs/graph-api/)
 
-- The Facebook API requires an `access token`.
+A Rust client library for the **Facebook Graph API v23.0**, with full support for both native and WebAssembly (WASM) environments.
 
-- The implementation of the Facebook API is done via the help of the following [Facebook for Developers documentation](https://developers.facebook.com/docs/facebook-login/manually-build-a-login-flow)
+> **Note**: This crate is currently in development and not yet published to crates.io. Use the Git installation method below.
 
+## Features
 
-# ToDo
+- ✅ **Facebook Graph API v23.0** - Latest version with 2-year support guarantee
+- 🦀 **Rust & WASM** - Works in both backend servers and frontend browsers
+- 🔐 **OAuth Flow** - Complete manual login flow implementation
+- 📄 **Pages API** - Manage Facebook pages, posts, photos, and videos
+- 📸 **Instagram Business API** - Access Instagram business accounts, media, and hashtags
+- 🔄 **Batch Requests** - Optimize API calls with batch operations
+- ⚡ **Async/Await** - Modern asynchronous Rust patterns
+- 🎯 **Type-Safe** - Strongly-typed API responses with serde
+- 🔧 **Flexible HTTP** - Choose between `reqwest` (default) or `web-sys` for HTTP
 
-### - Milestone version 0.1.x  <br/>
-- [x] Invoking the Login Dialog and Setting the Redirect URL <br/>
-- [x] Handling Login Dialog Response <br/>
-- [ ] Canceled Login <br/>
-- [ ] Confirming Identity <br/>
-- [x] Exchanging Code for an Access Token <br/>
-- [x] Handling Response which is returned in JSON format <br/>
-- [x] Inspecting Access Tokens <br/>
-- [ ] Checking Permissions <br/>
-- [ ] Re-asking for Declined Permissions <br/>
-- [x] Store Access Tokens and Login Status <br/>
-- [ ] Logging People Out <br/>
-- [ ] Detecting When People Uninstall Apps <br/>
-- [ ] Responding to Requests to Delete User Data<br/>
-- [x] Storage and tracking and login status
+## Requirements
 
+- Rust 1.63.0 or later
+- A Facebook App with App ID and App Secret ([Create one here](https://developers.facebook.com/apps/))
+- Valid Facebook access tokens for API calls
 
+## Documentation
 
-### Notes
+- [Facebook Graph API Reference](https://developers.facebook.com/docs/graph-api/)
+- 🔄 [Migration Guide to v23.0](MIGRATION_TO_V23.md)
+- ✨ [Enhancements Documentation](ENHANCEMENTS_V23.md)
 
-- Feel free to tag along on the project 🦊
+## Installation
 
-# Installing
-The crate can be use at the frontend or server.
-It also has two features: 
+Since this crate is not yet published to crates.io, install it directly from GitHub:
 
-- `reqwest`: this uses `Reqwest` for http connection. This is the default feature
-- `web-sys`: this uses `web-sys` for http connection. 
-
-Either of the feature can be use for frontend 
-
-### Frontend Cargo.toml
 ```toml
-      #For frontend using default feature (reqwest)
- facebook_api_rs = {git = "https://github.com/Ringrev/facebook-api-rs", rev = "de4256d86150397d9b686079f86dd5428846db37"}
-
-#For frontend using web-sys feature.
-facebook_api_rs = {git = "https://github.com/Ringrev/facebook-api-rs", default-features = false, features = ["web-sys"], rev = "de4256d86150397d9b686079f86dd5428846db37"}
+[dependencies]
+facebook_api_rs = { git = "https://github.com/osain-az/facebook-api-rs" }
 ```
 
-### Server Cargo.toml
-At the backend only the default feature(reqwest) should be used 
+Or specify a particular branch, tag, or commit:
+
 ```toml
- facebook_api_rs = {git = "https://github.com/Ringrev/facebook-api-rs", rev = "de4256d86150397d9b686079f86dd5428846db37"}
+[dependencies]
+# Use main branch
+facebook_api_rs = { git = "https://github.com/osain-az/facebook-api-rs", branch = "main" }
+
+# Use specific tag
+facebook_api_rs = { git = "https://github.com/osain-az/facebook-api-rs", tag = "v0.1.0" }
+
+# Use specific commit
+facebook_api_rs = { git = "https://github.com/osain-az/facebook-api-rs", rev = "abc123" }
 ```
 
-# Usage
+### Feature Flags
 
-##Manual Login Flow
- The crate uses manual login flow. 
-### Basic Steps 
-* `Build the login url`: this can be done at the frontend or backend.
-It is recommended to store credential at the server(backend);
+The crate provides two HTTP client implementations:
+
+- **`reqwest`** (default) - Uses [reqwest](https://docs.rs/reqwest) for native and WASM targets
+- **`web-sys`** - Uses [web-sys](https://docs.rs/web-sys) for browser-based WASM applications
+
+#### Using the Default Feature (reqwest)
+
+```toml
+[dependencies]
+facebook_api_rs = { git = "https://github.com/osain-az/facebook-api-rs" }
+```
+
+#### Using web-sys for WASM
+
+```toml
+[dependencies]
+facebook_api_rs = { git = "https://github.com/osain-az/facebook-api-rs", default-features = false, features = ["web-sys"] }
+```
+
+## Quick Start
+
+### 1. Build a Login URL
+
+Generate a Facebook OAuth login URL to authenticate users:
 
 ```rust
-    use facebook_api_rs::prelude::{Config, LoginResponseType, LoginUrlParameters};
+use facebook_api_rs::prelude::{Config, LoginResponseType, LoginUrlParameters};
 
- // server side or client
-pub fn login_url_handler() -> String {
-    let redirect_uri = "".to_owned(); // the uri you want to be redirected to after login
-    let facebook_app_id = "your app_id"; // your facebook app id 
+fn create_login_url() -> String {
+    let config = Config::new(
+        "YOUR_APP_ID".to_string(),
+        "https://yourapp.com/callback".to_string()
+    );
 
-    let config = Config::new(facebook_app_id.to_owned(), redirect_uri);
-    
-    // returning access token in the login response url. This will be verified at the server.
-    let response_type : LoginResponseType::TOKEN;
-     
-     // returning code as the login response. This will be exchanged for access token at the server
-    // let response_type : LoginResponseType::CODE; // check LoginResponseTyp for doc
-     
-    let login_url = LoginUrlParameters::new(config)
-        .add_response_type(response_type)
-        .add_scope(vec![]) //  an array of permission you ant to request
-        .full_login_url();
-     
-    // user login url
-    login_url
+    LoginUrlParameters::new(config)
+        .add_response_type(LoginResponseType::TOKEN)
+        .add_scope(vec!["email", "public_profile"])
+        .full_login_url()
 }
 ```
-* `After user login to facebook, capture the tokens or error`:  
+
+### 2. Handle OAuth Callback
+
+After users authenticate, extract tokens from the redirect URL:
 
 ```rust
-use facebook_api_rs::prelude::{
-    Account, Accounts, Client, Me, Config, TokenLiveType, UserToken,
-};
- async fn handle_user_login_response( url: String) {
-   // After login redirect url 
-    let tokens = UserToken::extract_user_tokens(url);
-    
-    if let Some(error) = tokens.login_error { 
-        // handle error 
-        return;
+use facebook_api_rs::prelude::UserToken;
+
+async fn handle_callback(redirect_url: String) -> Result<(), Box<dyn std::error::Error>> {
+    let tokens = UserToken::extract_user_tokens(redirect_url);
+
+    if let Some(error) = tokens.login_error {
+        eprintln!("Login error: {:?}", error);
+        return Err(Box::new(error));
     }
-    
-// If you requested for code (LoginResponseType::CODE ) while building the login url then send the code to the 
-// server to exchange for an access_token.
-    let code = tokens.code;
 
-// If you requested for a token (LoginResponseType::TOKEN ) while building the login url then send the access_token and the user id 
-// to the server to verify
-    let access_token = tokens;
-// To verify the access token, you will need the login user id.
-    let user: Me = Client::new(tokens, "".to_owned())
-        .accounts(TokenLiveType::LONGLIVE)
-        .user().await?;
-
-// send access_token and the user_id to the server
-    let user_id = user.id;
+    println!("Access token: {}", tokens.access_token);
+    Ok(())
 }
 ```
-* `exchange code for access_token or verify access_token at the server`:  
+
+### 3. Make API Calls
+
+Use the client to interact with Facebook Graph API:
 
 ```rust
-  use crate::facebook_api_rs::prelude::{UserToken, Config};
+use facebook_api_rs::prelude::{Client, TokenLiveType};
 
-async fn handle_token_verification() {
-// To verify access_token sent from client side
-    let access_token = "access_token from client";
-    
-//A valid token, it could be app_token, user_token, client_token, admin_token, page_token.
-    let valid_token = "a valid token";
-    let access_token_information = UserToken::access_token_information(
-        valid_token,
-        access_token
+async fn get_user_pages(user_token: UserToken) -> Result<(), Box<dyn std::error::Error>> {
+    let client = Client::new(user_token, String::new());
+
+    let accounts = client
+        .accounts(TokenLiveType::LONGLIVE)
+        .get()
+        .await?;
+
+    for account in accounts.data {
+        println!("Page: {} (ID: {})", account.name, account.id);
+    }
+
+    Ok(())
+}
+```
+
+## API Version Configuration
+
+By default, this crate uses **Facebook Graph API v23.0**. You can specify a custom version if needed:
+
+```rust
+use facebook_api_rs::prelude::{Config, Client, UserToken};
+
+// Using default v23.0
+let config = Config::new(
+    "your_app_id".to_string(),
+    "redirect_uri".to_string()
+);
+
+// Using custom version (format: vXX.X)
+let config = Config::new_with_version(
+    "your_app_id".to_string(),
+    "redirect_uri".to_string(),
+    "v22.0".to_string()
+);
+
+// Client with custom version
+let client = Client::new_with_version(
+    UserToken::default(),
+    "page_token".to_string(),
+    "v22.0".to_string()
+);
+```
+
+**Note**: Facebook guarantees each API version for at least 2 years. Always use the latest stable version when possible.
+
+## Usage Examples
+
+### Manual Login Flow
+
+#### Step 1: Generate Login URL
+
+Build the Facebook OAuth login URL (can be done on frontend or backend):
+
+````rust
+use facebook_api_rs::prelude::{Config, LoginResponseType, LoginUrlParameters};
+
+```rust
+use facebook_api_rs::prelude::{Config, LoginResponseType, LoginUrlParameters};
+
+fn build_login_url() -> String {
+    let config = Config::new(
+        "YOUR_APP_ID".to_string(),
+        "https://yourapp.com/callback".to_string()
+    );
+
+    // Use TOKEN response type to get access token directly
+    let response_type = LoginResponseType::TOKEN;
+
+    // Or use CODE to exchange for token on server
+    // let response_type = LoginResponseType::CODE;
+
+    LoginUrlParameters::new(config)
+        .add_response_type(response_type)
+        .add_scope(vec!["email", "public_profile", "pages_manage_posts"])
+        .full_login_url()
+}
+````
+
+#### Step 2: Handle Login Response
+
+After successful login, extract tokens or handle errors:
+
+```rust
+use facebook_api_rs::prelude::{Client, Me, TokenLiveType, UserToken};
+
+async fn handle_login_response(redirect_url: String) -> Result<(), Box<dyn std::error::Error>> {
+    let tokens = UserToken::extract_user_tokens(redirect_url);
+
+    // Check for login errors
+    if let Some(error) = tokens.login_error {
+        eprintln!("Login failed: {:?}", error);
+        return Err(Box::new(error));
+    }
+
+    // If using CODE response type, exchange it for access token
+    if !tokens.code.is_empty() {
+        // Send code to server for token exchange
+        println!("Authorization code: {}", tokens.code);
+    }
+
+    // If using TOKEN response type, verify the access token
+    if !tokens.access_token.is_empty() {
+        // Get user information
+        let client = Client::new(tokens.clone(), String::new());
+        let user: Me = client
+            .accounts(TokenLiveType::LONGLIVE)
+            .user()
+            .await?;
+
+        println!("User ID: {}", user.id);
+        println!("User Name: {}", user.name.unwrap_or_default());
+    }
+
+    Ok(())
+}
+```
+
+#### Step 3: Server-Side Token Verification
+
+Verify access tokens or exchange authorization codes on your server:
+
+```rust
+use facebook_api_rs::prelude::{Config, UserToken};
+
+// Verify an access token
+async fn verify_access_token(
+    access_token: String,
+    user_id: String,
+    app_id: String
+) -> Result<bool, Box<dyn std::error::Error>> {
+    // Use a valid app token or admin token for verification
+    let app_token = "YOUR_APP_TOKEN";
+
+    let token_info = UserToken::access_token_information(
+        app_token,
+        &access_token
     ).await?;
 
-// verify the access token 
-    let user_id = "userid";
-    let app_id = "your_app_id";
+    // Validate token properties
+    if !token_info.is_valid {
+        return Ok(false);
+    }
+    if token_info.app_id != app_id {
+        return Ok(false);
+    }
+    if token_info.user_id != user_id {
+        return Ok(false);
+    }
 
-    if !access_token_information.is_valid {
-        // handle it as you want 
-        return "token not valid"
-    }
-    if access_token_information.app_id != app_id {
-        // handle it as you want
-        return "token not valid"
-    }
-    if access_token_information.user_id != user_id {
-        // handle it as you want
-        return "token not valid"
-    }
+    Ok(true)
 }
 
-// To exchange code for access_token
-async fn exchange_code_for_access_token() {
-    let code = "The code sent from client".to_string();
-// The redirect_uri, must be the same uri used when building the login url.
-    let redirect_uri = "uri";
-    let config = Config::new("your app_id".to_owned(), redirect_uri);
+// Exchange authorization code for access token
+async fn exchange_code_for_token(
+    code: String
+) -> Result<UserToken, Box<dyn std::error::Error>> {
+    let config = Config::new(
+        "YOUR_APP_ID".to_string(),
+        "https://yourapp.com/callback".to_string()
+    );
 
-    let access_token = UserToken::default()
+    let token = UserToken::default()
         .exchange_code_for_access_token_at_server(
             code,
-            "your app_secret".to_string(), config).await?;
+            "YOUR_APP_SECRET".to_string(),
+            config
+        )
+        .await?;
+
+    Ok(token)
 }
 ```
 
-## Making request to Facebook graph api. 
+### Working with Facebook Pages
 
-All request/methods can be found through the Client binder while errors are handle by ClientErr.
+Get user's pages and manage page content:
 
 ```rust
-  // Get different accounts/pages a user have access to.
-async fn exchange_code_for_access_token() {
-    // intend to get page long live token 
-    let page_access_token_type = TokenLiveType::LONGLIVE;   
-    // intend to get page short live token 
-    let page_access_token_type = TokenLiveType::SHORTLIVE;
-    // Token from previous steps
-    let tokens = "user token";
-    let pages: Result<Accounts, ClientErr> = Client::new(tokens, "".to_owned()).accounts(page_access_token_type).get().await;
+use facebook_api_rs::prelude::{Client, TokenLiveType};
+
+async fn get_user_pages(user_token: UserToken) -> Result<(), Box<dyn std::error::Error>> {
+    let client = Client::new(user_token, String::new());
+
+    // Get all pages the user manages
+    let accounts = client
+        .accounts(TokenLiveType::LONGLIVE)
+        .get()
+        .await?;
+
+    for account in accounts.data {
+        println!("Page: {} (ID: {})", account.name, account.id);
+        println!("Access Token: {}", account.access_token);
+        println!("Category: {}", account.category);
+    }
+
+    Ok(())
 }
 ```
+
+### Publishing to Facebook Pages
+
+Create posts, upload photos, and publish videos:
+
+```rust
+use facebook_api_rs::prelude::{Client, TokenLiveType};
+
+async fn publish_page_post(
+    user_token: UserToken,
+    page_token: String
+) -> Result<(), Box<dyn std::error::Error>> {
+    let client = Client::new(user_token, page_token);
+
+    // Publish a text post
+    let result = client
+        .pages("PAGE_ID".to_string(), TokenLiveType::LONGLIVE)
+        .feed()
+        .publish_message("Hello from Rust! 🦀".to_string())
+        .await?;
+
+    println!("Post ID: {}", result.id);
+
+    Ok(())
+}
+```
+
+### Instagram Business API
+
+Access Instagram business accounts and media:
+
+```rust
+use facebook_api_rs::prelude::{Client, TokenLiveType};
+
+async fn get_instagram_media(
+    user_token: UserToken,
+    page_token: String
+) -> Result<(), Box<dyn std::error::Error>> {
+    let client = Client::new(user_token, page_token);
+
+    // Get Instagram account media
+    let media = client
+        .instagram_account("INSTAGRAM_BUSINESS_ACCOUNT_ID".to_string())
+        .media()
+        .fields(vec!["id", "caption", "media_type", "media_url", "timestamp"])
+        .get()
+        .await?;
+
+    for item in media.data {
+        println!("Media ID: {}", item.id);
+    }
+
+    Ok(())
+}
+```
+
+## API Coverage
+
+This crate currently supports:
+
+### Authentication & Tokens
+
+- ✅ OAuth login flow with customizable scopes
+- ✅ Authorization code exchange
+- ✅ Access token verification
+- ✅ Short-lived and long-lived tokens
+- ✅ Token inspection and debugging
+
+### User & Accounts API
+
+- ✅ Get user profile information
+- ✅ List user's managed pages
+- ✅ Page access token management
+
+### Facebook Pages API
+
+- ✅ Publish posts to pages
+- ✅ Upload photos to pages
+- ✅ Upload videos to pages
+- ✅ Page feed management
+- ✅ Search functionality
+
+### Instagram Business API
+
+- ✅ Instagram Business Account access
+- ✅ Media publishing and management
+- ✅ Hashtag search
+- ✅ Media insights
+
+### Other Features
+
+- ✅ Batch API requests
+- ✅ Custom API version support
+- ✅ Error handling with typed errors
+
+## Roadmap (v0.1.x)
+
+- [x] OAuth login dialog and redirect URL handling
+- [x] Login response parsing
+- [x] Authorization code exchange for access tokens
+- [x] JSON response handling
+- [x] Access token inspection
+- [x] Token storage and login status tracking
+- [ ] Canceled login handling
+- [ ] Identity confirmation
+- [ ] Permission checking
+- [ ] Re-requesting declined permissions
+- [ ] User logout functionality
+- [ ] App uninstall detection
+- [ ] User data deletion request handling
+
+## Error Handling
+
+The crate uses strongly-typed errors through the `ClientErr` enum:
+
+```rust
+use facebook_api_rs::prelude::{Client, ClientErr};
+
+async fn handle_api_errors() {
+    match some_api_call().await {
+        Ok(data) => println!("Success: {:?}", data),
+        Err(ClientErr::HttpError(e)) => eprintln!("HTTP error: {}", e),
+        Err(ClientErr::ParseError(e)) => eprintln!("Parse error: {}", e),
+        Err(e) => eprintln!("Other error: {:?}", e),
+    }
+}
+```
+
+## Examples
+
+Check out the [examples](examples/) directory for more detailed usage examples, including:
+
+- Complete OAuth flow implementation
+- Instagram integration
+- Page management
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request. For major changes, please open an issue first to discuss what you would like to change.
+
+### Development Setup
+
+```bash
+# Clone the repository
+git clone https://github.com/osain-az/facebook-api-rs.git
+cd facebook-api-rs
+
+# Run tests
+cargo test
+
+# Build documentation
+cargo doc --open
+
+# Run examples (requires Facebook App credentials)
+cargo run --example seed
+```
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Acknowledgments
+
+- [Facebook for Developers](https://developers.facebook.com/) - Official API documentation
+- Built with ❤️ using Rust
+
+## Support
+
+- � [Repository](https://github.com/osain-az/facebook-api-rs)
+- 🐛 [Issue Tracker](https://github.com/osain-az/facebook-api-rs/issues)
+- 💬 [Discussions](https://github.com/osain-az/facebook-api-rs/discussions)
+
+## Publishing to Crates.io
+
+This crate is ready for publication to crates.io. When published, users will be able to install it with:
+
+```toml
+[dependencies]
+facebook_api_rs = "0.1.0"
+```
+
+To publish (for maintainers):
+
+```bash
+# Ensure all tests pass
+cargo test
+
+# Check the package
+cargo package
+
+# Publish to crates.io
+cargo publish
+```
+
+## Related Projects
+
+- [facebook-graph-api](https://crates.io/crates/facebook-graph-api) - Alternative Facebook API client
+- [social-media-api](https://crates.io/crates/social-media-api) - Multi-platform social media API
+
+---
+
+**Note**: This is an unofficial library and is not affiliated with Meta Platforms, Inc.

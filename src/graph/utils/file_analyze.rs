@@ -1,13 +1,8 @@
-/// This mod will contain different utils methods that could be use in different
-/// mod
-use serde::{Deserialize, Serialize};
-use serde_json::ser::CharEscape::FormFeed;
 //use web_sys::Blob;
 //use web_sys::File;
 use std::convert::TryInto;
 use std::fs::File;
-use std::io::{BufRead, BufReader};
-use std::io::{Read, Seek};
+use std::io::Read;
 
 //#[derive(Deserialize, Debug, Serialize)]
 #[derive(Debug)]

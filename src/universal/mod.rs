@@ -2,8 +2,6 @@ use crate::prelude::utils::UploadingData;
 use crate::prelude::video::VideoParams;
 use crate::universal::errors::ClientErr;
 
-#[cfg(any(feature = "reqwest"))]
-use ::reqwest::multipart::Form;
 
 use async_trait::async_trait;
 use http::{HeaderMap, Request, Response};
